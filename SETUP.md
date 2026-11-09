@@ -119,4 +119,5 @@ Print these for the human, with the full absolute path of `icehacks/vault` fille
   this reminder on how to start work:
 
   > Open a new agent session in the `icehacks` folder (not `vault/`) and say:
-  > "Read AGENTS.md, then do task T0X." (Nisith will give you the task ID.)
+  > "Read AGENTS.md and tell me what I'm assigned."
+  > (The agent finds your section in `vault/team-memory/assignments.md` and walks you through it.)
