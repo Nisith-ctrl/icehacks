@@ -1,4 +1,4 @@
-// Owned by T02 (voice activation, STT/TTS, approval). T01 only created the skeleton.
+// Owned by T02 (voice activation, STT/TTS, approval).
 plugins {
     alias(libs.plugins.android.library)
 }
@@ -16,6 +16,7 @@ android {
 dependencies {
     implementation(project(":core"))
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.core.ktx)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }
