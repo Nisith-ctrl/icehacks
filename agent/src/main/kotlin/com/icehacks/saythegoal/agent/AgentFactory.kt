@@ -8,10 +8,11 @@ import com.icehacks.saythegoal.core.Overlay
 import com.icehacks.saythegoal.core.ScreenController
 import com.icehacks.saythegoal.core.UserCommand
 import com.icehacks.saythegoal.core.VoiceIO
+import java.io.File
 
 /**
- * Called by the app's AccessibilityService. T03 replaces the fake with the real runner.
- * The Claude key is available as BuildConfig.ANTHROPIC_API_KEY (empty if local.properties has none).
+ * Called by the app's AccessibilityService. Needs ANTHROPIC_API_KEY in local.properties; without
+ * it the agent still runs and says that no key is set up.
  */
 fun createAgent(
     screen: ScreenController,
@@ -19,10 +20,28 @@ fun createAgent(
     approval: ApprovalGate,
     overlay: Overlay,
     context: Context,
-): AgentRunner = FakeAgentRunner()
+): AgentRunner {
+    val config = AgentConfig()
+    val planner: Planner = if (config.apiKey.isBlank()) NoKeyPlanner else ClaudePlanner(config)
+    val prefs = FilePreferenceStore(File(context.filesDir, "saved_preferences.json"))
+    val ledger = DraftLedger()
+    val loop = AgentLoop(
+        screen, voice, approval, overlay, planner, prefs, ledger,
+        calendar = AndroidCalendarSource(context),
+        photos = AndroidPhotoSource(context),
+        config = config,
+    )
+    Log.i(AgentLoop.TAG, "agent ready: model=${config.model}, key set=${config.apiKey.isNotBlank()}")
+    return SayTheGoalAgent(screen, voice, overlay, loop, prefs, ledger)
+}
+
+private object NoKeyPlanner : Planner {
+    override suspend fun next(turn: PlannerTurn) =
+        PlannerStep("stop", tool("reason" to "No Claude API key is set up, so I can't plan. Add ANTHROPIC_API_KEY to local.properties and rebuild."))
+}
 
 class FakeAgentRunner : AgentRunner {
     override suspend fun handle(command: UserCommand) {
-        Log.i("STG-Agent", "FakeAgentRunner.handle: $command (key set: ${BuildConfig.ANTHROPIC_API_KEY.isNotEmpty()})")
+        Log.i(AgentLoop.TAG, "FakeAgentRunner.handle: $command")
     }
 }

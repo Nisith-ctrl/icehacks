@@ -1,8 +1,9 @@
-// Owned by T03 (planner loop, workflows, form mapping, prefs, undo). T01 only created the skeleton.
+// Owned by T03 (planner loop, workflows, form mapping, prefs, undo).
 import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 // ANTHROPIC_API_KEY comes from local.properties (gitignored). Missing key -> empty string, build still works.
@@ -20,6 +21,8 @@ android {
         buildConfigField("String", "ANTHROPIC_API_KEY", "\"${anthropicKey.replace("\"", "")}\"")
     }
     buildFeatures { buildConfig = true }
+    packaging { resources { excludes += setOf("META-INF/*") } }
+    testOptions { unitTests.isReturnDefaultValues = true }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -29,6 +32,7 @@ android {
 dependencies {
     implementation(project(":core"))
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.anthropic.java)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }
