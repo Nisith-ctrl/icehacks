@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Say the Goal</string>
+    <string name="service_description">Say the Goal reads the controls on screen and taps, types and scrolls for you when you ask by voice. It acts only in Gmail, Calendar, Chrome and Messages, and asks before anything is submitted or sent.</string>
+</resources>
