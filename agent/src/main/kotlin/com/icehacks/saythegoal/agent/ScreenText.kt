@@ -11,7 +11,7 @@ import com.icehacks.saythegoal.core.UiNode
  * Layout-only nodes (no text, not interactive) are dropped.
  */
 object ScreenText {
-    private const val MAX_LINES = 260
+    private const val MAX_LINES = 160 // token budget: Groq free tier is ~8K tokens/min
     private const val MAX_TEXT = 140
 
     fun render(s: ScreenSnapshot): String {

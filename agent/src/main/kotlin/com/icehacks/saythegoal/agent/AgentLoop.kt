@@ -283,7 +283,8 @@ class AgentLoop(
 
                 "none" -> {
                     errors++
-                    feedback = "Call exactly one tool each turn."
+                    feedback = step.text?.takeIf { it.startsWith("Your last tool call was malformed") }
+                        ?: "Call exactly one tool each turn."
                 }
 
                 else -> {
