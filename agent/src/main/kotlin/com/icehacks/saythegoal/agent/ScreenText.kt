@@ -29,7 +29,7 @@ object ScreenText {
             val flags = mutableListOf<String>()
             if (n.editable) flags += "edit"
             if (n.checkable) flags += if (n.checked) "check, checked" else "check"
-            else if (n.clickable) flags += "tap"
+            else if (n.clickable || labelOfClickableParent(n, byId)) flags += "tap"
             if (n.scrollable) flags += "scroll"
             if (n.selected) flags += "selected"
             if (n.focused) flags += "focused"
@@ -42,6 +42,13 @@ object ScreenText {
             }
         }
         return lines.joinToString("\n")
+    }
+
+    /** Compose apps put the label on a child of the clickable node: tapping the child works too. */
+    private fun labelOfClickableParent(n: UiNode, byId: Map<String, UiNode>): Boolean {
+        val p = n.parentId?.let { byId[it] } ?: return false
+        return p.clickable && p.text.isNullOrBlank() && p.contentDescription.isNullOrBlank() &&
+            (!n.text.isNullOrBlank() || !n.contentDescription.isNullOrBlank())
     }
 
     fun useful(n: UiNode) =
