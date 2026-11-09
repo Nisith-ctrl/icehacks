@@ -212,6 +212,7 @@ class AndroidVoice(
                 when (error) {
                     SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> restartEar(5_000)
                     SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> restartEar(600)
+                    SpeechRecognizer.ERROR_CLIENT -> restartEar(300) // also fired by our own cancel() before speaking
                     SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> restartEar(150)
                     SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE, SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED -> {
                         Log.w(TAG, "on-device recognizer has no en-US model (error $error); using the standard recognizer")
