@@ -71,7 +71,7 @@ class OverlayLayoutTest {
     fun captionGoesToTheOtherHalf() {
         assertTrue(OverlayLayout.captionAtTop(listOf(Bounds(0, 2000, 100, 2100)), screen))
         assertFalse(OverlayLayout.captionAtTop(listOf(Bounds(0, 200, 100, 300)), screen))
-        assertFalse(OverlayLayout.captionAtTop(emptyList(), screen))
+        assertTrue(OverlayLayout.captionAtTop(emptyList(), screen)) // nothing to avoid: keep clear of Send/compose
     }
 
     @Test
@@ -79,7 +79,16 @@ class OverlayLayoutTest {
         // Form fields high up and the Submit button low down: bottom band covers Submit, top band a field.
         val fields = listOf(Bounds(40, 200, 1040, 320), Bounds(40, 1000, 1040, 1120))
         val submit = Bounds(40, 2150, 1040, 2300)
-        assertFalse(OverlayLayout.captionAtTop(fields, screen))           // nothing at the bottom -> bottom
+        assertFalse(OverlayLayout.captionAtTop(fields, screen))           // fields at the top, nothing at the bottom -> bottom
         assertTrue(OverlayLayout.captionAtTop(fields + submit, screen))   // Submit is bigger -> top
+    }
+
+    @Test
+    fun restingSpotStaysOffTheCornersAndBars() {
+        val p = OverlayLayout.restingSpot(screen, size, gap)
+        assertTrue(insideSafeArea(p))
+        val sendButton = Bounds(900, 2200, 1080, 2334) // bottom-right, like Messages' Send
+        assertFalse(circleHitsTarget(p, sendButton))
+        assertTrue(p.cy > screen.safeTop + 600 && p.cy < screen.safeBottom - 600)
     }
 }
