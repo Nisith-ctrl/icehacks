@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Volunteer signup - Riverside Harvest Festival</title>
+  <link rel="stylesheet" href="../shared/form.css">
+</head>
+<body>
+  <header>
+    <h1>Harvest Festival Volunteers</h1>
+    <p>Riverside Community Park, main pavilion</p>
+  </header>
+  <main>
+    <p class="details">Thanks for helping out! Pick one shift and tell us where you'd like to help.</p>
+    <div id="errors" class="errors" role="alert" hidden></div>
+    <form id="signup" class="card" novalidate>
+      <div class="field">
+        <label for="vol-email">Email address <span class="req">(required)</span></label>
+        <input type="email" id="vol-email" name="emailAddress" autocomplete="email" required>
+      </div>
+
+      <div class="field">
+        <label for="vol-name">Your name <span class="req">(required)</span></label>
+        <input type="text" id="vol-name" name="yourName" autocomplete="name" required>
+      </div>
+
+      <fieldset>
+        <legend>Shift <span class="req">(required)</span></legend>
+        <div class="option">
+          <input type="radio" id="shift-1" name="shift" required>
+          <label for="shift-1" id="shift-1-label"></label>
+        </div>
+        <div class="option">
+          <input type="radio" id="shift-2" name="shift" required>
+          <label for="shift-2" id="shift-2-label"></label>
+        </div>
+      </fieldset>
+
+      <div class="field">
+        <label for="vol-role">Preferred volunteer role <span class="req">(required)</span></label>
+        <select id="vol-role" name="role" required>
+          <option value="">Choose a volunteer role</option>
+          <option>Welcome table</option>
+          <option>Food serving</option>
+          <option>Setup crew</option>
+          <option>Cleanup crew</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="vol-mobile">Mobile number <span class="req">(required)</span></label>
+        <input type="tel" id="vol-mobile" name="mobile" autocomplete="tel" required>
+      </div>
+
+      <fieldset>
+        <legend>How should we send your confirmation? <span class="req">(required)</span></legend>
+        <div class="option">
+          <input type="radio" id="send-text" name="sendConfirmation" value="Text message" required>
+          <label for="send-text">Text message</label>
+        </div>
+        <div class="option">
+          <input type="radio" id="send-call" name="sendConfirmation" value="Phone call" required>
+          <label for="send-call">Phone call</label>
+        </div>
+        <div class="option">
+          <input type="radio" id="send-email" name="sendConfirmation" value="Email" required>
+          <label for="send-email">Email</label>
+        </div>
+      </fieldset>
+
+      <button type="submit">Sign up for shift</button>
+    </form>
+  </main>
+  <script src="../shared/dates.js"></script>
+  <script src="../shared/form.js"></script>
+  <script>
+    const times = StgDates.fromQuery("volunteer");
+    [times.s1, times.s2].forEach((start, i) => {
+      const input = document.getElementById(`shift-${i + 1}`);
+      input.value = StgDates.toLocalIso(start);
+      document.getElementById(`shift-${i + 1}-label`).textContent = StgDates.describe(start, times.minutes);
+    });
+    StgForm({
+      formId: "signup",
+      storageKey: "stg-volunteer",
+      confirmPage: "confirmed.html",
+      prefix: "VOL",
+      order: ["emailAddress", "yourName", "shift", "role", "mobile", "sendConfirmation"],
+      describeChoice: (name, value) =>
+        name === "shift" ? StgDates.describe(StgDates.parseLocalIso(value), times.minutes) : value,
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registration confirmed - Riverside Public Library</title>
+  <link rel="stylesheet" href="../shared/form.css">
+</head>
+<body>
+  <header>
+    <h1>Intro to 3D Printing Workshop</h1>
+    <p>Riverside Public Library, Makerspace Room</p>
+  </header>
+  <main>
+    <section id="ok" class="card confirmed">
+      <h2>Registration confirmed</h2>
+      <p>Confirmation number: <strong id="number"></strong></p>
+      <dl id="values"></dl>
+    </section>
+    <section id="none" class="card" hidden>
+      <h2>No registration found</h2>
+      <p>This page didn't receive a submitted registration. Go back to the form and submit it again.</p>
+    </section>
+  </main>
+  <script src="../shared/form.js"></script>
+  <script>StgConfirm("stg-library");</script>
+</body>
+</html>

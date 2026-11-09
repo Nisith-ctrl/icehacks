@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signup confirmed - Riverside Harvest Festival</title>
+  <link rel="stylesheet" href="../shared/form.css">
+</head>
+<body>
+  <header>
+    <h1>Harvest Festival Volunteers</h1>
+    <p>Riverside Community Park, main pavilion</p>
+  </header>
+  <main>
+    <section id="ok" class="card confirmed">
+      <h2>You're signed up</h2>
+      <p>Volunteer confirmation: <strong id="number"></strong></p>
+      <dl id="values"></dl>
+    </section>
+    <section id="none" class="card" hidden>
+      <h2>No signup found</h2>
+      <p>This page didn't receive a submitted signup. Go back to the form and submit it again.</p>
+    </section>
+  </main>
+  <script src="../shared/form.js"></script>
+  <script>StgConfirm("stg-volunteer");</script>
+</body>
+</html>
