@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Say the Goal - demo seed data</title>
+  <link rel="stylesheet" href="../shared/form.css">
+  <style>
+    textarea { width: 100%; min-height: 220px; font: 14px/1.45 ui-monospace, Consolas, monospace; padding: 10px; border: 1px solid #9a968c; border-radius: 8px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 24px; }
+    .row button { width: auto; padding: 10px 14px; }
+    h2 { margin: 28px 0 8px; }
+    code { background: #ece9e1; padding: 1px 4px; border-radius: 4px; }
+    .card + .card { margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Demo seed data (for the team, not the agent)</h1>
+    <p>Generates the invite emails and calendar conflicts for one recording day.</p>
+  </header>
+  <main>
+    <div class="card">
+      <div class="field">
+        <label for="base">Seed day (usually today)</label>
+        <input type="text" id="base" placeholder="YYYY-MM-DD">
+      </div>
+      <p class="details">Library sessions are seed day +3 and +4; volunteer shifts are +5 and +6. The links carry the
+        exact times, so an email keeps working with its form even if you record on a later day.
+        Re-seed (send fresh emails, re-import the calendar file) whenever you change the seed day.</p>
+    </div>
+
+    <h2>1. Library workshop invite</h2>
+    <p>Send from the sender test account to the user test account. Subject:</p>
+    <p><strong id="lib-subject"></strong></p>
+    <textarea id="lib-body" readonly aria-label="Library invite email body"></textarea>
+    <div class="row"><button data-copy="lib-subject">Copy subject</button><button data-copy="lib-body">Copy body</button></div>
+
+    <h2>2. Volunteer signup invite</h2>
+    <p>Subject:</p>
+    <p><strong id="vol-subject"></strong></p>
+    <textarea id="vol-body" readonly aria-label="Volunteer invite email body"></textarea>
+    <div class="row"><button data-copy="vol-subject">Copy subject</button><button data-copy="vol-body">Copy body</button></div>
+
+    <h2>3. Calendar conflicts</h2>
+    <p id="conflicts"></p>
+    <p>Download the file and import it into the user test account's Google Calendar
+      (calendar.google.com → Settings → Import &amp; export → Import), or create the two events by hand.</p>
+    <div class="row"><button id="ics">Download stg-conflicts.ics</button></div>
+  </main>
+  <script src="../shared/dates.js"></script>
+  <script>
+    const baseInput = document.getElementById("base");
+    const pad = (n) => String(n).padStart(2, "0");
+    const today = new Date();
+    baseInput.value = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+
+    function baseDate() {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(baseInput.value.trim());
+      return m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date();
+    }
+
+    function link(kind, t) {
+      // Built by hand so the link stays readable in the email (no %3A for the colons).
+      return `${location.origin}/${kind}/?s1=${StgDates.toLocalIso(t.s1)}&s2=${StgDates.toLocalIso(t.s2)}&d=${t.minutes}`;
+    }
+
+    function icsTime(d) {
+      return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+    }
+
+    function conflictEvents(lib, vol) {
+      return [
+        { title: "Dentist appointment", start: lib.s1, end: StgDates.addMinutes(lib.s1, 60) },
+        { title: "Lunch with Sam", start: StgDates.addMinutes(vol.s2, 30), end: StgDates.addMinutes(vol.s2, 90) },
+      ];
+    }
+
+    function render() {
+      const base = baseDate();
+      const lib = StgDates.defaults("library", base);
+      const vol = StgDates.defaults("volunteer", base);
+
+      document.getElementById("lib-subject").textContent = "Invitation: Intro to 3D Printing Workshop at Riverside Library";
+      document.getElementById("lib-body").value = [
+        "Hi Alex,",
+        "",
+        "You're invited to a free, hands-on Intro to 3D Printing Workshop in the Riverside Public Library Makerspace Room.",
+        "",
+        "There are two sessions. Please pick the one that works for you:",
+        `- Session 1: ${StgDates.describe(lib.s1, lib.minutes)}`,
+        `- Session 2: ${StgDates.describe(lib.s2, lib.minutes)}`,
+        "",
+        "Register here:",
+        link("library", lib),
+        "",
+        "See you there,",
+        "Riverside Public Library Events",
+      ].join("\n");
+
+      document.getElementById("vol-subject").textContent = "Volunteers needed: Riverside Harvest Festival";
+      document.getElementById("vol-body").value = [
+        "Hi Alex,",
+        "",
+        "The Riverside Harvest Festival needs volunteers at the Community Park main pavilion.",
+        "",
+        "We have two shifts open:",
+        `- Shift A: ${StgDates.describe(vol.s1, vol.minutes)}`,
+        `- Shift B: ${StgDates.describe(vol.s2, vol.minutes)}`,
+        "",
+        "Sign up for a shift here:",
+        link("volunteer", vol),
+        "",
+        "Thank you!",
+        "Riverside Harvest Festival Team",
+      ].join("\n");
+
+      const ev = conflictEvents(lib, vol);
+      document.getElementById("conflicts").textContent =
+        `"${ev[0].title}" ${StgDates.describe(ev[0].start, 60)} (blocks library Session 1) and ` +
+        `"${ev[1].title}" ${StgDates.describe(ev[1].start, 60)} (blocks volunteer Shift B).`;
+    }
+
+    document.getElementById("ics").addEventListener("click", () => {
+      const base = baseDate();
+      const ev = conflictEvents(StgDates.defaults("library", base), StgDates.defaults("volunteer", base));
+      const stamp = icsTime(new Date());
+      const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SayTheGoal//Seed//EN"];
+      ev.forEach((e, i) => {
+        lines.push(
+          "BEGIN:VEVENT",
+          `UID:stg-conflict-${i + 1}-${icsTime(e.start)}@saythegoal`,
+          `DTSTAMP:${stamp}`,
+          `DTSTART:${icsTime(e.start)}`,
+          `DTEND:${icsTime(e.end)}`,
+          `SUMMARY:${e.title}`,
+          "END:VEVENT",
+        );
+      });
+      lines.push("END:VCALENDAR");
+      const blob = new Blob([lines.join("\r\n") + "\r\n"], { type: "text/calendar" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "stg-conflicts.ics";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    document.querySelectorAll("[data-copy]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const el = document.getElementById(btn.dataset.copy);
+        const text = el.value !== undefined ? el.value : el.textContent;
+        try {
+          await navigator.clipboard.writeText(text);
+          btn.textContent = "Copied";
+        } catch (e) {
+          btn.textContent = "Copy failed, select the text";
+        }
+        setTimeout(() => (btn.textContent = btn.dataset.copy.endsWith("subject") ? "Copy subject" : "Copy body"), 1500);
+      });
+    });
+
+    baseInput.addEventListener("input", render);
+    render();
+  </script>
+</body>
+</html>

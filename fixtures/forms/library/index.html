@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Workshop registration - Riverside Public Library</title>
+  <link rel="stylesheet" href="../shared/form.css">
+</head>
+<body>
+  <header>
+    <h1>Intro to 3D Printing Workshop</h1>
+    <p>Riverside Public Library, Makerspace Room</p>
+  </header>
+  <main>
+    <p class="details">Free hands-on workshop. Choose one session. Space is limited, so please register below.</p>
+    <div id="errors" class="errors" role="alert" hidden></div>
+    <form id="registration" class="card" novalidate>
+      <fieldset>
+        <legend>Session <span class="req">(required)</span></legend>
+        <div class="option">
+          <input type="radio" id="session-1" name="session" required>
+          <label for="session-1" id="session-1-label"></label>
+        </div>
+        <div class="option">
+          <input type="radio" id="session-2" name="session" required>
+          <label for="session-2" id="session-2-label"></label>
+        </div>
+      </fieldset>
+
+      <div class="field">
+        <label for="full-name">Full name <span class="req">(required)</span></label>
+        <input type="text" id="full-name" name="fullName" autocomplete="name" required>
+      </div>
+
+      <div class="field">
+        <label for="email">Email <span class="req">(required)</span></label>
+        <input type="email" id="email" name="email" autocomplete="email" required>
+      </div>
+
+      <div class="field">
+        <label for="phone">Phone <span class="req">(required)</span></label>
+        <input type="tel" id="phone" name="phone" autocomplete="tel" required>
+      </div>
+
+      <fieldset>
+        <legend>Confirmation method <span class="req">(required)</span></legend>
+        <div class="option">
+          <input type="radio" id="confirm-email" name="confirmation" value="Email" required>
+          <label for="confirm-email">Email</label>
+        </div>
+        <div class="option">
+          <input type="radio" id="confirm-text" name="confirmation" value="Text message" required>
+          <label for="confirm-text">Text message</label>
+        </div>
+      </fieldset>
+
+      <button type="submit">Register</button>
+    </form>
+  </main>
+  <script src="../shared/dates.js"></script>
+  <script src="../shared/form.js"></script>
+  <script>
+    const times = StgDates.fromQuery("library");
+    const starts = [times.s1, times.s2];
+    starts.forEach((start, i) => {
+      const input = document.getElementById(`session-${i + 1}`);
+      input.value = StgDates.toLocalIso(start);
+      document.getElementById(`session-${i + 1}-label`).textContent = StgDates.describe(start, times.minutes);
+    });
+    StgForm({
+      formId: "registration",
+      storageKey: "stg-library",
+      confirmPage: "confirmed.html",
+      prefix: "LIB",
+      order: ["session", "fullName", "email", "phone", "confirmation"],
+      describeChoice: (name, value) =>
+        name === "session" ? StgDates.describe(StgDates.parseLocalIso(value), times.minutes) : value,
+    });
+  </script>
+</body>
+</html>
