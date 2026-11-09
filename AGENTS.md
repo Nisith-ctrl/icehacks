@@ -6,17 +6,25 @@ which is its own git repo and syncs to GitHub every couple of minutes.
 
 ## Before you start any work
 
-1. Sync the vault: `git -C vault pull --rebase --autostash`
-2. Read, in this order:
+1. Sync both repos: `git pull` (code, on `main` or your branch) and
+   `git -C vault pull --rebase --autostash` (vault).
+2. Find out who you're working for and what they're assigned:
+   - Read `vault/team-memory/assignments.md`. Match your human by `gh api user --jq .login` or
+     `git config user.name` against its table; if neither matches, ask them their name.
+   - **Before doing any work, show them their section of that file**: their tasks, the next steps
+     in order, and what "done" means. Then ask which step to start with (default: the first one
+     not done yet). Do this even if they only said "start" or "what should I do".
+   - If they named a task ID that isn't in their section, say so and ask before going on.
+3. Read, in this order:
    - `vault/team-memory/project-brief.md`: what we're building, stack, conventions
-   - `vault/tasks/` — find **your** task file (your teammate will tell you its ID, e.g. `T03`).
-     Read its scope, the files you own, acceptance criteria and dependencies.
+   - `vault/tasks/`: the task file(s) from their assignment. Read its scope, the files you own,
+     acceptance criteria, dependencies and the **Handoff** section (what's already done).
    - Every file in `vault/team-memory/decisions/`: these are binding. Don't contradict them
      without asking your human.
    - Every file in `vault/team-memory/dead-ends/` so you don't repeat failed approaches.
    - `vault/team-memory/api-notes/` for any API or service your task touches.
    - Task files of the tasks yours depends on, especially their **Handoff** sections.
-3. If something in your task conflicts with a decision or another task's scope, stop and tell your
+4. If something in your task conflicts with a decision or another task's scope, stop and tell your
    human instead of guessing.
 
 ## While you work
