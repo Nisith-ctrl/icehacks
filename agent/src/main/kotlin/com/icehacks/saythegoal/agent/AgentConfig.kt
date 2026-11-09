@@ -15,10 +15,11 @@ data class AgentConfig(
     val visionModel: String = BuildConfig.GROQ_VISION_MODEL,
     val profile: Profile = Profile(),
     /**
-     * Chrome may only be used on these hosts (suffix match). The deployed forms are on
-     * saythegoal-forms-nisith.vercel.app; 10.0.2.2/localhost are for local testing.
+     * Chrome may only be used on these hosts (exact host or a subdomain of it). The deployed forms
+     * are on saythegoal-forms-nisith.vercel.app (decision 2026-11-09-test-form-urls);
+     * 10.0.2.2/localhost are for local testing.
      */
-    val formHosts: List<String> = listOf("vercel.app", "localhost", "10.0.2.2"),
+    val formHosts: List<String> = listOf("saythegoal-forms-nisith.vercel.app", "localhost", "10.0.2.2"),
     val maxActions: Int = 40,
     val maxTurns: Int = 70,
     /** Kept small: Groq's free tier allows ~8K tokens per minute, and every turn re-sends these. */
