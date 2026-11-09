@@ -1,0 +1,22 @@
+# The Obsidian vault is its own repo (icehacks-vault), cloned into vault/
+vault/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+.venv/
+venv/
+__pycache__/
+dist/
+build/
+.next/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
