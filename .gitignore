@@ -20,3 +20,14 @@ build/
 Thumbs.db
 .vscode/
 .idea/
+
+# Android / Gradle (local.properties holds ANTHROPIC_API_KEY: never commit it)
+local.properties
+.gradle/
+.kotlin/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
