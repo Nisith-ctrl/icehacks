@@ -33,6 +33,16 @@ Desktop: `http://localhost:8080/library/`. Emulator Chrome: `http://10.0.2.2:808
 
 ## Deployed
 
-Not deployed yet. Planned: Vercel static site with `fixtures/forms` as the root directory. Once
-deployed, put the URL here and in `vault/team-memory/decisions/YYYY-MM-DD-test-form-urls.md`,
-and tell T03 to set `formHosts` in `AgentConfig.kt`.
+**https://saythegoal-forms-nisith.vercel.app** (Vercel project `saythegoal-forms`, account
+`nisith-ctrl`, static files, no build step).
+
+| Page | URL |
+|---|---|
+| Seed page (team only) | https://saythegoal-forms-nisith.vercel.app/seed/ |
+| Library form | https://saythegoal-forms-nisith.vercel.app/library/ |
+| Volunteer form | https://saythegoal-forms-nisith.vercel.app/volunteer/ |
+
+- The production URL is public. Vercel's login wall applies only to preview deployments.
+- **Not linked to GitHub** (Vercel's GitHub app can't see this private repo), so pushing changes
+  to `fixtures/forms` does **not** redeploy. After merging a change, ask Nisith to redeploy, or run
+  `npx vercel deploy --prod` from `fixtures/forms` while logged in to the `nisith-ctrl` account.
