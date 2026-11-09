@@ -113,7 +113,7 @@ class AgentLoop(
                     val invalid: String? = when (step.tool) {
                         "tap" -> when {
                             node == null -> "There is no node ${s("node_id")} on this screen."
-                            looksLikeCommit(node) -> "That is a submit/send button: use the submit tool with a read-back."
+                            looksLikeCommit(snap, node) -> "That is a submit/send button: use the submit tool with a read-back."
                             else -> null
                         }
                         "enter_text" -> when {
@@ -377,10 +377,43 @@ class AgentLoop(
         const val TAG = "STG-Agent"
         private val COMMIT = Regex("^(submit|send|register|sign up|confirm|place order|pay|book|post)\\b", RegexOption.IGNORE_CASE)
 
-        fun looksLikeCommit(n: UiNode): Boolean {
-            val label = (n.text ?: n.contentDescription ?: "").trim()
-            return label.isNotEmpty() && COMMIT.containsMatchIn(label) && !n.editable
+        private val COMMIT_ID = Regex("(^|[/:_.])(send|submit)", RegexOption.IGNORE_CASE)
+
+        /** The node a tap really activates: itself if clickable, else its nearest clickable ancestor (as the device layer does). */
+        fun clickTarget(s: ScreenSnapshot, n: UiNode): UiNode {
+            val byId = s.nodes.associateBy { it.id }
+            var cur: UiNode? = n
+            while (cur != null && !cur.clickable) cur = cur.parentId?.let { byId[it] }
+            return cur ?: n
         }
+
+        /**
+         * Would tapping [n] submit or send? Checks the node, the control the tap really activates,
+         * that control's children (Compose apps put the label "Send SMS" on a child of the clickable
+         * node) and its view id (e.g. "Compose:Draft:Send").
+         */
+        fun looksLikeCommit(s: ScreenSnapshot, n: UiNode): Boolean {
+            if (n.editable) return false
+            val target = clickTarget(s, n)
+            if (target.editable) return false
+            if (target.viewId?.let { COMMIT_ID.containsMatchIn(it) } == true) return true
+            val parentOf = s.nodes.associate { it.id to it.parentId }
+            fun under(x: UiNode, depth: Int = 3): Boolean {
+                var p = x.parentId
+                repeat(depth) {
+                    if (p == null) return false
+                    if (p == target.id) return true
+                    p = parentOf[p]
+                }
+                return false
+            }
+            val labelled = listOf(n, target) + s.nodes.filter { under(it) }
+            return labelled.any { node ->
+                listOfNotNull(node.text, node.contentDescription).any { COMMIT.containsMatchIn(it.trim()) }
+            }
+        }
+
+        fun looksLikeCommit(n: UiNode): Boolean = looksLikeCommit(ScreenSnapshot("", null, 0L, listOf(n)), n)
 
         fun looksLikeUrl(t: String) = !t.contains(' ') && t.contains('.')
 
