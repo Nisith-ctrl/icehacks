@@ -11,8 +11,8 @@ import com.icehacks.saythegoal.core.VoiceIO
 import java.io.File
 
 /**
- * Called by the app's AccessibilityService. Needs ANTHROPIC_API_KEY in local.properties; without
- * it the agent still runs and says that no key is set up.
+ * Called by the app's AccessibilityService. Needs GROQ_API_KEY in local.properties (free key from
+ * console.groq.com); without it the agent still runs and says that no key is set up.
  */
 fun createAgent(
     screen: ScreenController,
@@ -22,7 +22,7 @@ fun createAgent(
     context: Context,
 ): AgentRunner {
     val config = AgentConfig()
-    val planner: Planner = if (config.apiKey.isBlank()) NoKeyPlanner else ClaudePlanner(config)
+    val planner: Planner = if (config.apiKey.isBlank()) NoKeyPlanner else GroqPlanner(config)
     val prefs = FilePreferenceStore(File(context.filesDir, "saved_preferences.json"))
     val ledger = DraftLedger()
     val loop = AgentLoop(
@@ -37,7 +37,7 @@ fun createAgent(
 
 private object NoKeyPlanner : Planner {
     override suspend fun next(turn: PlannerTurn) =
-        PlannerStep("stop", tool("reason" to "No Claude API key is set up, so I can't plan. Add ANTHROPIC_API_KEY to local.properties and rebuild."))
+        PlannerStep("stop", tool("reason" to "No Groq API key is set up, so I can't plan. Add GROQ_API_KEY to local.properties and rebuild."))
 }
 
 class FakeAgentRunner : AgentRunner {

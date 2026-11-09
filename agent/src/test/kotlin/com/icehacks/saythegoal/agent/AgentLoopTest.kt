@@ -27,14 +27,14 @@ class AgentLoopTest {
     private val chrome = "com.android.chrome"
     private fun form(name: String = "", method: String? = null) = screenOf(
         chrome,
-        n("n0", "library-forms.vercel.app/library", cls = "android.widget.EditText", viewId = "com.android.chrome:id/url_bar"),
+        n("n0", "saythegoal-forms-nisith.vercel.app/library", cls = "android.widget.EditText", viewId = "com.android.chrome:id/url_bar"),
         n("n1", name, cls = "android.widget.EditText", hint = "Full name", editable = true),
         n("n2", "Email", cls = "android.widget.RadioButton", checkable = true, checked = method == "Email", clickable = true),
         n("n3", "Text message", cls = "android.widget.RadioButton", checkable = true, checked = method == "Text message", clickable = true),
         n("n4", "Submit", cls = "android.widget.Button", clickable = true),
     )
     private val confirmation = screenOf(chrome,
-        n("n0", "library-forms.vercel.app/library/confirmed", viewId = "com.android.chrome:id/url_bar"), n("n1", "Registration confirmed"))
+        n("n0", "saythegoal-forms-nisith.vercel.app/library/confirmed", viewId = "com.android.chrome:id/url_bar"), n("n1", "Registration confirmed"))
 
     @Test
     fun ic1OpenGmailFromHomeScreen() = runTest {
@@ -134,6 +134,14 @@ class AgentLoopTest {
         val planner = FakePlanner(listOf(PlannerStep("done", tool("summary" to "should not get here"))))
         val out = loop(FakeScreen(elsewhere), planner).run("x", false)
         assertTrue(out is Outcome.Stopped)
+        assertTrue(planner.turns.isEmpty())
+    }
+
+    @Test
+    fun anotherVercelSiteIsNotAllowed() = runTest {
+        val other = screenOf(chrome, n("n0", "someone-else.vercel.app/library", viewId = "com.android.chrome:id/url_bar"))
+        val planner = FakePlanner(listOf(PlannerStep("done", tool("summary" to "should not get here"))))
+        assertTrue(loop(FakeScreen(other), planner).run("x", false) is Outcome.Stopped)
         assertTrue(planner.turns.isEmpty())
     }
 
