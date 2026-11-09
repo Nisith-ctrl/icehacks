@@ -45,6 +45,7 @@ class DeviceScreenController<H>(
     private val settler: Settler,
     private val allowedPackages: Set<String> = AllowedApps.packages,
     private val maxStalledActions: Int = 3,
+    private val maxEmptyRetries: Int = 10,
     private val log: (String) -> Unit = { runCatching { Log.i(TAG, it) } },
 ) : ScreenController {
 
@@ -111,7 +112,24 @@ class DeviceScreenController<H>(
         if (!ok) return ActionResult.Failed("${action::class.simpleName} could not be performed")
 
         settler.awaitSettled()
-        val after = backend.capture().snapshot
+        var after = backend.capture().snapshot
+        // The screen can go quiet before the result is drawn: an app launch, or a new window that
+        // has no readable tree yet. Settle again (bounded) until the expected state shows up.
+        fun pending(s: ScreenSnapshot) = s.nodes.isEmpty() ||
+            (action is DeviceAction.LaunchApp && s.packageName != action.packageName)
+        // Cold app starts on the emulator can take several seconds (first-run screens).
+        repeat(if (action is DeviceAction.LaunchApp) maxEmptyRetries * 3 else maxEmptyRetries) {
+            if (!pending(after)) return@repeat
+            settler.awaitSettled()
+            after = backend.capture().snapshot
+        }
+        if (action !is DeviceAction.LaunchApp && fingerprinter.of(after) == beforeFp) {
+            settler.awaitSettled() // one more round for slow UI responses
+            after = backend.capture().snapshot
+        }
+        if (action is DeviceAction.LaunchApp && after.packageName != action.packageName) {
+            return ActionResult.Failed("${action.packageName} did not come to the front")
+        }
         val changed = fingerprinter.of(after) != beforeFp
 
         if (action is DeviceAction.EnterText && !textPresent(action, on, after)) {

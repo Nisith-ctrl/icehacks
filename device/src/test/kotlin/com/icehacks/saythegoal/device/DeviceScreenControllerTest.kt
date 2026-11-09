@@ -151,6 +151,19 @@ class DeviceScreenControllerTest {
     }
 
     @Test
+    fun waitsWhileNewWindowIsStillEmpty() = runTest {
+        val b = FakeBackend(snap(submit, pkg = "com.google.android.apps.nexuslauncher"))
+        var settles = 0
+        val c = DeviceScreenController(b, fp, settler = {
+            settles++
+            if (settles == 3) b.screen = snap(node("x", "Inbox"), pkg = "com.google.android.gm")
+        }, log = {})
+        b.onClick = { b.screen = ScreenSnapshot("", null, 0L, emptyList()) }
+        val r = c.perform(DeviceAction.Tap("n1"), b.screen)
+        assertTrue(r is ActionResult.Done && r.after.packageName == "com.google.android.gm")
+    }
+
+    @Test
     fun fingerprintChangesOnVisibleChangeOnly() {
         val a = snap(name, submit)
         assertEquals(fp.of(a), fp.of(a.copy(capturedAtMs = 99, title = "other")))

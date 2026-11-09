@@ -15,6 +15,8 @@ import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 
 /** One-time setup: turn on the accessibility service and grant permissions. Large, readable controls. */
 class SetupActivity : AppCompatActivity() {
@@ -50,7 +52,14 @@ class SetupActivity : AppCompatActivity() {
         column.addView(bigButton("Grant microphone and other permissions") {
             requestPermissions(runtimePermissions, 1)
         })
-        setContentView(ScrollView(this).apply { addView(column, MATCH_PARENT, WRAP_CONTENT) })
+        val root = ScrollView(this).apply { addView(column, MATCH_PARENT, WRAP_CONTENT) }
+        // Android 15 draws edge-to-edge: keep content clear of the status and navigation bars.
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
+        setContentView(root)
     }
 
     override fun onResume() {
