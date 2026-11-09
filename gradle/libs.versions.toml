@@ -6,6 +6,7 @@ serialization = "1.9.0"
 coreKtx = "1.15.0"
 appcompat = "1.7.0"
 junit = "4.13.2"
+anthropic = "3.5.0"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -15,6 +16,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 junit = { module = "junit:junit", version.ref = "junit" }
+anthropic-java = { module = "com.anthropic:anthropic-java", version.ref = "anthropic" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
