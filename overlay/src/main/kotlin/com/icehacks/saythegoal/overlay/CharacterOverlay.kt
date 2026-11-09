@@ -42,9 +42,11 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
 
     override fun setMode(mode: CharacterMode) = ui {
         ensureAttached()
+        val wasHidden = stage.mode == CharacterMode.HIDDEN
         stage.mode = mode
         if (mode != CharacterMode.ACTING && mode != CharacterMode.WAITING_APPROVAL) stage.focus = null
-        if (stage.charX.isNaN()) park()
+        if (stage.charX.isNaN() || (wasHidden && mode != CharacterMode.HIDDEN)) park()
+        armAutoHide()
         if (mode == CharacterMode.LISTENING) startPulse() else stopPulse()
         placeCaption()
         stage.invalidate()
@@ -54,6 +56,7 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
         ensureAttached()
         stage.caption = text
         placeCaption()
+        armAutoHide()
         stage.invalidate()
     }
 
@@ -61,11 +64,13 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
         ensureAttached()
         stage.highlights = targets
         placeCaption()
+        armAutoHide()
         stage.invalidate()
     }
 
     override suspend fun pointAt(target: Bounds, caption: String): Unit = withContext(Dispatchers.Main) {
         ensureAttached()
+        main.removeCallbacks(autoHide)
         refreshScreen()
         if (stage.mode == CharacterMode.HIDDEN || stage.mode == CharacterMode.IDLE) setModeNow(CharacterMode.ACTING)
         val p = OverlayLayout.place(target, stage.screen, stage.characterSize, stage.gap)
@@ -165,10 +170,26 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
     /** Resting spot: bottom-right of the safe area, out of the way of most content. */
     private fun park() {
         refreshScreen()
-        val s = stage.screen
-        val p = OverlayLayout.place(Bounds(0, 0, s.width, s.height), s, stage.characterSize, stage.gap)
+        val p = OverlayLayout.restingSpot(stage.screen, stage.characterSize, stage.gap)
         stage.charX = p.cx
         stage.charY = p.cy
+    }
+
+    /** After the agent finishes (IDLE) or stops (PROBLEM), fade out so nothing stays on top of the app. */
+    private val autoHide = Runnable {
+        stage.mode = CharacterMode.HIDDEN
+        stage.caption = null
+        stage.highlights = emptyList()
+        stage.focus = null
+        stopPulse()
+        stage.invalidate()
+    }
+
+    private fun armAutoHide() {
+        main.removeCallbacks(autoHide)
+        if ((stage.mode == CharacterMode.IDLE || stage.mode == CharacterMode.PROBLEM) && stage.highlights.isEmpty()) {
+            main.postDelayed(autoHide, AUTO_HIDE_MS)
+        }
     }
 
     private fun startPulse() {
@@ -206,5 +227,6 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
         private const val MOVE_MS = 420L
         private const val MAX_POINT_MS = 650L
         private const val RESULT_MS = 380L
+        private const val AUTO_HIDE_MS = 6_000L
     }
 }

@@ -46,12 +46,23 @@ object OverlayLayout {
     }
 
     /**
+     * Where the character waits when it isn't pointing at anything: the middle of the right edge,
+     * a little above centre. Corners hold Send/Submit buttons, nav and app bars; mid-edge rarely does.
+     */
+    fun restingSpot(screen: ScreenArea, size: Float, gap: Float): Placement {
+        val half = size / 2
+        val cy = screen.safeTop + (screen.safeBottom - screen.safeTop) * 0.42f
+        return Placement(Side.RIGHT, screen.width - gap - half, cy.coerceIn(screen.safeTop + half, screen.safeBottom - half))
+    }
+
+    /**
      * True if the caption goes at the top of the safe area. Picks the end of the screen whose
      * caption band (about [bandFraction] of the safe height) overlaps the targets least, so the
-     * caption doesn't cover the control being used or the read-back highlights. Ties go to the bottom.
+     * caption doesn't cover the control being used or the read-back highlights. Ties go to the top:
+     * bottoms of screens hold Send, Submit and compose boxes; tops hold titles.
      */
     fun captionAtTop(targets: List<Bounds>, screen: ScreenArea, bandFraction: Float = 0.2f): Boolean {
-        if (targets.isEmpty()) return false
+        if (targets.isEmpty()) return true
         val band = ((screen.safeBottom - screen.safeTop) * bandFraction).toInt()
         fun overlap(top: Int, bottom: Int) = targets.sumOf { t ->
             val h = minOf(t.bottom, bottom) - maxOf(t.top, top)
@@ -59,6 +70,6 @@ object OverlayLayout {
         }
         val atTop = overlap(screen.safeTop, screen.safeTop + band)
         val atBottom = overlap(screen.safeBottom - band, screen.safeBottom)
-        return atBottom > atTop
+        return atBottom >= atTop
     }
 }
