@@ -60,6 +60,42 @@ object CommandParser {
     /** True if [word] sounds like the wake word "Suus" (see [SUUS]). */
     fun soundsLikeSuus(word: String): Boolean = SUUS.matches(word.replace("'", ""))
 
+    /** First words that start a request ("open Gmail", "use the one by the door", "what time is it"). */
+    private val REQUEST_STARTS = setOf(
+        "open", "go", "find", "search", "look", "show", "read", "check", "register", "sign", "fill", "enter",
+        "type", "write", "tap", "click", "press", "select", "pick", "choose", "use", "attach", "add", "remove",
+        "delete", "change", "replace", "send", "reply", "message", "text", "call", "email", "submit", "book",
+        "schedule", "try", "scroll", "close", "start", "continue", "finish", "keep", "put", "set", "make", "let",
+        "take", "undo", "forget", "remember", "cancel", "stop", "help", "tell", "say", "repeat", "skip",
+        "what", "which", "when", "where", "who", "how", "why", "can", "could", "would", "will", "please",
+        "i", "i'd", "i'm", "id", "im", "we", "my", "yes", "no", "ok", "okay",
+    )
+
+    /**
+     * True if [text], heard without the wake word during a session, reads like a request to SuuS.
+     * Chatter near the phone ("it's my calendar", "that's it again", "but expect you to") is ignored,
+     * so it can't start a task by accident. Saying "SuuS, ..." always works.
+     */
+    fun looksLikeRequest(text: String): Boolean {
+        val n = normalize(text)
+        if (n.isEmpty()) return false
+        if (classify(text) !is UserCommand.Goal) return true // stop, undo, memory
+        val words = n.split(" ")
+        return words.first() in REQUEST_STARTS
+    }
+
+    /**
+     * The question as spoken, with its choices read out when the question doesn't name them:
+     * "Which volunteer role would you like? You can say Setup, Food service, Cleanup or Information desk."
+     */
+    fun withChoices(question: String, choices: List<String>): String {
+        if (choices.isEmpty()) return question
+        val q = normalize(question)
+        if (choices.count { normalize(it) in q } >= minOf(2, choices.size)) return question
+        val list = if (choices.size == 1) choices[0] else choices.dropLast(1).joinToString(", ") + " or " + choices.last()
+        return "${question.trim()} You can say $list."
+    }
+
     fun classify(text: String): UserCommand {
         val n = normalize(text)
         return when {

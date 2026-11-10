@@ -90,7 +90,8 @@ class AndroidVoice(
     override suspend fun ask(question: String, choices: List<String>): String? {
         repeat(2) { attempt ->
             val expected = router.expectAnswer()
-            say(if (attempt == 0) question else "Sorry, I didn't catch that. $question")
+            val spoken = CommandParser.withChoices(question, choices)
+            say(if (attempt == 0) spoken else "Sorry, I didn't catch that. $spoken")
             val answer = router.awaitAnswer(expected, ANSWER_TIMEOUT_MS)
             if (answer != null) {
                 val result = if (choices.isEmpty()) answer else ChoiceMatcher.resolve(answer, choices)
@@ -239,6 +240,7 @@ class AndroidVoice(
 
     companion object {
         const val TAG = "SUUS-Voice"
-        const val ANSWER_TIMEOUT_MS = 8_000L
+        /** How long to wait for an answer after asking. Long enough to think, and to hear the choices. */
+        const val ANSWER_TIMEOUT_MS = 15_000L
     }
 }
