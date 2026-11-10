@@ -106,8 +106,16 @@ class DebugReceiver(
             put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/stg")
         }
         val resolver = service.contentResolver
-        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: error("insert failed")
-        resolver.openOutputStream(uri)?.use { it.write(content.toByteArray()) } ?: error("open failed")
+        // Replace an earlier snapshot with the same name. Otherwise MediaStore saves "name (1).json"
+        // and `adb pull .../name.json` silently returns the old file.
+        val existing = resolver.query(
+            MediaStore.Downloads.EXTERNAL_CONTENT_URI, arrayOf(MediaStore.Downloads._ID),
+            "${MediaStore.Downloads.DISPLAY_NAME} = ? AND ${MediaStore.Downloads.RELATIVE_PATH} LIKE ?",
+            arrayOf(fileName, Environment.DIRECTORY_DOWNLOADS + "/stg%"), null,
+        )?.use { c -> if (c.moveToFirst()) c.getLong(0) else null }
+        val uri = existing?.let { android.content.ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, it) }
+            ?: resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: error("insert failed")
+        resolver.openOutputStream(uri, "wt")?.use { it.write(content.toByteArray()) } ?: error("open failed")
         return "/sdcard/Download/stg/$fileName"
     }
 
