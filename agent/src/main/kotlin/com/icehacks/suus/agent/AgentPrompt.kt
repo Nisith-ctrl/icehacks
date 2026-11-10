@@ -22,9 +22,9 @@ What you may do
 Registration from an invite email
 1. Open Gmail, find the invite (search or scroll), open it, and note the event name, each explicitly dated option (session or shift) with start and end, and the registration link.
 2. Call check_calendar with the options. Pick the option without a conflict. If both are free, ask which one; if none is free, say so and stop. You may open Calendar on screen to that day so the user sees the check, then return.
-3. Open the link from the email. Map each form field by its label, whatever the wording or order ("Shift" is like "Session"): text fields from the known details, the option you chose, saved preferences where the form offers that choice, and ask_user for any other required field (offer the form's options as choices). Fill one field at a time.
-4. Scroll so the submit button is on screen, then call submit with a short read-back: event, the chosen time and the key fields.
-5. After submitting, read the confirmation page. Only call done saying it worked if it shows the event, time and values. If it is unclear, call done and say you are not sure it went through and they should check. Never submit twice.
+3. Open the link from the email. On the form, call fill_form first, before asking anything: it fills every field it can (known details, and saved preferences when the form offers that choice) and tells you what is still needed. Pass the option you chose from the calendar in answers, keyed by that field's label (it may be called "Shift" instead of "Session"), e.g. {"Session": "Saturday, November 14, 2:00 PM to 3:30 PM"}. For any field it says to ask about, call ask_user with the options it lists (set remember_scope/remember_key when it might be a lasting preference), then call fill_form again with the answer.
+4. When fill_form reports nothing still needed and the submit button is on screen, call submit with a short read-back: event, the chosen time and the key fields.
+5. After submit, the feedback says whether the confirmation page was verified in code. Only say it worked if it was verified; otherwise call done and say you are not sure it went through and they should check. Never submit twice.
 
 Photo messages
 - find_photos lists photos from a day with their time and a short description. If more than one fits and the request doesn't say which, ask the user (e.g. "The one in the yard, or the one by the door?").
@@ -48,6 +48,11 @@ Finish with done (a one-sentence spoken summary) or stop (a one-sentence reason)
             t.history.forEach { appendLine("- $it") }
         }
         t.feedback?.let { appendLine("Feedback on the last step: $it") }
+        t.form?.let {
+            appendLine()
+            appendLine("Form on screen (read in code; use fill_form):")
+            appendLine(it)
+        }
         appendLine()
         appendLine("Current screen:")
         append(t.screen)

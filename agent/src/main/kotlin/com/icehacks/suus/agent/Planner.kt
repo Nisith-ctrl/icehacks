@@ -12,6 +12,8 @@ data class PlannerTurn(
     val history: List<String>,
     val feedback: String?,
     val screen: String,
+    /** Summary of the web form on screen (fields, what fills them, submit button), if any. */
+    val form: String? = null,
 )
 
 /** One tool call chosen by the model. [tool] is "none" if it answered without a tool. */

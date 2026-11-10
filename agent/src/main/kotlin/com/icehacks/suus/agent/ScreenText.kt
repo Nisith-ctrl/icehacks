@@ -14,13 +14,24 @@ object ScreenText {
     private const val MAX_LINES = 160 // token budget: Groq free tier is ~8K tokens/min
     private const val MAX_TEXT = 140
 
-    fun render(s: ScreenSnapshot): String {
+    /**
+     * @param skipFormFields when a form summary is sent, leave out the text boxes, radios and
+     *   their labels inside the page (fill_form handles them); buttons, links and headings stay.
+     */
+    fun render(s: ScreenSnapshot, skipFormFields: Boolean = false): String {
         val byId = s.nodes.associateBy { it.id }
+        val web = if (skipFormFields) s.nodes.firstOrNull { it.className.endsWith("WebView") }?.id else null
+        fun inWeb(n: UiNode): Boolean {
+            var p = n.parentId
+            while (p != null) { if (p == web) return true; p = byId[p]?.parentId }
+            return false
+        }
         val lines = mutableListOf<String>()
         lines += "app: ${appName(s.packageName)} (${s.packageName})" + (s.title?.let { "  title: \"${clip(it)}\"" } ?: "")
         chromeUrl(s)?.let { lines += "url: $it" }
         for (n in s.nodes) {
             if (!useful(n)) continue
+            if (web != null && inWeb(n) && (n.editable || n.checkable || (!n.clickable && n.className.endsWith(".View")))) continue
             val parts = mutableListOf(n.id, n.className.substringAfterLast('.'))
             n.text?.takeIf { it.isNotBlank() }?.let { parts += "\"${clip(it)}\"" }
             n.contentDescription?.takeIf { it.isNotBlank() && it != n.text }?.let { parts += "desc=\"${clip(it)}\"" }
