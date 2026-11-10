@@ -2,4 +2,62 @@
 <resources>
     <string name="app_name">Say the Goal</string>
     <string name="service_description">Say the Goal reads the controls on screen and taps, types and scrolls for you when you ask by voice. It acts only in Gmail, Calendar, Chrome and Messages, and asks before anything is submitted or sent.</string>
+
+    <!-- Setup screen -->
+    <string name="setup_subtitle">Set up once. After that, just say what you need.</string>
+    <string name="setup_progress">%1$d of %2$d steps done</string>
+    <string name="setup_all_done_title">You\'re ready</string>
+    <string name="setup_all_done_body">Say \"Hey Goal\", then what you want. For example: \"Hey Goal, find the library workshop invite and register me.\" Say \"Stop\" at any time.</string>
+    <string name="step_done">Done</string>
+    <string name="step_not_done">Not done yet</string>
+    <string name="step_number_done">Step %1$d, done</string>
+    <string name="step_number_not_done">Step %1$d, not done yet</string>
+
+    <string name="step_service_title">Turn on Say the Goal</string>
+    <string name="step_service_detail">This lets the app read the screen and tap for you. In the list that opens, choose Say the Goal (it may be under Installed apps), then switch it on.</string>
+    <string name="step_service_action">Open Accessibility settings</string>
+
+    <string name="step_mic_title">Allow the microphone</string>
+    <string name="step_mic_detail">So the app can hear \"Hey Goal\" and your answers. Choose \"While using the app\".</string>
+    <string name="step_mic_action">Allow microphone</string>
+
+    <string name="step_calendar_title">Allow the calendar</string>
+    <string name="step_calendar_detail">So the app can pick times that don\'t clash with your events. It only reads your calendar.</string>
+    <string name="step_calendar_action">Allow calendar</string>
+
+    <string name="step_photos_title">Allow photos</string>
+    <string name="step_photos_detail">So the app can find the photo you ask for. Choose \"Allow all\".</string>
+    <string name="step_photos_action">Allow photos</string>
+
+    <string name="step_notifications_title">Allow notifications</string>
+    <string name="step_notifications_detail">So the app can show that it is listening.</string>
+    <string name="step_notifications_action">Allow notifications</string>
+
+    <string name="step_wake_title">Check that it hears you</string>
+    <string name="step_wake_detail">Press the button, then say: \"Hey Goal, what do you remember?\" The app should answer out loud.</string>
+    <string name="step_wake_action">Start the check</string>
+    <string name="step_wake_again">Check again</string>
+    <string name="wake_listening">Listening for 30 seconds. Say: \"Hey Goal, what do you remember?\"</string>
+    <string name="wake_heard">It heard you.</string>
+    <string name="wake_not_heard">It didn\'t hear \"Hey Goal\". Move closer to the phone and try again.</string>
+    <string name="wake_needs_setup">Finish the steps above first: turn on Say the Goal and allow the microphone.</string>
+
+    <string name="open_memory">What I remember</string>
+    <string name="debug_note">Debug build: adb hooks are active while the service is on.</string>
+
+    <!-- "What I remember" screen -->
+    <string name="memory_title">What I remember</string>
+    <string name="memory_intro">These are the choices you asked the app to remember. It uses them so it doesn\'t have to ask you again. You can remove any of them.</string>
+    <string name="memory_empty_title">Nothing saved yet</string>
+    <string name="memory_empty_body">The app only remembers what you tell it to. When it asks you a question, add \"remember that\" to your answer. For example: \"Email. Remember that for event signups.\"</string>
+    <string name="memory_saved_on">Saved %1$s</string>
+    <string name="memory_you_said">You said: \"%1$s\"</string>
+    <string name="memory_remove">Remove</string>
+    <string name="memory_remove_described">Remove: %1$s</string>
+    <string name="memory_confirm_title">Remove this?</string>
+    <string name="memory_confirm_body">\"%1$s\" will be forgotten. The app will ask you again next time.</string>
+    <string name="memory_confirm_yes">Remove it</string>
+    <string name="memory_confirm_no">Keep it</string>
+    <string name="memory_removed">Removed: %1$s</string>
+    <string name="back">Back</string>
 </resources>

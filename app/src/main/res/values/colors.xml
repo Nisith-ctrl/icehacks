@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Light theme. Text/background pairs are at least 4.5:1 (most are 7:1 or better). -->
+<resources>
+    <color name="stg_background">#F6F7F9</color>
+    <color name="stg_surface">#FFFFFF</color>
+    <color name="stg_outline">#AEB4BD</color>
+    <color name="stg_text">#111418</color>
+    <color name="stg_text_secondary">#3F4650</color>
+    <color name="stg_primary">#0B57D0</color>
+    <color name="stg_on_primary">#FFFFFF</color>
+    <color name="stg_ok">#146C2E</color>
+    <color name="stg_on_ok">#FFFFFF</color>
+    <color name="stg_pending">#7A4F00</color>
+    <color name="stg_danger">#B3261E</color>
+    <color name="stg_on_danger">#FFFFFF</color>
+    <color name="stg_icon_background">#0B57D0</color>
+</resources>

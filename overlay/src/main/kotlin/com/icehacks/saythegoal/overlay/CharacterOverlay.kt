@@ -47,7 +47,7 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
         if (mode != CharacterMode.ACTING && mode != CharacterMode.WAITING_APPROVAL) stage.focus = null
         if (stage.charX.isNaN() || (wasHidden && mode != CharacterMode.HIDDEN)) park()
         armAutoHide()
-        if (mode == CharacterMode.LISTENING) startPulse() else stopPulse()
+        if (animates(mode)) startPulse() else stopPulse()
         placeCaption()
         stage.invalidate()
     }
@@ -134,7 +134,7 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
 
     private fun setModeNow(mode: CharacterMode) {
         stage.mode = mode
-        if (mode == CharacterMode.LISTENING) startPulse() else stopPulse()
+        if (animates(mode)) startPulse() else stopPulse()
     }
 
     private fun ensureAttached() {
@@ -191,6 +191,9 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
             main.postDelayed(autoHide, AUTO_HIDE_MS)
         }
     }
+
+    /** Modes whose face moves: the sound bars while listening, the dots while thinking. */
+    private fun animates(mode: CharacterMode) = mode == CharacterMode.LISTENING || mode == CharacterMode.THINKING
 
     private fun startPulse() {
         if (pulse != null) return

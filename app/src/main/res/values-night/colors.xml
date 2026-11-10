@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark theme. -->
+<resources>
+    <color name="stg_background">#101317</color>
+    <color name="stg_surface">#1B2027</color>
+    <color name="stg_outline">#5A626E</color>
+    <color name="stg_text">#F2F4F7</color>
+    <color name="stg_text_secondary">#C6CCD5</color>
+    <color name="stg_primary">#A8C7FA</color>
+    <color name="stg_on_primary">#062E6F</color>
+    <color name="stg_ok">#6DD58C</color>
+    <color name="stg_on_ok">#0A3818</color>
+    <color name="stg_pending">#FFC555</color>
+    <color name="stg_danger">#F2B8B5</color>
+    <color name="stg_on_danger">#601410</color>
+</resources>

@@ -10,11 +10,13 @@ can't be created).
 - `pointAt(bounds, caption)`: the character glides (420 ms) to the side of the target with the most
   room, never covering it; it points and looks at the target, and an amber ring fades in. Returns
   in ≤ 650 ms. `showResult` shows a green tick or red cross for 380 ms, then clears the ring.
-- `setMode`: colour + face per mode (listening = green with a pulse, thinking = amber "…",
-  acting = blue, waiting for approval = purple "?", problem = red "!", idle = grey, hidden = nothing).
+- `setMode`: colour **and** face per mode, so it reads without colour vision: listening = green,
+  moving sound bars and a pulse; thinking = amber, three dots lifting in turn; acting = blue, eyes
+  and a pointer; waiting for approval = purple "?"; problem = red "!"; idle = grey, eyes; hidden =
+  nothing. The character has a white edge and a dark edge, so it shows on light and dark pages.
 - `highlight(list)`: cyan rings for the read-back; `highlight(emptyList())` clears them.
 - Captions: 22 sp bold white on near-black with an amber edge, up to 3 lines, inside the system-bar
-  insets. They go to whichever end of the screen covers the focused target, the highlights and the
+  insets. They follow the phone's font size setting up to 1.3x. They go to whichever end of the screen covers the focused target, the highlights and the
   character least (`OverlayLayout.captionAtTop`).
 - Agent usage: `setMode(ACTING)` → `pointAt(node.bounds, "Filling in your email")` →
   `screen.perform(...)` → `showResult(node.bounds, ok)`.

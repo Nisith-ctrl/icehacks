@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.SayTheGoal" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/stg_primary</item>
+        <item name="colorAccent">@color/stg_primary</item>
+        <item name="android:windowBackground">@color/stg_background</item>
+        <item name="android:textColorPrimary">@color/stg_text</item>
+        <item name="android:statusBarColor">@color/stg_background</item>
+        <item name="android:navigationBarColor">@color/stg_background</item>
+        <item name="android:windowLightStatusBar">@bool/stg_light_bars</item>
+        <item name="android:windowLightNavigationBar">@bool/stg_light_bars</item>
+    </style>
+</resources>

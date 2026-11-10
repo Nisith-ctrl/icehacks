@@ -24,6 +24,9 @@ import kotlin.math.sin
 internal class StageView(context: Context) : View(context) {
     private val dp = context.resources.displayMetrics.density
 
+    /** The user's font size setting, capped so a 3-line caption still fits on a phone. */
+    private val fontScale = context.resources.configuration.fontScale.coerceIn(1f, 1.3f)
+
     val characterSize = 64 * dp
     val gap = 12 * dp
 
@@ -31,7 +34,7 @@ internal class StageView(context: Context) : View(context) {
     var charX = Float.NaN
     var charY = Float.NaN
     var charAlpha = 1f
-    var pulse = 0f                     // 0..1, LISTENING ring animation
+    var pulse = 0f                     // 0..1, loops while LISTENING or THINKING
     var focus: Bounds? = null          // ring while pointing
     var focusAlpha = 0f
     var highlights: List<Bounds> = emptyList()
@@ -50,11 +53,15 @@ internal class StageView(context: Context) : View(context) {
     private val ringBright = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 4 * dp }
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
     private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 3 * dp; color = Color.WHITE }
+    // Dark edge outside the white one, so the character keeps an outline on white pages (Gmail, Chrome forms).
+    private val outline = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE; strokeWidth = 2 * dp; color = Color.rgb(16, 16, 24)
+    }
     private val glyph = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE; textAlign = Paint.Align.CENTER; textSize = 30 * dp; isFakeBoldText = true
     }
     private val captionText = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE; textSize = 22 * dp; isFakeBoldText = true
+        color = Color.WHITE; textSize = 22 * dp * fontScale; isFakeBoldText = true
     }
     private val captionBg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(235, 16, 16, 24) }
     private val captionEdge = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -118,12 +125,38 @@ internal class StageView(context: Context) : View(context) {
         c.drawCircle(charX, charY, r, fill)
         stroke.alpha = a
         c.drawCircle(charX, charY, r, stroke)
+        outline.alpha = (a * 0.7f).toInt()
+        c.drawCircle(charX, charY, r + 2.5f * dp, outline)
 
+        // Each mode has its own face as well as its own colour, so it reads without colour vision.
         when (mode) {
-            CharacterMode.THINKING -> c.drawText("…", charX, charY + 6 * dp, glyph)
+            CharacterMode.LISTENING -> soundBars(c, r)
+            CharacterMode.THINKING -> thinkingDots(c, r)
             CharacterMode.WAITING_APPROVAL -> c.drawText("?", charX, charY + 11 * dp, glyph)
             CharacterMode.PROBLEM -> c.drawText("!", charX, charY + 11 * dp, glyph)
             else -> eyes(c, r)
+        }
+    }
+
+    /** LISTENING: three bars that rise and fall like a sound meter. */
+    private fun soundBars(c: Canvas, r: Float) {
+        fill.color = Color.WHITE; fill.alpha = 255
+        val w = r * 0.18f
+        for (i in -1..1) {
+            val wave = sin(pulse * 2 * Math.PI.toFloat() + i * 1.3f)
+            val h = r * (0.34f + 0.2f * wave)
+            val x = charX + i * r * 0.38f
+            c.drawRoundRect(x - w / 2, charY - h, x + w / 2, charY + h, w / 2, w / 2, fill)
+        }
+    }
+
+    /** THINKING: three dots, each one lifting in turn. */
+    private fun thinkingDots(c: Canvas, r: Float) {
+        fill.color = Color.WHITE; fill.alpha = 255
+        val active = (pulse * 3).toInt().coerceIn(0, 2)
+        for (i in 0..2) {
+            val up = i == active
+            c.drawCircle(charX + (i - 1) * r * 0.4f, charY - (if (up) r * 0.14f else 0f), r * (if (up) 0.15f else 0.11f), fill)
         }
     }
 
