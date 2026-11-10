@@ -9,7 +9,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 /**
  * Decides where each transcript goes (mic or debug injection, same path):
  * 1. If an ask()/approval is waiting for an answer, the transcript is that answer.
- * 2. Else, with a wake phrase ("Hey Goal, …"), the rest is classified into a command and a session starts.
+ * 2. Else, with the wake word ("Suus, …"), the rest is classified into a command and a session starts.
  * 3. Else, during an active session (recent speech either way), it is classified into a command.
  * 4. Else it is ignored (people talking near the phone).
  */
@@ -21,6 +21,10 @@ class VoiceRouter(
 
     private val _commands = MutableSharedFlow<UserCommand>(extraBufferCapacity = 16)
     val commands: SharedFlow<UserCommand> = _commands
+
+    private val _wakes = MutableSharedFlow<Unit>(extraBufferCapacity = 4)
+    /** Fires whenever the wake word is heard, alone ("Suus") or before a command. */
+    val wakes: SharedFlow<Unit> = _wakes
 
     @Volatile private var pending: CompletableDeferred<String>? = null
     @Volatile private var lastActive: Long = Long.MIN_VALUE / 2
@@ -46,6 +50,7 @@ class VoiceRouter(
             else -> return Routed.IGNORED
         }
         markActive()
+        if (afterWake != null) _wakes.tryEmit(Unit)
         if (body.isBlank()) return Routed.WOKE
         _commands.tryEmit(CommandParser.classify(body))
         return Routed.COMMAND

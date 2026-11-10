@@ -18,6 +18,7 @@ import com.icehacks.saythegoal.core.VoiceIO
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.emptyFlow
 
 private const val TAG = "STG-Voice"
 
@@ -43,6 +44,13 @@ fun createVoice(context: Context, scope: CoroutineScope): VoiceIO {
     }
     return voice
 }
+
+/**
+ * Fires each time the wake word ("Suus") is heard, alone or before a command. For the setup screen's wake
+ * check (T05): `wakeSignals(SayTheGoalAccessibilityService.instance!!.voice).first()`.
+ * Empty for voices that can't hear (FakeVoice).
+ */
+fun wakeSignals(voice: VoiceIO): Flow<Unit> = (voice as? AndroidVoice)?.router?.wakes ?: emptyFlow()
 
 /** Spoken approval: only the commit word or "Cancel" count. */
 fun createApprovalGate(voice: VoiceIO, fingerprinter: Fingerprinter): ApprovalGate =
