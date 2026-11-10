@@ -94,7 +94,7 @@ class AgentLoop(
 
         for (turn in 1..config.maxTurns) {
             currentCoroutineContext().ensureActive()
-            val snap = screen.snapshot()
+            val snap = settledOnAllowedHost(screen.snapshot())
             // The form block is only for form goals: "open Gmail" with a form left on screen must not fill it.
             val form = if (formGoal) formSummary(snap) else null
             val screenText = ScreenText.render(snap, skipFormFields = form != null)
@@ -104,7 +104,10 @@ class AgentLoop(
                 return stop("I ended up outside the apps I'm allowed to use, so I stopped.")
             }
             ScreenText.chromeUrl(snap)?.let { url ->
-                if (looksLikeUrl(url) && !hostAllowed(url)) return stop("That page isn't one of the registration forms, so I stopped.")
+                if (looksLikeUrl(url) && !hostAllowed(url)) {
+                    log("host not allowed: $url")
+                    return stop("That page isn't one of the registration forms, so I stopped.")
+                }
             }
             if (errors >= 3) return stop("I couldn't get that to work, so I stopped.")
             if (actions >= config.maxActions) return stop("This is taking too many steps, so I stopped.")
@@ -525,6 +528,22 @@ class AgentLoop(
             val desc = photoDescriptions.getOrPut(p.id) { src.thumbnailJpeg(p)?.let { planner.describePhoto(it) } }
             "photo ${i + 1}: taken ${TimeText.spoken(p.takenMs)}, file ${p.name}" + (desc?.let { ", looks like: $it" } ?: "")
         }.joinToString("; ")
+    }
+
+    /**
+     * A link from Gmail goes through a redirect (google.com/url…), so Chrome briefly shows another host.
+     * Give it up to [AgentConfig.redirectWaitMs] to land before the host guard decides.
+     */
+    private suspend fun settledOnAllowedHost(first: ScreenSnapshot): ScreenSnapshot {
+        var snap = first
+        var waited = 0L
+        while (waited < config.redirectWaitMs) {
+            val url = ScreenText.chromeUrl(snap) ?: return snap
+            if (!looksLikeUrl(url) || hostAllowed(url)) return snap
+            delay(500); waited += 500
+            snap = screen.snapshot()
+        }
+        return snap
     }
 
     private fun hostAllowed(url: String): Boolean {

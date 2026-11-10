@@ -32,6 +32,8 @@ data class AgentConfig(
      * so tests that script every step keep their exact steps.
      */
     val autoFillForms: Boolean = false,
+    /** How long to let a link's redirect land before the form-host guard stops the run. */
+    val redirectWaitMs: Long = 4_000,
 )
 
 /** Spoken app names the model may launch, mapped to packages (all in core.AllowedApps). */

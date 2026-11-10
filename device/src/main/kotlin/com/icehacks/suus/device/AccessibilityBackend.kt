@@ -27,6 +27,19 @@ class AccessibilityBackend(
     private val maxNodes: Int = 2_000,
 ) : ScreenBackend<AccessibilityNodeInfo> {
 
+    /** True if [n]'s subtree shows any text (checked breadth-first, at most [limit] nodes). */
+    private fun hasContent(n: AccessibilityNodeInfo, limit: Int = 300): Boolean {
+        val queue = ArrayDeque<AccessibilityNodeInfo>().apply { add(n) }
+        var seen = 0
+        while (queue.isNotEmpty() && seen++ < limit) {
+            val x = queue.removeFirst()
+            if (!x.isVisibleToUser) continue
+            if (!x.text.isNullOrBlank() || !x.contentDescription.isNullOrBlank()) return true
+            for (c in 0 until x.childCount) x.getChild(c)?.let(queue::add)
+        }
+        return false
+    }
+
     override suspend fun capture(): Captured<AccessibilityNodeInfo> {
         val window = activeAppWindow()
         val root = window?.root ?: service.rootInActiveWindow
@@ -64,9 +77,12 @@ class AccessibilityBackend(
                 enabled = info.isEnabled,
             )
             handles += info
-            for (c in 0 until info.childCount) {
-                info.getChild(c)?.let { visit(it, id, false) }
-            }
+            val children = (0 until info.childCount).mapNotNull { info.getChild(it) }.filter { it.isVisibleToUser }
+            val hidden = if (children.size < 2) emptySet() else Occlusion.covered(children.map { c ->
+                val cr = Rect().also { c.getBoundsInScreen(it) }
+                Occlusion.Sibling(Bounds(cr.left, cr.top, cr.right, cr.bottom), c.drawingOrder, hasContent(c))
+            })
+            children.forEachIndexed { i, c -> if (i !in hidden) visit(c, id, false) }
         }
         visit(root, null, true)
 
@@ -88,9 +104,16 @@ class AccessibilityBackend(
     override suspend fun click(handle: AccessibilityNodeInfo, bounds: Bounds): Boolean {
         // A control cut off at the screen edge (e.g. a radio under Chrome's bottom bar or the
         // keyboard) must be brought fully on screen first, or a gesture lands on whatever covers it.
+        val identity = identityOf(handle)
         if (handle.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_ON_SCREEN.id)) {
             delay(250)
             handle.refresh()
+            // A list may rebind this view to another item while scrolling it into view (Gmail's inbox
+            // did: the tap opened the email below the invite). Then the handle is no longer the target.
+            if (identityOf(handle) != identity) {
+                Log.w(TAG, "click: target changed while scrolling it into view; not clicking")
+                return false
+            }
         }
         var n: AccessibilityNodeInfo? = handle
         while (n != null && !n.isClickable) n = n.parent
@@ -106,6 +129,9 @@ class AccessibilityBackend(
         Log.i(TAG, "click: gesture at ${r.centerX()},${r.centerY()}")
         return tapAt(r.exactCenterX(), r.exactCenterY())
     }
+
+    private fun identityOf(n: AccessibilityNodeInfo) =
+        listOf(n.text?.toString(), n.contentDescription?.toString(), n.viewIdResourceName, n.className?.toString())
 
     /** A gesture tap is only safe inside the app window and outside the keyboard. */
     private fun safeToTap(x: Float, y: Float): Boolean {
