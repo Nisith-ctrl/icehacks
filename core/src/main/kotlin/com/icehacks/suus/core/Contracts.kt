@@ -169,4 +169,5 @@ object DebugActions { // broadcast actions, registered in debug builds only
     const val ACTION = "com.icehacks.suus.DEBUG_ACTION"       // T01: --es json '<DeviceAction JSON>'
     const val UTTERANCE = "com.icehacks.suus.DEBUG_UTTERANCE" // T02: --es text "..." as if spoken
     const val OVERLAY = "com.icehacks.suus.DEBUG_OVERLAY"     // T04: --es demo point|caption|highlight
+    const val RUNLOG = "com.icehacks.suus.DEBUG_RUNLOG"       // T06: --es op export|clear|summary
 }

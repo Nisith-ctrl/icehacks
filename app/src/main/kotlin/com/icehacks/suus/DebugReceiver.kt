@@ -15,7 +15,9 @@ import com.icehacks.suus.core.DeviceAction
 import com.icehacks.suus.core.ScreenSnapshot
 import com.icehacks.suus.core.ScrollDirection
 import com.icehacks.suus.core.SuusJson
+import com.icehacks.suus.agent.data.handleRunLogDebug
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 
@@ -40,6 +42,7 @@ class DebugReceiver(
         val filter = IntentFilter().apply {
             addAction(DebugActions.SNAPSHOT)
             addAction(DebugActions.ACTION)
+            addAction(DebugActions.RUNLOG)
         }
         ContextCompat.registerReceiver(service, this, filter, ContextCompat.RECEIVER_EXPORTED)
         Log.i(TAG, "debug hooks registered")
@@ -51,6 +54,9 @@ class DebugReceiver(
         when (intent.action) {
             DebugActions.SNAPSHOT -> scope.launch { dumpSnapshot(intent.getStringExtra("name")) }
             DebugActions.ACTION -> scope.launch { runAction(intent) }
+            DebugActions.RUNLOG -> scope.launch(Dispatchers.IO) {
+                Log.i(TAG, "DEBUG_RUNLOG " + handleRunLogDebug(context, intent.getStringExtra("op")))
+            }
         }
     }
 

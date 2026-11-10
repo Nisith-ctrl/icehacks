@@ -79,4 +79,13 @@ class FormAgentLoopTest {
         assertEquals("Email", page.confirmBy)
         assertEquals(null, page.role)
     }
+
+    @Test
+    fun aGoalThatIsNotAboutTheFormLeavesItAlone() = runTest {
+        val page = FakeChromeForm()
+        val planner = FakePlanner(listOf(PlannerStep("stop", tool("reason" to "test end"))))
+        loop(page, TestVoice(), planner).run("open Gmail", false)
+        assertTrue(page.performed.toString(), page.performed.isEmpty())
+        assertEquals(null, planner.turns[0].feedback)
+    }
 }

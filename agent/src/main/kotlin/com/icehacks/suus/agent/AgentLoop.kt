@@ -75,6 +75,7 @@ class AgentLoop(
     private val autoFilled = mutableSetOf<String>()
 
     suspend fun run(goal: String, takeOver: Boolean): Outcome {
+        val formGoal = isFormGoal(goal, takeOver)
         val history = ArrayDeque<String>()
         var feedback: String? = null
         var actions = 0
@@ -91,7 +92,8 @@ class AgentLoop(
         for (turn in 1..config.maxTurns) {
             currentCoroutineContext().ensureActive()
             val snap = screen.snapshot()
-            val form = formSummary(snap)
+            // The form block is only for form goals: "open Gmail" with a form left on screen must not fill it.
+            val form = if (formGoal) formSummary(snap) else null
             val screenText = ScreenText.render(snap, skipFormFields = form != null)
 
             // ---- guards ----
@@ -417,6 +419,9 @@ class AgentLoop(
         }
     }
 
+    /** A goal about a form, or "take over" (carry on with what's on screen). */
+    private fun isFormGoal(goal: String, takeOver: Boolean) = takeOver || FORM_GOAL.containsMatchIn(goal)
+
     private fun hintsFor(goal: String) = (listOf(goal) + notes.takeLast(30)).joinToString(" ")
 
     /**
@@ -489,6 +494,10 @@ class AgentLoop(
     }
 
     companion object {
+        private val FORM_GOAL = Regex(
+            "\\b(form|fill|sign (me )?up|signup|register|registration|rsvp|volunteer|enrol+|apply|application|book|join|shift)",
+            RegexOption.IGNORE_CASE,
+        )
         const val TAG = "SUUS-Agent"
         private val COMMIT = Regex("^(submit|send|register|sign up|confirm|place order|pay|book|post)\\b", RegexOption.IGNORE_CASE)
 
