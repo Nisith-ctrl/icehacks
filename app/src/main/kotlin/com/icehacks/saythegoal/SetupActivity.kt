@@ -83,7 +83,7 @@ class SetupActivity : AppCompatActivity() {
         column.addSpaced(bodyText(getString(R.string.setup_subtitle), 20f), 8)
         progress = bodyText("", 20f, secondary = false).apply {
             typeface = Typeface.DEFAULT_BOLD
-            ViewCompat.setAccessibilityLiveRegion(this, ViewCompat.ACCESSIBILITY_LIVE_REGION_POLITE)
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
         column.addSpaced(progress, 16)
 
@@ -195,7 +195,7 @@ class SetupActivity : AppCompatActivity() {
 
         if (withNote) {
             step.note = bodyText("", 18f, secondary = false).apply {
-                ViewCompat.setAccessibilityLiveRegion(this, ViewCompat.ACCESSIBILITY_LIVE_REGION_POLITE)
+                accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
             }
             box.addSpaced(step.note!!, 10)
         }
