@@ -2,10 +2,7 @@ package com.icehacks.suus.ui
 
 import android.content.Context
 import android.content.res.ColorStateList
-import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Path
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
@@ -13,6 +10,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -141,9 +139,8 @@ internal fun TextView.setChip(text: CharSequence, kind: ChipKind) {
     this.text = text
     val (bg, fg) = when (kind) {
         ChipKind.DONE -> R.color.suus_ok_soft to R.color.suus_ok
-        ChipKind.NEXT -> R.color.suus_primary_soft to R.color.suus_on_primary_soft
-        ChipKind.WAITING -> R.color.suus_pending_soft to R.color.suus_pending
-        ChipKind.INFO -> R.color.suus_surface_alt to R.color.suus_text_secondary
+        ChipKind.NEXT -> R.color.suus_pending_soft to R.color.suus_pending // the robot's antenna yellow
+        ChipKind.WAITING, ChipKind.INFO -> R.color.suus_surface_alt to R.color.suus_text_secondary
     }
     background = context.roundedBox(context.themeColor(bg), 20)
     setTextColor(context.themeColor(fg))
@@ -157,57 +154,42 @@ internal fun Context.card(): LinearLayout = LinearLayout(this).apply {
 }
 
 /**
- * The coloured header at the top of a screen: the character, a big title and a line under it.
- * White text on a blue-violet gradient (contrast above 7:1 at both ends).
+ * The header at the top of a screen: a big title and a line under it on the left, the SuuS robot on
+ * the right. Cream text on a dark green gradient (contrast above 10:1 at both ends).
  */
 internal fun Context.heroHeader(title: CharSequence, subtitle: CharSequence): View {
-    val box = LinearLayout(this).apply {
+    val text = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
+        addSpaced(titleText(title, 36f, R.color.suus_on_hero))
+        addSpaced(
+            TextView(context).apply {
+                this.text = subtitle
+                textSize = 19f
+                setLineSpacing(0f, 1.15f)
+                setTextColor(themeColor(R.color.suus_on_hero))
+            },
+            6,
+        )
+    }
+    return LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
         background = GradientDrawable(
             GradientDrawable.Orientation.TL_BR,
             intArrayOf(themeColor(R.color.suus_hero_start), themeColor(R.color.suus_hero_end)),
         ).apply { cornerRadius = dp(28).toFloat() }
-        setPadding(dp(24), dp(24), dp(24), dp(26))
-    }
-    box.addView(CharacterBadgeView(this), LinearLayout.LayoutParams(dp(72), dp(72)))
-    box.addSpaced(titleText(title, 36f, R.color.suus_on_hero), 14)
-    box.addSpaced(
-        TextView(this).apply {
-            text = subtitle
-            textSize = 19f
-            setLineSpacing(0f, 1.15f)
-            setTextColor(themeColor(R.color.suus_on_hero))
-        },
-        6,
-    )
-    return box
-}
-
-/** The overlay character as a still picture: a round face with eyes, pointing right. Decorative. */
-internal class CharacterBadgeView(context: Context) : View(context) {
-    private val face = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
-    private val eye = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = ContextCompat.getColor(context, R.color.suus_hero_start) }
-    private val pointer = Path()
-
-    init { importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO }
-
-    override fun onDraw(canvas: Canvas) {
-        val s = minOf(width, height).toFloat()
-        val cx = s * 0.44f
-        val cy = s / 2
-        val r = s * 0.36f
-        pointer.reset()
-        pointer.moveTo(s * 0.98f, cy)
-        pointer.lineTo(cx + r * 0.7f, cy - r * 0.55f)
-        pointer.lineTo(cx + r * 0.7f, cy + r * 0.55f)
-        pointer.close()
-        canvas.drawPath(pointer, face)
-        canvas.drawCircle(cx, cy, r, face)
-        canvas.drawCircle(cx - r * 0.36f, cy - r * 0.1f, r * 0.15f, eye)
-        canvas.drawCircle(cx + r * 0.36f, cy - r * 0.1f, r * 0.15f, eye)
+        setPadding(dp(24), dp(22), dp(16), dp(22))
+        addView(text, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+        addView(suusSprite(), LinearLayout.LayoutParams(dp(80), dp(110)).apply { marginStart = dp(8) })
     }
 }
 
+/** guru's SuuS robot (the overlay's standing frame) as a still picture. Decorative. */
+internal fun Context.suusSprite(): ImageView = ImageView(this).apply {
+    setImageResource(com.icehacks.suus.overlay.R.drawable.suus_walk_0)
+    scaleType = ImageView.ScaleType.FIT_CENTER
+    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+}
 /** Adds [child] full width with [topDp] of space above it. */
 internal fun LinearLayout.addSpaced(child: View, topDp: Int = 0) {
     val lp = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
