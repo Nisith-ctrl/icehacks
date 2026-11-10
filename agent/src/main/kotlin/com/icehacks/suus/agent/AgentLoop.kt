@@ -14,6 +14,14 @@ import com.icehacks.suus.core.ScreenSnapshot
 import com.icehacks.suus.core.ScrollDirection
 import com.icehacks.suus.core.UiNode
 import com.icehacks.suus.core.VoiceIO
+import com.icehacks.suus.agent.form.ConfirmationCheck
+import com.icehacks.suus.agent.form.FormFiller
+import com.icehacks.suus.agent.form.FormMapper
+import com.icehacks.suus.agent.form.FormReader
+import com.icehacks.suus.agent.form.sameLabel
+import com.icehacks.suus.agent.form.sameChoice
+import com.icehacks.suus.agent.form.normalizeLabel
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.JsonArray
@@ -57,6 +65,15 @@ class AgentLoop(
 
     private val photoDescriptions = HashMap<Long, String?>()
 
+    /** Fills forms field by field through [act]; remembers dropdown choices Chrome doesn't expose. */
+    private val filler = FormFiller(screen, ledger, { a, s, n, c -> act(a, s, n, c) }, log)
+
+    /** What the current form holds (label -> value), for the read-back and the confirmation check. */
+    private val formValues = LinkedHashMap<String, String>()
+
+    /** Form pages already auto-filled in this run (keyed by URL without the query). */
+    private val autoFilled = mutableSetOf<String>()
+
     suspend fun run(goal: String, takeOver: Boolean): Outcome {
         val history = ArrayDeque<String>()
         var feedback: String? = null
@@ -64,6 +81,9 @@ class AgentLoop(
         var errors = 0
         val screensAfterActions = HashMap<Int, Int>()
         submitted = false
+        formValues.clear()
+        filler.reset()
+        autoFilled.clear()
 
         overlay.setMode(CharacterMode.THINKING)
         overlay.caption("Working on it…")
@@ -71,7 +91,8 @@ class AgentLoop(
         for (turn in 1..config.maxTurns) {
             currentCoroutineContext().ensureActive()
             val snap = screen.snapshot()
-            val screenText = ScreenText.render(snap)
+            val form = formSummary(snap)
+            val screenText = ScreenText.render(snap, skipFormFields = form != null)
 
             // ---- guards ----
             if (actions > 0 && snap.packageName.isNotEmpty() && snap.packageName !in AllowedApps.packages) {
@@ -82,6 +103,21 @@ class AgentLoop(
             }
             if (errors >= 3) return stop("I couldn't get that to work, so I stopped.")
             if (actions >= config.maxActions) return stop("This is taking too many steps, so I stopped.")
+
+            // First time on a form page: fill what's known in code, then tell the model what's left.
+            val page = ScreenText.chromeUrl(snap)?.substringBefore('?')
+            if (config.autoFillForms && form != null && page != null && !submitted && autoFilled.add(page)) {
+                overlay.setMode(CharacterMode.ACTING)
+                overlay.caption("Filling in what I know")
+                val report = filler.fill(config.profile, prefs.all(), emptyMap(), hints = hintsFor(goal),
+                    maxActions = (config.maxActions - actions).coerceAtLeast(1))
+                actions += report.actions
+                formValues.putAll(report.values)
+                feedback = listOfNotNull(feedback, "I filled the form in code. " + report.describe()).joinToString(" ")
+                history += "filled the form in code: ${report.filled.size} filled, ${report.needs.size} still needed"
+                while (history.size > config.historyLines) history.removeFirst()
+                continue
+            }
 
             overlay.setMode(CharacterMode.THINKING)
             val step = planner.next(
@@ -94,6 +130,7 @@ class AgentLoop(
                     history = history.toList(),
                     feedback = feedback,
                     screen = screenText,
+                    form = form,
                 ),
             )
             log("turn $turn: ${step.tool} ${step.input}")
@@ -193,18 +230,37 @@ class AgentLoop(
                         voice.say("Saved: ${saved.spoken()}.")
                     }
                     remember("asked \"$question\" -> \"$answer\"" + (chosen?.let { " (= $it)" } ?: "") + if (saved != null) " [saved preference]" else "")
+                    val applied = if (config.autoFillForms) applyAnswerToForm(question, choices, chosen ?: answer.trim(), goal) else null
                     feedback = "The user answered: \"$answer\"" + (chosen?.let { " (choice: $it)" } ?: "") +
                         when {
                             saved != null -> ". Saved as a preference. Saving is not approval to submit."
                             wantsRemember(answer) -> ". They asked you to remember it, but you gave no remember_scope/remember_key, so it was not saved."
                             else -> "."
-                        }
+                        } + (applied?.let { " $it" } ?: "")
                     overlay.setMode(CharacterMode.THINKING)
                 }
 
                 "note" -> {
                     s("text")?.let { notes += it }
                     feedback = "Noted."
+                }
+
+                "fill_form" -> {
+                    if (ScreenText.chromeUrl(snap) == null || FormReader.read(snap).fields.isEmpty()) {
+                        errors++
+                        feedback = "There's no form on this screen."
+                        continue
+                    }
+                    val answers = (input["answers"] as? JsonObject)?.mapNotNull { (k, v) ->
+                        (v as? JsonPrimitive)?.contentOrNull?.let { k to it }
+                    }?.toMap() ?: emptyMap()
+                    overlay.setMode(CharacterMode.ACTING)
+                    val report = filler.fill(config.profile, prefs.all(), answers, maxActions = (config.maxActions - actions).coerceAtLeast(1))
+                    actions += report.actions
+                    formValues.putAll(report.values)
+                    if (report.filled.isNotEmpty() || report.needs.isEmpty()) errors = 0
+                    feedback = report.describe()
+                    remember("fill_form: ${report.filled.size} filled, ${report.needs.size} still needed")
                 }
 
                 "check_calendar" -> {
@@ -262,7 +318,8 @@ class AgentLoop(
                                 submitted = true
                                 ledger.clear() // undo stays within the draft stage
                                 remember("submitted with \"$commitWord\" after spoken approval")
-                                feedback = "Submitted. Read the result page and call done with what it shows (or say you're not sure). Do not submit again."
+                                feedback = "Submitted. " + verifyConfirmation(r.after) +
+                                    " Call done with what it shows (or say you're not sure). Do not submit again."
                             } else {
                                 remember("submit refused: $r")
                                 feedback = "It was NOT submitted ($r). If the screen changed after approval, check it and call submit again for a fresh approval."
@@ -337,6 +394,64 @@ class AgentLoop(
         }
     }
 
+    /** A short summary of the form on screen for the model, or null when there's no form. */
+    private fun formSummary(snap: ScreenSnapshot): String? {
+        val url = ScreenText.chromeUrl(snap) ?: return null
+        if (!looksLikeUrl(url) || !hostAllowed(url)) return null
+        val form = FormReader.read(snap)
+        if (form.fields.isEmpty()) return null
+        val plans = FormMapper.plan(form, config.profile, prefs.all())
+        return buildString {
+            form.title?.let { appendLine("Form: $it") }
+            for (p in plans) {
+                val f = p.field
+                val known = f.value ?: formValues.entries.firstOrNull { sameLabel(it.key, f.label) }?.value
+                val state = if (known != null) "set to \"$known\"" else "empty"
+                val opts = if (f.options.isNotEmpty()) " Options: " + f.options.joinToString(" | ") { it.label } else ""
+                val req = if (f.required) ", required" else ""
+                val target = p.target?.let { ": \"$it\"" } ?: ""
+                appendLine("- ${f.label} (${f.kind.name.lowercase()}$req) $state -> ${p.reason}$target.$opts")
+            }
+            if (form.submitNodeId != null) append("Submit button: \"${form.submitLabel}\" (${form.submitNodeId})")
+            else append("Submit button: not on screen yet (scroll down)")
+        }
+    }
+
+    private fun hintsFor(goal: String) = (listOf(goal) + notes.takeLast(30)).joinToString(" ")
+
+    /**
+     * If a form is on screen and the question was about one of its fields (its label words are in
+     * the question, or the offered choices are that field's options), put the answer in that field.
+     * Returns the filler's report for the model, or null if nothing matched.
+     */
+    private suspend fun applyAnswerToForm(question: String, choices: List<String>, value: String, goal: String): String? {
+        val snap = screen.snapshot()
+        val url = ScreenText.chromeUrl(snap) ?: return null
+        if (!looksLikeUrl(url) || !hostAllowed(url)) return null
+        val form = FormReader.read(snap)
+        val q = " " + normalizeLabel(question) + " "
+        val field = form.fields.filter { it.value == null }.firstOrNull { f ->
+            val words = normalizeLabel(f.label).split(" ").filter { it.length > 3 }
+            (words.isNotEmpty() && words.count { q.contains(" $it ") } * 2 >= words.size) ||
+                (choices.isNotEmpty() && f.options.isNotEmpty() && choices.all { c -> f.options.any { sameChoice(it.label, c) } })
+        } ?: return null
+        overlay.setMode(CharacterMode.ACTING)
+        val report = filler.fill(config.profile, prefs.all(), mapOf(field.label to value), hints = hintsFor(goal))
+        formValues.putAll(report.values)
+        return "I put it in \"${field.label}\". " + report.describe()
+    }
+
+    /** Re-reads the page after a submit and checks it's a confirmation showing what was sent. */
+    private suspend fun verifyConfirmation(after: ScreenSnapshot): String {
+        var result = ConfirmationCheck.check(after, formValues)
+        if (!result.confirmed) {
+            kotlinx.coroutines.delay(2_000) // the confirmation page may still be loading
+            result = ConfirmationCheck.check(screen.snapshot(), formValues)
+        }
+        log("confirmation check: $result")
+        return result.describe()
+    }
+
     private fun readbackTargets(snap: ScreenSnapshot, submit: UiNode): List<Bounds> =
         snap.nodes.filter { (it.editable && !it.text.isNullOrBlank()) || (it.checkable && it.checked) }.map { it.bounds } + submit.bounds
 
@@ -377,7 +492,8 @@ class AgentLoop(
         const val TAG = "SUUS-Agent"
         private val COMMIT = Regex("^(submit|send|register|sign up|confirm|place order|pay|book|post)\\b", RegexOption.IGNORE_CASE)
 
-        private val COMMIT_ID = Regex("(^|[/:_.])(send|submit)", RegexOption.IGNORE_CASE)
+        /** A view id that names a send/submit control: ends in send/submit (optionally "_button"), e.g. "Compose:Draft:Send". */
+        private val COMMIT_ID = Regex("(^|[/:_.-])(send|submit)([_-]?(button|btn))?$", RegexOption.IGNORE_CASE)
 
         /** The node a tap really activates: itself if clickable, else its nearest clickable ancestor (as the device layer does). */
         fun clickTarget(s: ScreenSnapshot, n: UiNode): UiNode {
@@ -393,9 +509,9 @@ class AgentLoop(
          * node) and its view id (e.g. "Compose:Draft:Send").
          */
         fun looksLikeCommit(s: ScreenSnapshot, n: UiNode): Boolean {
-            if (n.editable) return false
+            if (n.editable || n.checkable) return false // a radio/checkbox is an answer, not a commit
             val target = clickTarget(s, n)
-            if (target.editable) return false
+            if (target.editable || target.checkable) return false
             if (target.viewId?.let { COMMIT_ID.containsMatchIn(it) } == true) return true
             val parentOf = s.nodes.associate { it.id to it.parentId }
             fun under(x: UiNode, depth: Int = 3): Boolean {

@@ -21,7 +21,7 @@ fun createAgent(
     overlay: Overlay,
     context: Context,
 ): AgentRunner {
-    val config = AgentConfig()
+    val config = AgentConfig(autoFillForms = true)
     val planner: Planner = if (config.apiKey.isBlank()) NoKeyPlanner else GroqPlanner(config)
     val prefs = sharedPreferenceStore(context)
     val ledger = DraftLedger()

@@ -26,6 +26,12 @@ data class AgentConfig(
     val historyLines: Int = 12,
     /** Longest wait for a rate-limit retry before giving up on a turn. */
     val maxRateLimitWaitSec: Int = 65,
+    /**
+     * Fill known form fields in code the first time a form page is seen, and put answers to the
+     * user's questions straight into the matching field. On in the app (createAgent); off by default
+     * so tests that script every step keep their exact steps.
+     */
+    val autoFillForms: Boolean = false,
 )
 
 /** Spoken app names the model may launch, mapped to packages (all in core.AllowedApps). */

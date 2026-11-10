@@ -55,7 +55,7 @@ class GroqPlanner(
                 put("description", spec.description)
                 put("parameters", buildJsonObject {
                     put("type", "object")
-                    put("properties", toJson(spec.properties))
+                    put("properties", toJson(spec.properties.mapValues { (name, schema) -> if (name in spec.required) schema else nullable(schema) }))
                     put("required", toJson(spec.required))
                 })
             })
@@ -210,6 +210,12 @@ class GroqPlanner(
     companion object {
         const val TAG = "SUUS-Agent"
         private val JSON = "application/json".toMediaType()
+
+        /** Lets an optional parameter also be null: models often send null for "not given". */
+        fun nullable(schema: Map<String, Any>): Map<String, Any> {
+            val t = schema["type"] as? String ?: return schema
+            return schema + ("type" to listOf(t, "null"))
+        }
 
         fun toJson(v: Any?): JsonElement = when (v) {
             null -> JsonNull
