@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.icehacks.saythegoal.overlay"
+    namespace = "com.icehacks.suus.overlay"
     compileSdk = 35
     defaultConfig { minSdk = 30 }
     compileOptions {

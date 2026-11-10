@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SayTheGoal"
+rootProject.name = "Suus"
 include(":core", ":app", ":device", ":voice", ":agent", ":overlay")

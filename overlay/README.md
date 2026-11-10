@@ -5,7 +5,7 @@ can't be created).
 
 - One full-screen `TYPE_ACCESSIBILITY_OVERLAY` window, `FLAG_NOT_TOUCHABLE | FLAG_NOT_FOCUSABLE |
   FLAG_LAYOUT_IN_SCREEN`: user taps, our gesture taps and the keyboard pass through. Window title
-  `SayTheGoalOverlay`. The device layer reads only `TYPE_APPLICATION` windows and ignores events
+  `SuusOverlay`. The device layer reads only `TYPE_APPLICATION` windows and ignores events
   from our package, so the overlay is never in snapshots or fingerprints (checked on the emulator).
 - `pointAt(bounds, caption)`: the character glides (420 ms) to the side of the target with the most
   room, never covering it; it points and looks at the target, and an amber ring fades in. Returns
@@ -24,13 +24,13 @@ can't be created).
 ## adb demo (debug builds, service on)
 
 ```bash
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_OVERLAY --es demo point --es text Gmail
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_OVERLAY --es demo point --ei l 100 --ei t 900 --ei r 500 --ei b 1100
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_OVERLAY --es demo caption --es text "Filling in your email"
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_OVERLAY --es demo highlight --es text "Gmail,Chrome"
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_OVERLAY --es demo mode --es mode LISTENING
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_OVERLAY --es demo tour
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_OVERLAY --es demo clear
+adb shell am broadcast -a com.icehacks.suus.DEBUG_OVERLAY --es demo point --es text Gmail
+adb shell am broadcast -a com.icehacks.suus.DEBUG_OVERLAY --es demo point --ei l 100 --ei t 900 --ei r 500 --ei b 1100
+adb shell am broadcast -a com.icehacks.suus.DEBUG_OVERLAY --es demo caption --es text "Filling in your email"
+adb shell am broadcast -a com.icehacks.suus.DEBUG_OVERLAY --es demo highlight --es text "Gmail,Chrome"
+adb shell am broadcast -a com.icehacks.suus.DEBUG_OVERLAY --es demo mode --es mode LISTENING
+adb shell am broadcast -a com.icehacks.suus.DEBUG_OVERLAY --es demo tour
+adb shell am broadcast -a com.icehacks.suus.DEBUG_OVERLAY --es demo clear
 ```
 
-Logcat tag `STG-Overlay`. Placement geometry is unit-tested in `OverlayLayoutTest`.
+Logcat tag `SUUS-Overlay`. Placement geometry is unit-tested in `OverlayLayoutTest`.
