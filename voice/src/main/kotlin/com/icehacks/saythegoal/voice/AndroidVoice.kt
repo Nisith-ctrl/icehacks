@@ -164,6 +164,10 @@ class AndroidVoice(
                 putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+                // Nudge the recognizer toward the wake word "Suus" (not a dictionary word).
+                if (android.os.Build.VERSION.SDK_INT >= 33) {
+                    putStringArrayListExtra(RecognizerIntent.EXTRA_BIASING_STRINGS, CommandParser.BIASING_PHRASES)
+                }
             },
         )
     }
