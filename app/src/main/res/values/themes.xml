@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Suus" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/suus_primary</item>
+        <item name="colorAccent">@color/suus_primary</item>
+        <item name="android:windowBackground">@color/suus_background</item>
+        <item name="android:textColorPrimary">@color/suus_text</item>
+        <item name="android:statusBarColor">@color/suus_background</item>
+        <item name="android:navigationBarColor">@color/suus_background</item>
+        <item name="android:windowLightStatusBar">@bool/suus_light_bars</item>
+        <item name="android:windowLightNavigationBar">@bool/suus_light_bars</item>
+    </style>
+</resources>

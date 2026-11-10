@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark theme. -->
+<resources>
+    <color name="suus_background">#0D0F16</color>
+    <color name="suus_surface">#171A24</color>
+    <color name="suus_surface_alt">#1F2330</color>
+    <color name="suus_outline">#343A4D</color>
+    <color name="suus_text">#F1F3FA</color>
+    <color name="suus_text_secondary">#B8BED0</color>
+    <color name="suus_primary">#A9B6FF</color>
+    <color name="suus_on_primary">#101A6B</color>
+    <color name="suus_primary_soft">#252C52</color>
+    <color name="suus_on_primary_soft">#D3DAFF</color>
+    <color name="suus_ok">#6FD596</color>
+    <color name="suus_on_ok">#063A1A</color>
+    <color name="suus_ok_soft">#173322</color>
+    <color name="suus_pending">#FFC266</color>
+    <color name="suus_pending_soft">#3A2A10</color>
+    <color name="suus_danger">#FFB4AB</color>
+    <color name="suus_on_danger">#690005</color>
+    <color name="suus_hero_start">#2A3596</color>
+    <color name="suus_hero_end">#4B2A99</color>
+    <color name="suus_on_hero">#FFFFFF</color>
+</resources>

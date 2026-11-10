@@ -12,9 +12,11 @@
 
     <application
         android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
+        android:theme="@style/Theme.Suus">
 
         <activity
             android:name=".SetupActivity"
@@ -25,8 +27,15 @@
             </intent-filter>
         </activity>
 
+        <!-- T05: "What I remember" (saved preferences). Opened from the setup screen only. -->
+        <activity
+            android:name=".ui.MemoryActivity"
+            android:exported="false"
+            android:label="@string/memory_title"
+            android:parentActivityName=".SetupActivity" />
+
         <service
-            android:name=".SayTheGoalAccessibilityService"
+            android:name=".SuusAccessibilityService"
             android:exported="true"
             android:label="@string/app_name"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">

@@ -3,10 +3,10 @@ plugins {
 }
 
 android {
-    namespace = "com.icehacks.saythegoal"
+    namespace = "com.icehacks.suus"
     compileSdk = 35
     defaultConfig {
-        applicationId = "com.icehacks.saythegoal"
+        applicationId = "com.icehacks.suus"
         minSdk = 30
         targetSdk = 35
         versionCode = 1

@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.icehacks.saythegoal.voice"
+    namespace = "com.icehacks.suus.voice"
     compileSdk = 35
     defaultConfig { minSdk = 30 }
     compileOptions {

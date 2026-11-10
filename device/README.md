@@ -14,31 +14,31 @@ forms, emails or photos.
   are never in snapshots or fingerprints. Tap = `ACTION_CLICK` on the node or nearest clickable
   ancestor, else a gesture tap at the bounds centre. Scroll = `ACTION_SCROLL_FORWARD/BACKWARD`
   (DOWN = forward), else a swipe.
-- Logcat tag: `STG-Device`.
+- Logcat tag: `SUUS-Device`.
 
 ## adb debug hooks (debug builds, service on)
 
 ```bash
-# Snapshot -> /sdcard/Download/stg/<name>.json and Logcat
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_SNAPSHOT --es name home-screen
-adb pull /sdcard/Download/stg/home-screen.json fixtures/screens/
+# Snapshot -> /sdcard/Download/suus/<name>.json and Logcat
+adb shell am broadcast -a com.icehacks.suus.DEBUG_SNAPSHOT --es name home-screen
+adb pull /sdcard/Download/suus/home-screen.json fixtures/screens/
 
 # Actions. Node ids refer to the last snapshot taken by the hooks.
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_ACTION --es tapText Gmail
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_ACTION --es tap n12
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_ACTION --es node n7 --es text "Ada Lovelace"
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_ACTION --es scroll down
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_ACTION --es back 1
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_ACTION --es launch com.google.android.gm
-# Raw DeviceAction JSON (StgJson, "type" discriminator):
-adb shell "am broadcast -a com.icehacks.saythegoal.DEBUG_ACTION --es json '{\"type\":\"Tap\",\"nodeId\":\"n5\"}'"
+adb shell am broadcast -a com.icehacks.suus.DEBUG_ACTION --es tapText Gmail
+adb shell am broadcast -a com.icehacks.suus.DEBUG_ACTION --es tap n12
+adb shell am broadcast -a com.icehacks.suus.DEBUG_ACTION --es node n7 --es text "Ada Lovelace"
+adb shell am broadcast -a com.icehacks.suus.DEBUG_ACTION --es scroll down
+adb shell am broadcast -a com.icehacks.suus.DEBUG_ACTION --es back 1
+adb shell am broadcast -a com.icehacks.suus.DEBUG_ACTION --es launch com.google.android.gm
+# Raw DeviceAction JSON (SuusJson, "type" discriminator):
+adb shell "am broadcast -a com.icehacks.suus.DEBUG_ACTION --es json '{\"type\":\"Tap\",\"nodeId\":\"n5\"}'"
 
-adb logcat -s STG-Device
+adb logcat -s SUUS-Device
 ```
 
 Turn the service on without touching the device:
 
 ```bash
-adb shell settings put secure enabled_accessibility_services com.icehacks.saythegoal/.SayTheGoalAccessibilityService
+adb shell settings put secure enabled_accessibility_services com.icehacks.suus/.SuusAccessibilityService
 adb shell settings put secure accessibility_enabled 1
 ```

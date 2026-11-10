@@ -5,16 +5,18 @@ can't be created).
 
 - One full-screen `TYPE_ACCESSIBILITY_OVERLAY` window, `FLAG_NOT_TOUCHABLE | FLAG_NOT_FOCUSABLE |
   FLAG_LAYOUT_IN_SCREEN`: user taps, our gesture taps and the keyboard pass through. Window title
-  `SayTheGoalOverlay`. The device layer reads only `TYPE_APPLICATION` windows and ignores events
+  `SuusOverlay`. The device layer reads only `TYPE_APPLICATION` windows and ignores events
   from our package, so the overlay is never in snapshots or fingerprints (checked on the emulator).
 - `pointAt(bounds, caption)`: the character glides (420 ms) to the side of the target with the most
   room, never covering it; it points and looks at the target, and an amber ring fades in. Returns
   in ≤ 650 ms. `showResult` shows a green tick or red cross for 380 ms, then clears the ring.
-- `setMode`: colour + face per mode (listening = green with a pulse, thinking = amber "…",
-  acting = blue, waiting for approval = purple "?", problem = red "!", idle = grey, hidden = nothing).
+- `setMode`: colour **and** face per mode, so it reads without colour vision: listening = green,
+  moving sound bars and a pulse; thinking = amber, three dots lifting in turn; acting = blue, eyes
+  and a pointer; waiting for approval = purple "?"; problem = red "!"; idle = grey, eyes; hidden =
+  nothing. The character has a white edge and a dark edge, so it shows on light and dark pages.
 - `highlight(list)`: cyan rings for the read-back; `highlight(emptyList())` clears them.
 - Captions: 22 sp bold white on near-black with an amber edge, up to 3 lines, inside the system-bar
-  insets. They go to whichever end of the screen covers the focused target, the highlights and the
+  insets. They follow the phone's font size setting up to 1.3x. They go to whichever end of the screen covers the focused target, the highlights and the
   character least (`OverlayLayout.captionAtTop`).
 - Agent usage: `setMode(ACTING)` → `pointAt(node.bounds, "Filling in your email")` →
   `screen.perform(...)` → `showResult(node.bounds, ok)`.
@@ -22,13 +24,13 @@ can't be created).
 ## adb demo (debug builds, service on)
 
 ```bash
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_OVERLAY --es demo point --es text Gmail
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_OVERLAY --es demo point --ei l 100 --ei t 900 --ei r 500 --ei b 1100
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_OVERLAY --es demo caption --es text "Filling in your email"
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_OVERLAY --es demo highlight --es text "Gmail,Chrome"
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_OVERLAY --es demo mode --es mode LISTENING
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_OVERLAY --es demo tour
-adb shell am broadcast -a com.icehacks.saythegoal.DEBUG_OVERLAY --es demo clear
+adb shell am broadcast -a com.icehacks.suus.DEBUG_OVERLAY --es demo point --es text Gmail
+adb shell am broadcast -a com.icehacks.suus.DEBUG_OVERLAY --es demo point --ei l 100 --ei t 900 --ei r 500 --ei b 1100
+adb shell am broadcast -a com.icehacks.suus.DEBUG_OVERLAY --es demo caption --es text "Filling in your email"
+adb shell am broadcast -a com.icehacks.suus.DEBUG_OVERLAY --es demo highlight --es text "Gmail,Chrome"
+adb shell am broadcast -a com.icehacks.suus.DEBUG_OVERLAY --es demo mode --es mode LISTENING
+adb shell am broadcast -a com.icehacks.suus.DEBUG_OVERLAY --es demo tour
+adb shell am broadcast -a com.icehacks.suus.DEBUG_OVERLAY --es demo clear
 ```
 
-Logcat tag `STG-Overlay`. Placement geometry is unit-tested in `OverlayLayoutTest`.
+Logcat tag `SUUS-Overlay`. Placement geometry is unit-tested in `OverlayLayoutTest`.

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Light theme. Text on its background is at least 4.5:1; most pairs are 7:1 or better. -->
+<resources>
+    <color name="suus_background">#F4F5FB</color>
+    <color name="suus_surface">#FFFFFF</color>
+    <color name="suus_surface_alt">#EEF0FA</color>
+    <color name="suus_outline">#D3D7E6</color>
+    <color name="suus_text">#12141C</color>
+    <color name="suus_text_secondary">#474D5E</color>
+    <color name="suus_primary">#3346D3</color>
+    <color name="suus_on_primary">#FFFFFF</color>
+    <color name="suus_primary_soft">#E3E7FF</color>
+    <color name="suus_on_primary_soft">#1E2C9C</color>
+    <color name="suus_ok">#13703A</color>
+    <color name="suus_on_ok">#FFFFFF</color>
+    <color name="suus_ok_soft">#DDF3E4</color>
+    <color name="suus_pending">#7A4A00</color>
+    <color name="suus_pending_soft">#FFEFD2</color>
+    <color name="suus_danger">#B42318</color>
+    <color name="suus_on_danger">#FFFFFF</color>
+    <color name="suus_hero_start">#3346D3</color>
+    <color name="suus_hero_end">#6A3BD0</color>
+    <color name="suus_on_hero">#FFFFFF</color>
+    <color name="suus_icon_background">#3346D3</color>
+</resources>

@@ -17,7 +17,7 @@ val localProps = Properties().apply {
 fun prop(name: String, default: String = "") = localProps.getProperty(name, default).replace("\"", "")
 
 android {
-    namespace = "com.icehacks.saythegoal.agent"
+    namespace = "com.icehacks.suus.agent"
     compileSdk = 35
     defaultConfig {
         minSdk = 30
