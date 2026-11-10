@@ -23,6 +23,15 @@ object CommandParser {
      */
     private val SUUS = Regex("^[sz](u|uu|oo|ou|ue|eu|ew|oe|ui)(s|ss|se|z|zz|ze|ce)s?$")
 
+    /**
+     * What the recognizer wrote when guru said just "SuuS" on the emulator (2026-11-10): real words
+     * that sound like it. They count **only when said alone** (optionally after "hey"/"ok"), so
+     * "excuse me", "sis come here" or "cease and desist" never wake SuuS.
+     */
+    private val BARE_SOUNDALIKES = setOf(
+        "sis", "cease", "seas", "sees", "seize", "excuse", "sous", "suis", "sooth", "soothe", "use", "juice",
+    )
+
     private val STOP_WORDS = setOf(
         "stop", "cancel", "stop it", "stop that", "stop now", "never mind", "nevermind", "cancel that", "abort",
     )
@@ -54,6 +63,8 @@ object CommandParser {
         val next = w.getOrNull(start + 1)
         if (next != null && w[start].length <= 3 && soundsLikeSuus(w[start] + next)) return rest(start + 2)
         if (next == "us" && w[start] in setOf("sue", "su", "soo", "zoo")) return rest(start + 2)
+        // Said alone: "sis", "cease", "excuse" (see BARE_SOUNDALIKES)
+        if (w.size == start + 1 && w[start].replace("'", "") in BARE_SOUNDALIKES) return ""
         return null
     }
 

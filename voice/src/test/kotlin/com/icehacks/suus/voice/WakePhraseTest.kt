@@ -35,6 +35,18 @@ class WakePhraseTest {
     }
 
     @Test
+    fun bareSoundalikesFromRealSpeechWake() {
+        // What the emulator's recognizer returned when guru said "SuuS" on its own.
+        for (said in listOf("sis", "cease", "Excuse.", "hey sis", "Cease")) {
+            assertEquals(said, "", CommandParser.afterWake(said))
+        }
+        // The same words inside ordinary speech don't.
+        for (said in listOf("excuse me", "sis come here", "cease and desist", "use the one by the door", "juice please")) {
+            assertNull(said, CommandParser.afterWake(said))
+        }
+    }
+
+    @Test
     fun ordinarySpeechDoesNotWake() {
         for (said in listOf(
             "", "Sue", "sue me", "so what", "soup is ready", "sauce please", "suits", "sushi tonight",
