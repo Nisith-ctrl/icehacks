@@ -1,5 +1,8 @@
 package com.icehacks.saythegoal.agent
 
+import android.content.Context
+import com.icehacks.saythegoal.agent.data.StgData
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -30,6 +33,18 @@ interface PreferenceStore {
     fun clear()
 }
 
+/** A [PreferenceStore] a screen can watch: [preferences] holds the full list and emits after every change. */
+interface ObservablePreferenceStore : PreferenceStore {
+    val preferences: StateFlow<List<SavedPreference>>
+}
+
+/**
+ * The one shared preference store (T06): a SQLite table that survives restarts, filled once from
+ * the old JSON file. The agent and the "What I remember" screen get the same instance, so a
+ * preference removed on screen is forgotten by the agent at once. Safe to call from any thread.
+ */
+fun createPreferenceStore(context: Context): ObservablePreferenceStore = StgData.preferences(context)
+
 open class InMemoryPreferenceStore : PreferenceStore {
     protected val items = mutableListOf<SavedPreference>()
     @Synchronized override fun all() = items.toList()
@@ -44,7 +59,10 @@ open class InMemoryPreferenceStore : PreferenceStore {
     protected open fun persist() {}
 }
 
-/** JSON file in the app's private files dir. */
+/**
+ * The old storage: a JSON file in the app's private files dir. [createPreferenceStore] imports it
+ * once and never reads it again; kept for that import and for existing tests.
+ */
 class FilePreferenceStore(private val file: File) : InMemoryPreferenceStore() {
     private val json = Json { ignoreUnknownKeys = true }
     private val serializer = ListSerializer(SavedPreference.serializer())

@@ -6,12 +6,14 @@ import android.content.Intent
 import android.graphics.Path
 import android.graphics.Rect
 import android.os.Bundle
+import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
 import com.icehacks.saythegoal.core.Bounds
 import com.icehacks.saythegoal.core.ScreenSnapshot
 import com.icehacks.saythegoal.core.ScrollDirection
 import com.icehacks.saythegoal.core.UiNode
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -84,10 +86,35 @@ class AccessibilityBackend(
     }
 
     override suspend fun click(handle: AccessibilityNodeInfo, bounds: Bounds): Boolean {
+        // A control cut off at the screen edge (e.g. a radio under Chrome's bottom bar or the
+        // keyboard) must be brought fully on screen first, or a gesture lands on whatever covers it.
+        if (handle.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_ON_SCREEN.id)) {
+            delay(250)
+            handle.refresh()
+        }
         var n: AccessibilityNodeInfo? = handle
         while (n != null && !n.isClickable) n = n.parent
-        if (n != null && n.performAction(AccessibilityNodeInfo.ACTION_CLICK)) return true
-        return tapAt((bounds.left + bounds.right) / 2f, (bounds.top + bounds.bottom) / 2f)
+        if (n != null && n.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+            Log.i(TAG, "click: ACTION_CLICK")
+            return true
+        }
+        val r = Rect().also { handle.getBoundsInScreen(it) }
+        if (!safeToTap(r.exactCenterX(), r.exactCenterY())) {
+            Log.w(TAG, "click: no ACTION_CLICK and $r is covered or off the app window; not tapping")
+            return false
+        }
+        Log.i(TAG, "click: gesture at ${r.centerX()},${r.centerY()}")
+        return tapAt(r.exactCenterX(), r.exactCenterY())
+    }
+
+    /** A gesture tap is only safe inside the app window and outside the keyboard. */
+    private fun safeToTap(x: Float, y: Float): Boolean {
+        val app = Rect().also { activeAppWindow()?.getBoundsInScreen(it) }
+        if (app.isEmpty || !app.contains(x.toInt(), y.toInt())) return false
+        return service.windows.none { w ->
+            w.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD &&
+                Rect().also { w.getBoundsInScreen(it) }.contains(x.toInt(), y.toInt())
+        }
     }
 
     override suspend fun setText(handle: AccessibilityNodeInfo, text: String): Boolean {
@@ -95,7 +122,11 @@ class AccessibilityBackend(
         val args = Bundle().apply {
             putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
         }
-        return handle.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
+        val ok = handle.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
+        // Close the keyboard: our users don't type, and an open keyboard (plus Chrome's autofill
+        // bar) covers the controls below the field.
+        if (ok) handle.performAction(AccessibilityNodeInfo.ACTION_CLEAR_FOCUS)
+        return ok
     }
 
     override suspend fun scroll(handle: AccessibilityNodeInfo?, direction: ScrollDirection): Boolean {
@@ -160,4 +191,6 @@ class AccessibilityBackend(
             }
             if (!service.dispatchGesture(g, cb, null) && cont.isActive) cont.resume(false)
         }
+
+    private companion object { const val TAG = "STG-Device" }
 }
