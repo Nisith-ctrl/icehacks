@@ -22,6 +22,10 @@ class VoiceRouter(
     private val _commands = MutableSharedFlow<UserCommand>(extraBufferCapacity = 16)
     val commands: SharedFlow<UserCommand> = _commands
 
+    private val _wakes = MutableSharedFlow<Unit>(extraBufferCapacity = 4)
+    /** Fires whenever a wake phrase is heard, alone ("Hey Goal") or before a command. */
+    val wakes: SharedFlow<Unit> = _wakes
+
     @Volatile private var pending: CompletableDeferred<String>? = null
     @Volatile private var lastActive: Long = Long.MIN_VALUE / 2
 
@@ -46,6 +50,7 @@ class VoiceRouter(
             else -> return Routed.IGNORED
         }
         markActive()
+        if (afterWake != null) _wakes.tryEmit(Unit)
         if (body.isBlank()) return Routed.WOKE
         _commands.tryEmit(CommandParser.classify(body))
         return Routed.COMMAND

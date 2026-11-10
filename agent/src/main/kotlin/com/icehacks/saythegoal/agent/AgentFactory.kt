@@ -23,7 +23,7 @@ fun createAgent(
 ): AgentRunner {
     val config = AgentConfig()
     val planner: Planner = if (config.apiKey.isBlank()) NoKeyPlanner else GroqPlanner(config)
-    val prefs = FilePreferenceStore(File(context.filesDir, "saved_preferences.json"))
+    val prefs = sharedPreferenceStore(context)
     val ledger = DraftLedger()
     val loop = AgentLoop(
         screen, voice, approval, overlay, planner, prefs, ledger,
@@ -34,6 +34,21 @@ fun createAgent(
     Log.i(AgentLoop.TAG, "agent ready: model=${config.model}, key set=${config.apiKey.isNotBlank()}")
     return SayTheGoalAgent(screen, voice, overlay, loop, prefs, ledger)
 }
+
+/**
+ * The one preference store in the app process, shared by the agent and the "What I remember"
+ * screen (T05), so a preference deleted on screen is forgotten by the running agent at once.
+ * T06 (Advay): when `createPreferenceStore(context)` lands, return it from here (keep it a single
+ * instance) and both sides switch over with no other change.
+ */
+fun sharedPreferenceStore(context: Context): PreferenceStore =
+    sharedStore ?: synchronized(storeLock) {
+        sharedStore ?: FilePreferenceStore(File(context.applicationContext.filesDir, "saved_preferences.json"))
+            .also { sharedStore = it }
+    }
+
+private val storeLock = Any()
+@Volatile private var sharedStore: PreferenceStore? = null
 
 private object NoKeyPlanner : Planner {
     override suspend fun next(turn: PlannerTurn) =
