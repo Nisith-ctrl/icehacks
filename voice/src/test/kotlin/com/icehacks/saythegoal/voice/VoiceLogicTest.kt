@@ -38,9 +38,9 @@ class CommandParserTest {
 
     @Test
     fun wakePhrase() {
-        assertEquals("open Gmail", CommandParser.afterWake("Hey Goal, open Gmail"))
-        assertEquals("", CommandParser.afterWake("hey goal"))
-        assertEquals("register me", CommandParser.afterWake("Say the goal register me"))
+        assertEquals("open Gmail", CommandParser.afterWake("Suus, open Gmail"))
+        assertEquals("", CommandParser.afterWake("suus"))
+        assertEquals("register me", CommandParser.afterWake("Hey Suus register me"))
         assertNull(CommandParser.afterWake("open Gmail"))
     }
 }
@@ -81,7 +81,7 @@ class VoiceRouterTest {
         assertEquals(VoiceRouter.Routed.IGNORED, router.onTranscript("open gmail"))
         val first = async { router.commands.first() }
         yield()
-        assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("Hey Goal, open Gmail"))
+        assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("Suus, open Gmail"))
         assertEquals(UserCommand.Goal("open Gmail", takeOver = false), first.await())
         clock += 30_000
         val stop = async { router.commands.first() }
@@ -90,7 +90,7 @@ class VoiceRouterTest {
         assertEquals(UserCommand.Stop, stop.await())
         clock += 200_000
         assertEquals(VoiceRouter.Routed.IGNORED, router.onTranscript("stop"))
-        assertEquals(VoiceRouter.Routed.WOKE, router.onTranscript("hey goal"))
+        assertEquals(VoiceRouter.Routed.WOKE, router.onTranscript("suus"))
     }
 
     @Test

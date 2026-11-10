@@ -46,7 +46,7 @@ fun createVoice(context: Context, scope: CoroutineScope): VoiceIO {
 }
 
 /**
- * Fires each time a wake phrase is heard, alone or before a command. For the setup screen's wake
+ * Fires each time the wake word ("Suus") is heard, alone or before a command. For the setup screen's wake
  * check (T05): `wakeSignals(SayTheGoalAccessibilityService.instance!!.voice).first()`.
  * Empty for voices that can't hear (FakeVoice).
  */
