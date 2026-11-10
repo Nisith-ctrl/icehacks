@@ -84,6 +84,8 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
         stage.captionTop = OverlayLayout.captionAtTop(listOf(target, dest) + stage.highlights, stage.screen)
 
         move?.cancel()
+        val walks = kotlin.math.abs(p.cx - fromX) + kotlin.math.abs(p.cy - fromY) > stage.gap
+        if (p.cx != fromX) stage.facingLeft = p.cx < fromX
         val anim = ValueAnimator.ofFloat(0f, 1f).apply {
             duration = MOVE_MS
             interpolator = DecelerateInterpolator()
@@ -92,12 +94,15 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
                 stage.charX = fromX + (p.cx - fromX) * t
                 stage.charY = fromY + (p.cy - fromY) * t
                 stage.focusAlpha = t
+                // Step through the walking frames while it moves (one frame per WALK_FRAME_MS).
+                if (walks) stage.frame = ((it.currentPlayTime / WALK_FRAME_MS) % StageView.FRAME_COUNT).toInt()
                 stage.invalidate()
             }
         }
         move = anim
         withTimeoutOrNull(MAX_POINT_MS) { anim.await() }
         anim.end()
+        stage.frame = 0 // standing pose once it arrives
         stage.charX = p.cx
         stage.charY = p.cy
         stage.focusAlpha = 1f
@@ -228,6 +233,7 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
         const val TAG = "SUUS-Overlay"
         const val WINDOW_TITLE = "SuusOverlay"
         private const val MOVE_MS = 420L
+        private const val WALK_FRAME_MS = 70L
         private const val MAX_POINT_MS = 650L
         private const val RESULT_MS = 380L
         private const val AUTO_HIDE_MS = 6_000L

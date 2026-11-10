@@ -79,11 +79,12 @@ class MemoryActivity : AppCompatActivity() {
         if (saved.isEmpty()) {
             list.addSpaced(
                 card().apply {
-                    addSpaced(CharacterBadgeView(context).apply {
-                        background = roundedBox(themeColor(R.color.suus_primary), 40)
-                    }.let { badge ->
-                        LinearLayout(context).apply { addView(badge, LinearLayout.LayoutParams(dp(72), dp(72))) }
-                    })
+                    addSpaced(
+                        LinearLayout(context).apply {
+                            gravity = android.view.Gravity.CENTER_HORIZONTAL
+                            addView(suusSprite(), LinearLayout.LayoutParams(dp(88), dp(120)))
+                        },
+                    )
                     addSpaced(titleText(getString(R.string.memory_empty_title), 24f), 16)
                     addSpaced(bodyText(getString(R.string.memory_empty_body)), 8)
                 },
