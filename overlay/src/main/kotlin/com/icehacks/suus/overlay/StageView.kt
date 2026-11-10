@@ -39,6 +39,7 @@ internal class StageView(context: Context) : View(context) {
     var charAlpha = 1f
     var pulse = 0f                     // 0..1, loops while LISTENING or THINKING
     var frame = 0                      // walking frame, 0..7; 0 is the standing pose
+    var popScale = 1f                  // < 1 while the robot pops in (overshoots past 1)
     var facingLeft = false             // mirror the robot when it walks left
     var focus: Bounds? = null          // ring while pointing
     var focusAlpha = 0f
@@ -111,6 +112,8 @@ internal class StageView(context: Context) : View(context) {
         val bob = if (mode == CharacterMode.THINKING) sin(pulse * 2 * Math.PI.toFloat()) * 3 * dp else 0f
         val cx = charX
         val cy = charY + bob
+        c.save()
+        c.scale(popScale, popScale, cx, cy + h / 2) // grow up from its feet
 
         if (mode == CharacterMode.LISTENING) {
             fill.color = modeColor(mode)
@@ -145,6 +148,7 @@ internal class StageView(context: Context) : View(context) {
             c.drawBitmap(bmp, null, spriteRect, spritePaint)
         }
         badge(c, cx + w * 0.42f, cy - h * 0.30f, a)
+        c.restore()
     }
 
     /**

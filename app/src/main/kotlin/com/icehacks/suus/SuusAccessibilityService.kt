@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import com.icehacks.suus.agent.createAgent
 import com.icehacks.suus.core.AgentRunner
+import com.icehacks.suus.core.CharacterMode
 import com.icehacks.suus.core.Fingerprinter
 import com.icehacks.suus.core.Overlay
 import com.icehacks.suus.core.ScreenController
@@ -17,12 +18,14 @@ import com.icehacks.suus.device.Sha256Fingerprinter
 import com.icehacks.suus.overlay.createOverlay
 import com.icehacks.suus.voice.createApprovalGate
 import com.icehacks.suus.voice.createVoice
+import com.icehacks.suus.voice.wakeSignals
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -47,6 +50,7 @@ class SuusAccessibilityService : AccessibilityService() {
 
     private val queue = Channel<UserCommand>(Channel.UNLIMITED)
     @Volatile private var current: Job? = null
+    @Volatile private var listening: Job? = null
     private var debug: DebugReceiver? = null
 
     override fun onServiceConnected() {
@@ -79,6 +83,24 @@ class SuusAccessibilityService : AccessibilityService() {
             }
         }
 
+        // Show the robot the moment its name is heard, so the user knows SuuS is listening.
+        // If no request follows (and no task is running), it goes back to idle and fades out.
+        scope.launch {
+            wakeSignals(voice).collect {
+                listening?.cancel()
+                if (current?.isActive == true) return@collect // a task is running: the agent owns the robot
+                overlay.setMode(CharacterMode.LISTENING)
+                overlay.caption("I'm listening…")
+                listening = scope.launch {
+                    delay(WAKE_SHOW_MS)
+                    if (current?.isActive != true) {
+                        overlay.caption(null)
+                        overlay.setMode(CharacterMode.IDLE)
+                    }
+                }
+            }
+        }
+
         if (BuildConfig.DEBUG) debug = DebugReceiver(this, scope).also { it.register() }
         instance = this
         Log.i(TAG, "service connected")
@@ -102,6 +124,8 @@ class SuusAccessibilityService : AccessibilityService() {
 
     companion object {
         const val TAG = "SUUS-Device"
+        /** How long the robot stays up after a bare "SuuS" if nothing else is said. */
+        const val WAKE_SHOW_MS = 12_000L
 
         /** The running service, or null. For debug hooks and the setup screen only. */
         @Volatile var instance: SuusAccessibilityService? = null

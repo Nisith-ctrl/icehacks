@@ -13,6 +13,7 @@ import android.view.WindowInsets
 import android.view.WindowManager
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
+import android.view.animation.OvershootInterpolator
 import com.icehacks.suus.core.Bounds
 import com.icehacks.suus.core.CharacterMode
 import com.icehacks.suus.core.Overlay
@@ -37,19 +38,37 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
     private var attached = false
     private var move: ValueAnimator? = null
     private var pulse: ValueAnimator? = null
+    private var pop: ValueAnimator? = null
 
     // ---------- Overlay ----------
 
     override fun setMode(mode: CharacterMode) = ui {
         ensureAttached()
         val wasHidden = stage.mode == CharacterMode.HIDDEN
+        val startsListening = mode == CharacterMode.LISTENING && stage.mode != CharacterMode.LISTENING
         stage.mode = mode
         if (mode != CharacterMode.ACTING && mode != CharacterMode.WAITING_APPROVAL) stage.focus = null
         if (stage.charX.isNaN() || (wasHidden && mode != CharacterMode.HIDDEN)) park()
         armAutoHide()
         if (animates(mode)) startPulse() else stopPulse()
+        // Pop in when it appears or starts listening, so "SuuS" visibly wakes it.
+        if ((wasHidden && mode != CharacterMode.HIDDEN) || startsListening) popIn()
         placeCaption()
         stage.invalidate()
+    }
+
+    /** A quick bouncy grow from its feet (overshoots, then settles). */
+    private fun popIn() {
+        pop?.cancel()
+        pop = ValueAnimator.ofFloat(0.2f, 1f).apply {
+            duration = POP_MS
+            interpolator = OvershootInterpolator(2.4f)
+            addUpdateListener { stage.popScale = it.animatedValue as Float; stage.invalidate() }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) { stage.popScale = 1f; stage.invalidate() }
+            })
+            start()
+        }
     }
 
     override fun caption(text: String?) = ui {
@@ -237,5 +256,6 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
         private const val MAX_POINT_MS = 400L
         private const val RESULT_MS = 200L
         private const val AUTO_HIDE_MS = 6_000L
+        private const val POP_MS = 380L
     }
 }
