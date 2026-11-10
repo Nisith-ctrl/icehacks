@@ -232,10 +232,10 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
     companion object {
         const val TAG = "SUUS-Overlay"
         const val WINDOW_TITLE = "SuusOverlay"
-        private const val MOVE_MS = 420L
-        private const val WALK_FRAME_MS = 70L
-        private const val MAX_POINT_MS = 650L
-        private const val RESULT_MS = 380L
+        private const val MOVE_MS = 260L
+        private const val WALK_FRAME_MS = 45L
+        private const val MAX_POINT_MS = 400L
+        private const val RESULT_MS = 200L
         private const val AUTO_HIDE_MS = 6_000L
     }
 }
