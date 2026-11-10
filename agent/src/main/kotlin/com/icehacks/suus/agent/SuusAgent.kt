@@ -9,6 +9,9 @@ import com.icehacks.suus.core.Overlay
 import com.icehacks.suus.core.ScreenController
 import com.icehacks.suus.core.UserCommand
 import com.icehacks.suus.core.VoiceIO
+import com.icehacks.suus.agent.data.NoOpRunLogger
+import com.icehacks.suus.agent.data.RunLogger
+import com.icehacks.suus.agent.data.sessionOutcome
 import kotlinx.coroutines.CancellationException
 
 /**
@@ -24,6 +27,7 @@ class SuusAgent(
     private val prefs: PreferenceStore,
     private val ledger: DraftLedger,
     private val log: (String) -> Unit = { runCatching { Log.i(AgentLoop.TAG, it) } },
+    private val runLog: RunLogger = NoOpRunLogger,
 ) : AgentRunner {
 
     override suspend fun handle(command: UserCommand) {
@@ -33,6 +37,7 @@ class SuusAgent(
                 is UserCommand.Goal -> {
                     val outcome = loop.run(command.text, command.takeOver)
                     log("outcome $outcome")
+                    runLog.sessionOutcome(outcome)
                     if (loop.submitted) loop.notes.clear()
                 }
                 is UserCommand.Undo -> undo(command.text)

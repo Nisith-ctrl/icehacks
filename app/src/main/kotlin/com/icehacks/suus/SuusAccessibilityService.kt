@@ -4,6 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import com.icehacks.suus.agent.createAgent
+import com.icehacks.suus.agent.data.createRunLog
 import com.icehacks.suus.core.AgentRunner
 import com.icehacks.suus.core.Fingerprinter
 import com.icehacks.suus.core.Overlay
@@ -34,6 +35,7 @@ class SuusAccessibilityService : AccessibilityService() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val settler = EventSettler()
+    private val runLog by lazy { createRunLog(this) } // T06: counts the user's own touches
 
     lateinit var screen: ScreenController
         private set
@@ -89,6 +91,7 @@ class SuusAccessibilityService : AccessibilityService() {
         // Ignore our own windows (overlay animations must not keep the screen "unsettled").
         if (event.packageName?.toString() == packageName) return
         settler.onEvent()
+        runLog.onUiEvent(event.eventType, event.packageName)
     }
 
     override fun onInterrupt() {}
