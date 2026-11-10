@@ -8,6 +8,9 @@
     <string name="setup_progress">%1$d of %2$d steps done</string>
     <string name="setup_all_done_title">You\'re ready</string>
     <string name="setup_all_done_body">Say \"Suus\", then what you want. For example: \"Suus, find the library workshop invite and register me.\" Say \"Stop\" at any time.</string>
+    <string name="setup_privacy">Suus only acts in Gmail, Calendar, Chrome and Messages, and always asks you before it submits or sends anything.</string>
+    <string name="step_next">Do this next</string>
+    <string name="step_number_next">Step %1$d, do this next</string>
     <string name="step_done">Done</string>
     <string name="step_not_done">Not done yet</string>
     <string name="step_number_done">Step %1$d, done</string>
@@ -50,7 +53,13 @@
     <string name="memory_intro">These are the choices you asked the app to remember. It uses them so it doesn\'t have to ask you again. You can remove any of them.</string>
     <string name="memory_empty_title">Nothing saved yet</string>
     <string name="memory_empty_body">The app only remembers what you tell it to. When it asks you a question, add \"remember that\" to your answer. For example: \"Email. Remember that for event signups.\"</string>
-    <string name="memory_saved_on">Saved %1$s</string>
+    <string name="memory_voice_hint">You can also ask out loud: \"Suus, what do you remember?\" or \"Suus, forget my event signup choice.\"</string>
+    <string name="memory_label">%1$s · %2$s</string>
+    <string name="memory_forget_all">Forget everything</string>
+    <string name="memory_forget_all_title">Forget everything?</string>
+    <string name="memory_forget_all_body">All saved choices will be removed. Suus will ask you again next time.</string>
+    <string name="memory_forget_all_yes">Forget everything</string>
+    <string name="memory_forgot_all">Everything forgotten</string>
     <string name="memory_you_said">You said: \"%1$s\"</string>
     <string name="memory_remove">Remove</string>
     <string name="memory_remove_described">Remove: %1$s</string>

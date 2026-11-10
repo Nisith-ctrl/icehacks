@@ -55,8 +55,10 @@ class SetupActivity : AppCompatActivity() {
         val actionLabel: Int,
         val doneActionLabel: Int? = null, // steps that can be repeated keep a (secondary) button when done
     ) {
+        lateinit var box: LinearLayout
         lateinit var badge: TextView
         lateinit var state: TextView
+        lateinit var detail: TextView
         lateinit var button: AppCompatButton
         lateinit var buttonAgain: AppCompatButton
         var note: TextView? = null
@@ -65,6 +67,8 @@ class SetupActivity : AppCompatActivity() {
     private val scope: CoroutineScope = MainScope()
     private lateinit var settings: SharedPreferences
     private lateinit var progress: TextView
+    private lateinit var progressFill: View
+    private lateinit var progressRest: View
     private lateinit var readyCard: View
     private val steps = mutableListOf<Step>()
 
@@ -82,11 +86,13 @@ class SetupActivity : AppCompatActivity() {
 
         column.addSpaced(titleText(getString(R.string.app_name), 32f))
         column.addSpaced(bodyText(getString(R.string.setup_subtitle), 20f), 8)
+        column.addSpaced(bodyText(getString(R.string.setup_privacy), 16f), 8)
         progress = bodyText("", 20f, secondary = false).apply {
             typeface = Typeface.DEFAULT_BOLD
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
-        column.addSpaced(progress, 16)
+        column.addSpaced(progress, 20)
+        column.addSpaced(progressBar(), 8)
 
         column.addSpaced(
             stepCard(
@@ -172,8 +178,22 @@ class SetupActivity : AppCompatActivity() {
 
     // ---------- building ----------
 
+    /** A thick bar under "3 of 6 steps done": two weighted views, no drawable work needed. */
+    private fun progressBar(): View {
+        progressFill = View(this).apply { background = roundedBox(themeColor(R.color.stg_ok), 6) }
+        progressRest = View(this)
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            background = roundedBox(themeColor(R.color.stg_outline), 6)
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS // the text says it
+            addView(progressFill, LinearLayout.LayoutParams(0, dp(12), 0f))
+            addView(progressRest, LinearLayout.LayoutParams(0, dp(12), 1f))
+        }
+    }
+
     private fun stepCard(title: Int, detail: Int, step: Step, withNote: Boolean = false, onAction: () -> Unit): View {
         val box = card()
+        step.box = box
 
         step.badge = TextView(this).apply {
             textSize = 20f
@@ -192,7 +212,8 @@ class SetupActivity : AppCompatActivity() {
 
         step.state = bodyText("", 18f).apply { typeface = Typeface.DEFAULT_BOLD }
         box.addSpaced(step.state, 10)
-        box.addSpaced(bodyText(getString(detail)), 6)
+        step.detail = bodyText(getString(detail))
+        box.addSpaced(step.detail, 6)
 
         if (withNote) {
             step.note = bodyText("", 18f, secondary = false).apply {
@@ -213,22 +234,52 @@ class SetupActivity : AppCompatActivity() {
     // ---------- state ----------
 
     private fun refresh() {
-        var doneCount = 0
-        for (step in steps) {
-            val done = step.isDone()
-            if (done) doneCount++
+        val doneFlags = steps.map { it.isDone() }
+        val doneCount = doneFlags.count { it }
+        // The first step that isn't done is "next": it gets the only filled button and a highlighted
+        // card, so there is one obvious thing to press. Later steps keep an outlined button, so a
+        // step the user chooses to skip never blocks the rest.
+        val next = doneFlags.indexOfFirst { !it }
+        for ((i, step) in steps.withIndex()) {
+            val done = doneFlags[i]
+            val isNext = i == next
             step.badge.text = if (done) "✓" else step.number.toString()
             step.badge.setTextColor(themeColor(if (done) R.color.stg_on_ok else R.color.stg_text))
             step.badge.background =
                 if (done) roundedBox(themeColor(R.color.stg_ok), 22)
                 else roundedBox(themeColor(R.color.stg_surface), 22, themeColor(R.color.stg_outline))
-            step.state.text = getString(if (done) R.string.step_done else R.string.step_not_done)
-            step.state.contentDescription =
-                getString(if (done) R.string.step_number_done else R.string.step_number_not_done, step.number)
+            step.state.text = getString(
+                when {
+                    done -> R.string.step_done
+                    isNext -> R.string.step_next
+                    else -> R.string.step_not_done
+                },
+            )
+            step.state.contentDescription = getString(
+                when {
+                    done -> R.string.step_number_done
+                    isNext -> R.string.step_number_next
+                    else -> R.string.step_number_not_done
+                },
+                step.number,
+            )
             step.state.setTextColor(themeColor(if (done) R.color.stg_ok else R.color.stg_pending))
-            step.button.visibility = if (done) View.GONE else View.VISIBLE
-            step.buttonAgain.visibility = if (done && step.doneActionLabel != null) View.VISIBLE else View.GONE
+            // Done steps shrink to their title and state; repeatable ones keep their explanation.
+            step.detail.visibility = if (done && step.doneActionLabel == null) View.GONE else View.VISIBLE
+            step.box.background =
+                if (isNext) roundedBox(themeColor(R.color.stg_surface), 20).apply { setStroke(dp(3), themeColor(R.color.stg_primary)) }
+                else roundedBox(themeColor(R.color.stg_surface), 20, themeColor(R.color.stg_outline))
+            step.button.visibility = if (isNext) View.VISIBLE else View.GONE
+            step.buttonAgain.visibility = when {
+                done -> if (step.doneActionLabel != null) View.VISIBLE else View.GONE
+                isNext -> View.GONE
+                else -> View.VISIBLE // a later step: outlined, so it doesn't compete with the next one
+            }
         }
+        (progressFill.layoutParams as LinearLayout.LayoutParams).weight = doneCount.toFloat()
+        (progressRest.layoutParams as LinearLayout.LayoutParams).weight = (steps.size - doneCount).toFloat()
+        progressFill.visibility = if (doneCount == 0) View.GONE else View.VISIBLE
+        progressFill.requestLayout()
         // The wake check: say what it is doing, and don't let it start twice.
         steps.lastOrNull()?.let { wake ->
             val note = if (wakeListening) getString(R.string.wake_listening) else wakeNote
