@@ -7,9 +7,9 @@ can't be created).
   FLAG_LAYOUT_IN_SCREEN`: user taps, our gesture taps and the keyboard pass through. Window title
   `SuusOverlay`. The device layer reads only `TYPE_APPLICATION` windows and ignores events
   from our package, so the overlay is never in snapshots or fingerprints (checked on the emulator).
-- `pointAt(bounds, caption)`: the character glides (420 ms) to the side of the target with the most
+- `pointAt(bounds, caption)`: the character glides (260 ms) to the side of the target with the most
   room, never covering it; it points and looks at the target, and an amber ring fades in. Returns
-  in ≤ 650 ms. `showResult` shows a green tick or red cross for 380 ms, then clears the ring.
+  in ≤ 400 ms. `showResult` shows a green tick or red cross for 200 ms, then clears the ring.
 - The character is guru's **SuuS robot sprite** (`res/drawable-nodpi/suus_walk_0..7.png`, cut from
   the design sheet). It is 88 dp tall, walks through its 8 frames while it glides to a target (and
   faces the way it walks), then stands still.
