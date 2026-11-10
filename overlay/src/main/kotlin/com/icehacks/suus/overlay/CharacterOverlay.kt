@@ -142,6 +142,20 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
         }
     }
 
+    /**
+     * Shows what the user is saying, live (not part of the core Overlay contract; the app calls it
+     * through [showHeard]). A final transcript stays for a moment, then fades; null clears it.
+     */
+    fun showHeard(text: String?, final: Boolean) = ui {
+        main.removeCallbacks(clearHeard)
+        stage.heard = text
+        stage.heardAlpha = 1f
+        stage.invalidate()
+        if (text != null && final) main.postDelayed(clearHeard, HEARD_LINGER_MS)
+    }
+
+    private val clearHeard = Runnable { stage.heard = null; stage.invalidate() }
+
     // ---------- internals (main thread) ----------
 
     /** Caption goes to the end of the screen that covers the focused target and highlights least. */
@@ -257,5 +271,6 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
         private const val RESULT_MS = 200L
         private const val AUTO_HIDE_MS = 6_000L
         private const val POP_MS = 380L
+        private const val HEARD_LINGER_MS = 2_500L
     }
 }

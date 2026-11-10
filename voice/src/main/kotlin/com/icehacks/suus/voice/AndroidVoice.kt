@@ -39,6 +39,9 @@ class AndroidVoice(
 
     override val commands: Flow<UserCommand> = router.commands
 
+    /** Live transcripts (partial and final), see [heardSpeech]. */
+    val heard = kotlinx.coroutines.flow.MutableSharedFlow<Heard>(extraBufferCapacity = 32)
+
     private val main = Handler(Looper.getMainLooper())
     private var recognizer: SpeechRecognizer? = null
     private var tts: TextToSpeech? = null
@@ -87,16 +90,30 @@ class AndroidVoice(
         }
     }
 
+    /**
+     * Asks and waits for an answer. When [choices] are offered, only an answer that names one of
+     * them (or "stop"/"cancel") counts; anything else (room chatter, a cough) is ignored and SuuS
+     * keeps listening, so a stray sentence can't be taken as the answer.
+     */
     override suspend fun ask(question: String, choices: List<String>): String? {
+        val spoken = CommandParser.withChoices(question, choices)
         repeat(2) { attempt ->
-            val expected = router.expectAnswer()
-            val spoken = CommandParser.withChoices(question, choices)
+            var expected = router.expectAnswer()
             say(if (attempt == 0) spoken else "Sorry, I didn't catch that. $spoken")
-            val answer = router.awaitAnswer(expected, ANSWER_TIMEOUT_MS)
-            if (answer != null) {
-                val result = if (choices.isEmpty()) answer else ChoiceMatcher.resolve(answer, choices)
-                Log.i(TAG, "ask '$question' $choices -> '$answer' => '$result'")
-                return result
+            val deadline = SystemClock.uptimeMillis() + ANSWER_TIMEOUT_MS
+            while (true) {
+                val left = deadline - SystemClock.uptimeMillis()
+                if (left <= 0) break
+                val answer = router.awaitAnswer(expected, left) ?: break
+                val accepted = choices.isEmpty() || ChoiceMatcher.match(answer, choices) != null ||
+                    CommandParser.classify(answer) is UserCommand.Stop
+                if (accepted) {
+                    val result = if (choices.isEmpty()) answer else ChoiceMatcher.resolve(answer, choices)
+                    Log.i(TAG, "ask '$question' $choices -> '$answer' => '$result'")
+                    return result
+                }
+                Log.i(TAG, "ask: '$answer' isn't one of $choices, still listening")
+                expected = router.expectAnswer()
             }
         }
         Log.i(TAG, "ask '$question' -> no answer")
@@ -107,6 +124,7 @@ class AndroidVoice(
     fun inject(text: String) {
         val routed = router.onTranscript(text, forceSession = true)
         Log.i(TAG, "inject '$text' -> $routed")
+        heard.tryEmit(Heard(text, final = true, forSuus = routed != VoiceRouter.Routed.IGNORED))
     }
 
     fun close() {
@@ -125,7 +143,15 @@ class AndroidVoice(
             val ok = status == TextToSpeech.SUCCESS
             if (ok) {
                 tts?.language = Locale.US
-                tts?.setSpeechRate(1.05f)
+                // A livelier voice: a touch faster and brighter, and the best installed US voice.
+                tts?.setSpeechRate(1.12f)
+                tts?.setPitch(1.08f)
+                runCatching {
+                    tts?.voices
+                        ?.filter { it.locale == Locale.US && !it.isNetworkConnectionRequired && "notInstalled" !in it.features }
+                        ?.maxByOrNull { it.quality }
+                        ?.let { tts?.voice = it }
+                }
             } else {
                 Log.w(TAG, "TextToSpeech init failed: $status")
             }
@@ -164,7 +190,7 @@ class AndroidVoice(
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
                 putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true) // live "you said…" bubble
                 // Nudge the recognizer toward the wake word "Suus" (not a dictionary word).
                 if (android.os.Build.VERSION.SDK_INT >= 33) {
                     putStringArrayListExtra(RecognizerIntent.EXTRA_BIASING_STRINGS, CommandParser.BIASING_PHRASES)
@@ -199,15 +225,20 @@ class AndroidVoice(
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onEndOfSpeech() { endOfSpeechAt = SystemClock.uptimeMillis() }
-            override fun onPartialResults(partialResults: Bundle?) {}
+            override fun onPartialResults(partialResults: Bundle?) {
+                val text = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+                if (!text.isNullOrBlank()) heard.tryEmit(Heard(text, final = false, forSuus = router.attentive(text)))
+            }
             override fun onEvent(eventType: Int, params: Bundle?) {}
 
             override fun onResults(results: Bundle?) {
                 val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
                 if (endOfSpeechAt > 0) Log.i(TAG, "latency end-of-speech -> result ${SystemClock.uptimeMillis() - endOfSpeechAt} ms")
                 if (!text.isNullOrBlank()) {
+                    val forSuus = router.attentive(text)
                     val routed = router.onTranscript(text)
                     Log.i(TAG, "heard '$text' -> $routed")
+                    heard.tryEmit(Heard(text, final = true, forSuus = forSuus && routed != VoiceRouter.Routed.IGNORED))
                     if (routed == VoiceRouter.Routed.WOKE) scope.launch { say("Yes?") }
                 }
                 restartEar(100)

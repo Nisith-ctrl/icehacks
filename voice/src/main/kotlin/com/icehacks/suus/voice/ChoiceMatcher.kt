@@ -49,9 +49,13 @@ object ChoiceMatcher {
         if (ordinal != null && mentionsOrdinal && ordinal < choices.size) return choices[ordinal]
 
         // 3. Content-word overlap: "by the door" -> "The one by the door"; "text" -> "Text message".
+        //    Also "set up" -> "Setup crew" (spaces dropped) and "food service" -> "Food serving" (same stem).
         val answerTokens = words.filter { it !in FILLER }.toSet()
         if (answerTokens.isEmpty()) return null
-        val scores = choices.associateWith { c -> tokens(c).count { it in answerTokens } }
+        val compact = a.replace(" ", "")
+        fun hit(t: String) = t in answerTokens || (t.length >= 4 && compact.contains(t)) ||
+            (t.length >= 5 && answerTokens.any { w -> w.length >= 5 && w.take(5) == t.take(5) })
+        val scores = choices.associateWith { c -> tokens(c).count { hit(it) } }
         val best = scores.values.max()
         if (best == 0) return null
         val top = scores.filterValues { it == best }.keys

@@ -127,6 +127,18 @@ class VoiceRouterTest {
     }
 
     @Test
+    fun looseChoiceAnswers() {
+        val roles = listOf("Welcome table", "Food serving", "Setup crew", "Cleanup crew")
+        assertEquals("Food serving", ChoiceMatcher.match("food service", roles))
+        assertEquals("Setup crew", ChoiceMatcher.match("set up", roles))
+        assertEquals("Cleanup crew", ChoiceMatcher.match("clean up please", roles))
+        assertEquals("Welcome table", ChoiceMatcher.match("the welcome one", roles))
+        assertEquals("Food serving", ChoiceMatcher.match("number two", roles))
+        assertEquals(null, ChoiceMatcher.match("what's up what's up", roles))
+        assertEquals(null, ChoiceMatcher.match("I'm going to make a costume", roles))
+    }
+
+    @Test
     fun questionsReadTheirChoices() {
         val roles = listOf("Setup", "Food service", "Cleanup", "Information desk")
         assertEquals(
