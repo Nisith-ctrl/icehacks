@@ -7,69 +7,109 @@ import android.widget.LinearLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.icehacks.saythegoal.R
+import com.icehacks.saythegoal.agent.ObservablePreferenceStore
 import com.icehacks.saythegoal.agent.PreferenceStore
 import com.icehacks.saythegoal.agent.SavedPreference
 import com.icehacks.saythegoal.agent.scopeLabel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 /**
  * "What I remember": every preference the agent has saved, in plain words, each with one big
  * Remove button and a confirmation. The agent only saves what the user asks it to remember, and
- * the empty state says so.
+ * the empty state says so. With T06's observable store the list updates live while it's open.
  */
 class MemoryActivity : AppCompatActivity() {
 
+    private val scope = MainScope()
+    private var watch: Job? = null
     private lateinit var list: LinearLayout
     private lateinit var store: PreferenceStore
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        applySavedTheme()
         super.onCreate(savedInstanceState)
         val (root, column) = page()
-        column.addSpaced(titleText(getString(R.string.memory_title), 32f))
-        column.addSpaced(bodyText(getString(R.string.memory_intro)), 8)
-        column.addSpaced(bodyText(getString(R.string.memory_voice_hint), 18f, secondary = false), 8)
+        column.addSpaced(bigButton(getString(R.string.back_arrow), ButtonKind.TONAL) { finish() }.apply {
+            contentDescription = getString(R.string.back)
+        })
+        column.addSpaced(heroHeader(getString(R.string.memory_title), getString(R.string.memory_intro)), 16)
+        column.addSpaced(
+            card().apply {
+                background = roundedBox(themeColor(R.color.stg_primary_soft), 24)
+                addSpaced(bodyText(getString(R.string.memory_voice_hint), 18f).apply {
+                    setTextColor(themeColor(R.color.stg_on_primary_soft))
+                })
+            },
+            16,
+        )
         list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        column.addSpaced(list, 8)
-        column.addSpaced(bigButton(getString(R.string.back), ButtonKind.SECONDARY) { finish() }, 24)
+        column.addSpaced(list, 4)
         setContentView(root)
     }
 
-    override fun onResume() {
-        super.onResume()
-        // Re-open on every visit: the agent may have saved something since we were last here.
+    override fun onStart() {
+        super.onStart()
         store = openPreferenceStore(this)
-        render()
+        val live = store as? ObservablePreferenceStore
+        if (live != null) {
+            // Saves and removals (by voice or here) show up while the screen is open.
+            watch = scope.launch { live.preferences.collect { render(it) } }
+        } else {
+            render(store.all())
+        }
     }
 
-    private fun render() {
+    override fun onStop() {
+        watch?.cancel()
+        watch = null
+        super.onStop()
+    }
+
+    override fun onDestroy() {
+        scope.cancel()
+        super.onDestroy()
+    }
+
+    private fun render(items: List<SavedPreference>) {
         list.removeAllViews()
-        val saved = store.all().sortedByDescending { it.savedAtMs }
+        val saved = items.sortedByDescending { it.savedAtMs }
         if (saved.isEmpty()) {
             list.addSpaced(
                 card().apply {
-                    addSpaced(titleText(getString(R.string.memory_empty_title), 22f))
+                    addSpaced(CharacterBadgeView(context).apply {
+                        background = roundedBox(themeColor(R.color.stg_primary), 40)
+                    }.let { badge ->
+                        LinearLayout(context).apply { addView(badge, LinearLayout.LayoutParams(dp(72), dp(72))) }
+                    })
+                    addSpaced(titleText(getString(R.string.memory_empty_title), 24f), 16)
                     addSpaced(bodyText(getString(R.string.memory_empty_body)), 8)
                 },
                 16,
             )
             return
         }
-        for (item in saved) list.addSpaced(itemCard(item), 16)
+        list.addSpaced(sectionLabel(resources.getQuantityString(R.plurals.memory_count, saved.size, saved.size)), 24)
+        for (item in saved) list.addSpaced(itemCard(item), 12)
         if (saved.size >= 2) {
             list.addSpaced(bigButton(getString(R.string.memory_forget_all), ButtonKind.SECONDARY) { confirmForgetAll() }, 24)
         }
     }
 
     private fun itemCard(item: SavedPreference): View = card().apply {
-        // "EVENT SIGNUPS · 10 Nov 2026": the kind of task it applies to, and when it was saved.
-        addSpaced(
-            bodyText(getString(R.string.memory_label, scopeLabel(item.scope).uppercase(), item.savedWhen()), 15f).apply {
-                letterSpacing = 0.06f
-                typeface = Typeface.DEFAULT_BOLD
-            },
-        )
-        addSpaced(titleText(item.headline(), 22f), 6)
+        // "EVENT SIGNUPS · Nov 10, 2026": the kind of task it applies to, and when it was saved.
+        addWrapped(chip().apply {
+            setChip(getString(R.string.memory_label, scopeLabel(item.scope).uppercase(), item.savedWhen()), ChipKind.INFO)
+            textSize = 15f
+            letterSpacing = 0.04f
+        })
+        addSpaced(titleText(item.headline(), 24f), 12)
         if (item.sourceUtterance.isNotBlank()) {
-            addSpaced(bodyText(getString(R.string.memory_you_said, item.sourceUtterance)), 4)
+            addSpaced(bodyText(getString(R.string.memory_you_said, item.sourceUtterance)).apply {
+                setTypeface(typeface, Typeface.ITALIC)
+            }, 6)
         }
         val remove = bigButton(getString(R.string.memory_remove), ButtonKind.DANGER) { confirmRemove(item) }
         // Several Remove buttons on one screen: tell TalkBack which one this is.
@@ -83,7 +123,7 @@ class MemoryActivity : AppCompatActivity() {
         getString(R.string.memory_confirm_yes),
     ) {
         store.remove(item.scope, item.key)
-        render()
+        if (store !is ObservablePreferenceStore) render(store.all())
         list.announceForAccessibility(getString(R.string.memory_removed, item.headline()))
     }
 
@@ -93,7 +133,7 @@ class MemoryActivity : AppCompatActivity() {
         getString(R.string.memory_forget_all_yes),
     ) {
         store.clear()
-        render()
+        if (store !is ObservablePreferenceStore) render(store.all())
         list.announceForAccessibility(getString(R.string.memory_forgot_all))
     }
 
@@ -116,6 +156,7 @@ class MemoryActivity : AppCompatActivity() {
             8,
         )
         buttons.addSpaced(bigButton(getString(R.string.memory_confirm_no), ButtonKind.SECONDARY) { dialog.dismiss() }, 12)
+        dialog.window?.setBackgroundDrawable(roundedBox(themeColor(R.color.stg_surface), 28))
         dialog.show()
     }
 }

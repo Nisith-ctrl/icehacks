@@ -22,14 +22,22 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import com.icehacks.saythegoal.ui.ButtonKind
+import com.icehacks.saythegoal.ui.ChipKind
 import com.icehacks.saythegoal.ui.MemoryActivity
 import com.icehacks.saythegoal.ui.addSpaced
+import com.icehacks.saythegoal.ui.addWrapped
+import com.icehacks.saythegoal.ui.appearanceCard
+import com.icehacks.saythegoal.ui.applySavedTheme
 import com.icehacks.saythegoal.ui.bigButton
 import com.icehacks.saythegoal.ui.bodyText
 import com.icehacks.saythegoal.ui.card
+import com.icehacks.saythegoal.ui.chip
 import com.icehacks.saythegoal.ui.dp
+import com.icehacks.saythegoal.ui.heroHeader
 import com.icehacks.saythegoal.ui.page
 import com.icehacks.saythegoal.ui.roundedBox
+import com.icehacks.saythegoal.ui.sectionLabel
+import com.icehacks.saythegoal.ui.setChip
 import com.icehacks.saythegoal.ui.themeColor
 import com.icehacks.saythegoal.ui.titleText
 import com.icehacks.saythegoal.voice.wakeSignals
@@ -42,9 +50,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
- * One-time setup, as a checklist. Each step is a card with a done / not done state and one big
- * button that opens the right system dialog or Settings page. The state is re-read every time the
- * screen comes back, so it always matches what Android reports.
+ * One-time setup, as a checklist. Each step is a card with a status chip and one big button that
+ * opens the right system dialog or Settings page. The first step that isn't done is highlighted and
+ * gets the only filled button, so there is always one obvious thing to press. State is re-read
+ * every time the screen comes back, so it always matches what Android reports.
  */
 class SetupActivity : AppCompatActivity() {
 
@@ -80,77 +89,55 @@ class SetupActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_IMAGES else Manifest.permission.READ_EXTERNAL_STORAGE
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        applySavedTheme()
         super.onCreate(savedInstanceState)
         settings = getSharedPreferences("setup", Context.MODE_PRIVATE)
         val (root, column) = page()
 
-        column.addSpaced(titleText(getString(R.string.app_name), 32f))
-        column.addSpaced(bodyText(getString(R.string.setup_subtitle), 20f), 8)
-        column.addSpaced(bodyText(getString(R.string.setup_privacy), 16f), 8)
-        progress = bodyText("", 20f, secondary = false).apply {
-            typeface = Typeface.DEFAULT_BOLD
-            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
-        }
-        column.addSpaced(progress, 20)
-        column.addSpaced(progressBar(), 8)
+        column.addSpaced(heroHeader(getString(R.string.app_name), getString(R.string.setup_subtitle)))
 
-        column.addSpaced(
-            stepCard(
-                R.string.step_service_title, R.string.step_service_detail,
-                Step(1, ::serviceEnabled, R.string.step_service_action),
-            ) { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
-            16,
-        )
-        column.addSpaced(
-            stepCard(
-                R.string.step_mic_title, R.string.step_mic_detail,
-                Step(2, { granted(Manifest.permission.RECORD_AUDIO) }, R.string.step_mic_action),
-            ) { askFor(Manifest.permission.RECORD_AUDIO) },
-            16,
-        )
-        column.addSpaced(
-            stepCard(
-                R.string.step_calendar_title, R.string.step_calendar_detail,
-                Step(3, { granted(Manifest.permission.READ_CALENDAR) }, R.string.step_calendar_action),
-            ) { askFor(Manifest.permission.READ_CALENDAR) },
-            16,
-        )
-        column.addSpaced(
-            stepCard(
-                R.string.step_photos_title, R.string.step_photos_detail,
-                Step(4, { granted(photosPermission) }, R.string.step_photos_action),
-            ) { askFor(photosPermission) },
-            16,
-        )
-        column.addSpaced(
-            stepCard(
-                R.string.step_notifications_title, R.string.step_notifications_detail,
-                Step(5, ::notificationsAllowed, R.string.step_notifications_action),
-            ) { askFor(Manifest.permission.POST_NOTIFICATIONS) },
-            16,
-        )
-        column.addSpaced(
-            stepCard(
-                R.string.step_wake_title, R.string.step_wake_detail,
-                Step(6, { settings.getBoolean(KEY_WAKE_OK, false) }, R.string.step_wake_action, R.string.step_wake_again),
-                withNote = true,
-            ) { startWakeCheck() },
-            16,
-        )
-
+        // Ready card sits right under the header once everything is done: it's what the user needs then.
         readyCard = card().apply {
-            addSpaced(titleText(getString(R.string.setup_all_done_title), 24f))
-            addSpaced(bodyText(getString(R.string.setup_all_done_body)), 8)
+            background = roundedBox(themeColor(R.color.stg_ok_soft), 24)
+            addSpaced(titleText(getString(R.string.setup_all_done_title), 24f, R.color.stg_ok))
+            addSpaced(bodyText(getString(R.string.setup_all_done_body), 18f, secondary = false), 8)
         }
         column.addSpaced(readyCard, 16)
 
+        column.addSpaced(progressCard(), 16)
+
+        column.addSpaced(sectionLabel(getString(R.string.section_setup)), 28)
+        addStep(column, R.string.step_service_title, R.string.step_service_detail,
+            Step(1, ::serviceEnabled, R.string.step_service_action)) { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+        addStep(column, R.string.step_mic_title, R.string.step_mic_detail,
+            Step(2, { granted(Manifest.permission.RECORD_AUDIO) }, R.string.step_mic_action)) { askFor(Manifest.permission.RECORD_AUDIO) }
+        addStep(column, R.string.step_calendar_title, R.string.step_calendar_detail,
+            Step(3, { granted(Manifest.permission.READ_CALENDAR) }, R.string.step_calendar_action)) { askFor(Manifest.permission.READ_CALENDAR) }
+        addStep(column, R.string.step_photos_title, R.string.step_photos_detail,
+            Step(4, { granted(photosPermission) }, R.string.step_photos_action)) { askFor(photosPermission) }
+        addStep(column, R.string.step_notifications_title, R.string.step_notifications_detail,
+            Step(5, ::notificationsAllowed, R.string.step_notifications_action)) { askFor(Manifest.permission.POST_NOTIFICATIONS) }
+        addStep(column, R.string.step_wake_title, R.string.step_wake_detail,
+            Step(6, { settings.getBoolean(KEY_WAKE_OK, false) }, R.string.step_wake_action, R.string.step_wake_again),
+            withNote = true) { startWakeCheck() }
+
+        column.addSpaced(sectionLabel(getString(R.string.section_more)), 28)
         column.addSpaced(
-            bigButton(getString(R.string.open_memory), ButtonKind.SECONDARY) {
-                startActivity(Intent(this, MemoryActivity::class.java))
+            card().apply {
+                addSpaced(titleText(getString(R.string.open_memory), 22f))
+                addSpaced(bodyText(getString(R.string.open_memory_body)), 6)
+                addSpaced(
+                    bigButton(getString(R.string.open_memory_action), ButtonKind.TONAL) {
+                        startActivity(Intent(this@SetupActivity, MemoryActivity::class.java))
+                    },
+                    16,
+                )
             },
-            24,
+            12,
         )
-        if (BuildConfig.DEBUG) column.addSpaced(bodyText(getString(R.string.debug_note), 14f), 16)
+        column.addSpaced(appearanceCard(), 16)
+        column.addSpaced(bodyText(getString(R.string.setup_privacy), 16f).apply { gravity = Gravity.CENTER }, 24)
+        if (BuildConfig.DEBUG) column.addSpaced(bodyText(getString(R.string.debug_note), 14f).apply { gravity = Gravity.CENTER }, 12)
 
         setContentView(root)
     }
@@ -178,20 +165,28 @@ class SetupActivity : AppCompatActivity() {
 
     // ---------- building ----------
 
-    /** A thick bar under "3 of 6 steps done": two weighted views, no drawable work needed. */
-    private fun progressBar(): View {
-        progressFill = View(this).apply { background = roundedBox(themeColor(R.color.stg_ok), 6) }
-        progressRest = View(this)
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            background = roundedBox(themeColor(R.color.stg_outline), 6)
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS // the text says it
-            addView(progressFill, LinearLayout.LayoutParams(0, dp(12), 0f))
-            addView(progressRest, LinearLayout.LayoutParams(0, dp(12), 1f))
+    /** "4 of 6 steps done" and a thick bar. Two weighted views, so no drawable work is needed. */
+    private fun progressCard(): View = card().apply {
+        progress = titleText("", 22f).apply {
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+            ViewCompat.setAccessibilityHeading(this, false) // a status line, not a heading
         }
+        addSpaced(progress)
+        progressFill = View(context).apply { background = roundedBox(themeColor(R.color.stg_ok), 8) }
+        progressRest = View(context)
+        addSpaced(
+            LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                background = roundedBox(themeColor(R.color.stg_surface_alt), 8)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS // the text says it
+                addView(progressFill, LinearLayout.LayoutParams(0, dp(14), 0f))
+                addView(progressRest, LinearLayout.LayoutParams(0, dp(14), 1f))
+            },
+            14,
+        )
     }
 
-    private fun stepCard(title: Int, detail: Int, step: Step, withNote: Boolean = false, onAction: () -> Unit): View {
+    private fun addStep(column: LinearLayout, title: Int, detail: Int, step: Step, withNote: Boolean = false, onAction: () -> Unit) {
         val box = card()
         step.box = box
 
@@ -199,27 +194,29 @@ class SetupActivity : AppCompatActivity() {
             textSize = 20f
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO // the state line says the same thing
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO // the chip says the same thing
         }
         val heading = titleText(getString(title), 22f)
-        val header = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            addView(step.badge, LinearLayout.LayoutParams(dp(44), dp(44)))
-            addView(heading, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(14) })
-        }
-        box.addSpaced(header)
+        box.addSpaced(
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                addView(step.badge, LinearLayout.LayoutParams(dp(48), dp(48)))
+                addView(heading, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(14) })
+            },
+        )
 
-        step.state = bodyText("", 18f).apply { typeface = Typeface.DEFAULT_BOLD }
-        box.addSpaced(step.state, 10)
+        step.state = chip()
+        box.addWrapped(step.state, 12)
         step.detail = bodyText(getString(detail))
-        box.addSpaced(step.detail, 6)
+        box.addSpaced(step.detail, 10)
 
         if (withNote) {
             step.note = bodyText("", 18f, secondary = false).apply {
+                typeface = Typeface.DEFAULT_BOLD
                 accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
             }
-            box.addSpaced(step.note!!, 10)
+            box.addSpaced(step.note!!, 12)
         }
 
         step.button = bigButton(getString(step.actionLabel), ButtonKind.PRIMARY, onAction)
@@ -228,7 +225,7 @@ class SetupActivity : AppCompatActivity() {
         box.addSpaced(step.buttonAgain, 16)
 
         steps += step
-        return box
+        column.addSpaced(box, 12)
     }
 
     // ---------- state ----------
@@ -237,24 +234,29 @@ class SetupActivity : AppCompatActivity() {
         val doneFlags = steps.map { it.isDone() }
         val doneCount = doneFlags.count { it }
         // The first step that isn't done is "next": it gets the only filled button and a highlighted
-        // card, so there is one obvious thing to press. Later steps keep an outlined button, so a
-        // step the user chooses to skip never blocks the rest.
+        // card. Later steps keep an outlined button, so a step the user skips never blocks the rest.
         val next = doneFlags.indexOfFirst { !it }
         for ((i, step) in steps.withIndex()) {
             val done = doneFlags[i]
             val isNext = i == next
             step.badge.text = if (done) "✓" else step.number.toString()
-            step.badge.setTextColor(themeColor(if (done) R.color.stg_on_ok else R.color.stg_text))
-            step.badge.background =
-                if (done) roundedBox(themeColor(R.color.stg_ok), 22)
-                else roundedBox(themeColor(R.color.stg_surface), 22, themeColor(R.color.stg_outline))
-            step.state.text = getString(
+            step.badge.setTextColor(themeColor(
                 when {
-                    done -> R.string.step_done
-                    isNext -> R.string.step_next
-                    else -> R.string.step_not_done
+                    done -> R.color.stg_on_ok
+                    isNext -> R.color.stg_on_primary
+                    else -> R.color.stg_text_secondary
                 },
-            )
+            ))
+            step.badge.background = when {
+                done -> roundedBox(themeColor(R.color.stg_ok), 24)
+                isNext -> roundedBox(themeColor(R.color.stg_primary), 24)
+                else -> roundedBox(themeColor(R.color.stg_surface_alt), 24)
+            }
+            when {
+                done -> step.state.setChip(getString(R.string.step_done), ChipKind.DONE)
+                isNext -> step.state.setChip(getString(R.string.step_next), ChipKind.NEXT)
+                else -> step.state.setChip(getString(R.string.step_not_done), ChipKind.WAITING)
+            }
             step.state.contentDescription = getString(
                 when {
                     done -> R.string.step_number_done
@@ -263,12 +265,11 @@ class SetupActivity : AppCompatActivity() {
                 },
                 step.number,
             )
-            step.state.setTextColor(themeColor(if (done) R.color.stg_ok else R.color.stg_pending))
-            // Done steps shrink to their title and state; repeatable ones keep their explanation.
+            // Done steps shrink to their title and chip; repeatable ones keep their explanation.
             step.detail.visibility = if (done && step.doneActionLabel == null) View.GONE else View.VISIBLE
             step.box.background =
-                if (isNext) roundedBox(themeColor(R.color.stg_surface), 20).apply { setStroke(dp(3), themeColor(R.color.stg_primary)) }
-                else roundedBox(themeColor(R.color.stg_surface), 20, themeColor(R.color.stg_outline))
+                if (isNext) roundedBox(themeColor(R.color.stg_surface), 24, themeColor(R.color.stg_primary), 3)
+                else roundedBox(themeColor(R.color.stg_surface), 24, themeColor(R.color.stg_outline), 1)
             step.button.visibility = if (isNext) View.VISIBLE else View.GONE
             step.buttonAgain.visibility = when {
                 done -> if (step.doneActionLabel != null) View.VISIBLE else View.GONE
@@ -324,10 +325,10 @@ class SetupActivity : AppCompatActivity() {
         }
     }
 
-    // ---------- wake phrase check ----------
+    // ---------- wake word check ----------
 
     /**
-     * Waits up to 30 s for the running service to hear the wake word ("Suus", alone or before a
+     * Waits up to 30 s for the running service to hear the wake word ("SuuS", alone or before a
      * request). It uses the same recogniser and wake matching as a real task, so a pass means the
      * microphone, the recogniser and the wake word all work on this phone.
      */

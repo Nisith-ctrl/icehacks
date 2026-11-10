@@ -17,6 +17,6 @@ internal fun openPreferenceStore(context: Context): PreferenceStore = sharedPref
 /** "Use Email for event signups": the same words the agent says aloud, as a sentence. */
 internal fun SavedPreference.headline(): String = spoken().replaceFirstChar { it.uppercase() }
 
-/** "9 Nov 2026, 3:12 PM" in the phone's own format. */
+/** "Nov 9, 2026" in the phone's own format. Short, so the label chip stays on one line. */
 internal fun SavedPreference.savedWhen(): String =
-    DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(savedAtMs))
+    DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(savedAtMs))
