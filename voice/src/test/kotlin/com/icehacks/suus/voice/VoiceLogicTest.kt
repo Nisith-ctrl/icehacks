@@ -74,7 +74,7 @@ class ChoiceMatcherTest {
 
 class VoiceRouterTest {
     private var clock = 0L
-    private val router = VoiceRouter(now = { clock }, sessionMs = 90_000)
+    private val router = VoiceRouter(now = { clock }, sessionMs = 30_000, followUpMs = 10_000)
 
     @Test
     fun wakeThenSessionThenTimeout() = runTest {
@@ -83,7 +83,7 @@ class VoiceRouterTest {
         yield()
         assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("Suus, open Gmail"))
         assertEquals(UserCommand.Goal("open Gmail", takeOver = false), first.await())
-        clock += 30_000
+        clock += 20_000
         val stop = async { router.commands.first() }
         yield()
         assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("stop"))
@@ -91,6 +91,49 @@ class VoiceRouterTest {
         clock += 200_000
         assertEquals(VoiceRouter.Routed.IGNORED, router.onTranscript("stop"))
         assertEquals(VoiceRouter.Routed.WOKE, router.onTranscript("suus"))
+    }
+
+    @Test
+    fun chatterDuringASessionIsIgnored() = runTest {
+        assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("Suus, open Gmail"))
+        clock += 5_000
+        for (chatter in listOf("it's my calendar", "that's it again", "but expect you to", "news at six")) {
+            assertEquals(chatter, VoiceRouter.Routed.IGNORED, router.onTranscript(chatter))
+        }
+        assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("undo the photo"))
+        assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("use the one by the door"))
+        assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("what are the options"))
+    }
+
+    @Test
+    fun bareWakeTakesTheNextUtteranceAsTheRequest() = runTest {
+        assertEquals(VoiceRouter.Routed.WOKE, router.onTranscript("Suus"))
+        clock += 3_000
+        val cmd = async { router.commands.first() }
+        yield()
+        assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("the library workshop thing"))
+        assertEquals(UserCommand.Goal("the library workshop thing", takeOver = false), cmd.await())
+        // Only one free follow-up: more chatter after it is filtered again.
+        assertEquals(VoiceRouter.Routed.IGNORED, router.onTranscript("it's my calendar"))
+    }
+
+    @Test
+    fun followUpWindowCloses() = runTest {
+        assertEquals(VoiceRouter.Routed.WOKE, router.onTranscript("Suus"))
+        clock += 40_000
+        assertEquals(VoiceRouter.Routed.IGNORED, router.onTranscript("the library workshop thing"))
+    }
+
+    @Test
+    fun questionsReadTheirChoices() {
+        val roles = listOf("Setup", "Food service", "Cleanup", "Information desk")
+        assertEquals(
+            "Which volunteer role would you like? You can say Setup, Food service, Cleanup or Information desk.",
+            CommandParser.withChoices("Which volunteer role would you like?", roles),
+        )
+        val named = "Should I use Email or Text message?"
+        assertEquals(named, CommandParser.withChoices(named, listOf("Email", "Text message")))
+        assertEquals("Ready?", CommandParser.withChoices("Ready?", emptyList()))
     }
 
     @Test
