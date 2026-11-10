@@ -10,7 +10,8 @@ import kotlinx.coroutines.withTimeoutOrNull
  * Decides where each transcript goes (mic or debug injection, same path):
  * 1. If an ask()/approval is waiting for an answer, the transcript is that answer.
  * 2. Else, with the wake word ("Suus, …"), the rest is classified into a command and a session starts.
- * 3. Else, right after a bare "Suus" (within [followUpMs]), the next utterance is the command.
+ * 3. Else, right after a bare "Suus" (within [followUpMs]), the next utterance that reads like a
+ *    request is the command (room chatter such as "your phone" is still ignored).
  * 4. Else, during an active session (recent speech either way), it becomes a command only if it reads
  *    like a request ([CommandParser.looksLikeRequest]), so chatter near the phone doesn't start tasks.
  * 5. Else it is ignored.
@@ -51,8 +52,8 @@ class VoiceRouter(
         val followUp = now() - wokeAt < followUpMs
         val body = when {
             afterWake != null -> afterWake
-            forceSession || followUp -> t
-            sessionActive && CommandParser.looksLikeRequest(t) -> t
+            forceSession -> t
+            (followUp || sessionActive) && CommandParser.looksLikeRequest(t) -> t
             else -> return Routed.IGNORED
         }
         markActive()

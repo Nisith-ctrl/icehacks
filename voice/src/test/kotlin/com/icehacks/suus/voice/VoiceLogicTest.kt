@@ -111,8 +111,10 @@ class VoiceRouterTest {
         clock += 3_000
         val cmd = async { router.commands.first() }
         yield()
-        assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("the library workshop thing"))
-        assertEquals(UserCommand.Goal("the library workshop thing", takeOver = false), cmd.await())
+        // Room chatter right after the wake is still ignored (seen live: "your phone").
+        assertEquals(VoiceRouter.Routed.IGNORED, router.onTranscript("your phone"))
+        assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("find the library workshop invite"))
+        assertEquals(UserCommand.Goal("find the library workshop invite", takeOver = false), cmd.await())
         // Only one free follow-up: more chatter after it is filtered again.
         assertEquals(VoiceRouter.Routed.IGNORED, router.onTranscript("it's my calendar"))
     }
@@ -121,7 +123,7 @@ class VoiceRouterTest {
     fun followUpWindowCloses() = runTest {
         assertEquals(VoiceRouter.Routed.WOKE, router.onTranscript("Suus"))
         clock += 40_000
-        assertEquals(VoiceRouter.Routed.IGNORED, router.onTranscript("the library workshop thing"))
+        assertEquals(VoiceRouter.Routed.IGNORED, router.onTranscript("your phone"))
     }
 
     @Test
