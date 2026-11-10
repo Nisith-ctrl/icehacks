@@ -52,6 +52,16 @@ fun createVoice(context: Context, scope: CoroutineScope): VoiceIO {
  */
 fun wakeSignals(voice: VoiceIO): Flow<Unit> = (voice as? AndroidVoice)?.router?.wakes ?: emptyFlow()
 
+/**
+ * What the microphone hears, live: partial text while the user is still speaking, then the final
+ * text. [forSuus] is true when SuuS is paying attention to it (a question is waiting, the wake word
+ * was said, or a session is open), so the app can show it as "you said…" without showing room chatter.
+ */
+data class Heard(val text: String, val final: Boolean, val forSuus: Boolean)
+
+/** Live transcripts for the overlay's "you said" bubble. Empty for fake voices. */
+fun heardSpeech(voice: VoiceIO): Flow<Heard> = (voice as? AndroidVoice)?.heard ?: emptyFlow()
+
 /** Spoken approval: only the commit word or "Cancel" count. */
 fun createApprovalGate(voice: VoiceIO, fingerprinter: Fingerprinter): ApprovalGate =
     SpokenApprovalGate(voice, fingerprinter)

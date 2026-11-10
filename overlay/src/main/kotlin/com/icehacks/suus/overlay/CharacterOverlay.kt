@@ -49,6 +49,9 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
         stage.mode = mode
         if (mode != CharacterMode.ACTING && mode != CharacterMode.WAITING_APPROVAL) stage.focus = null
         if (stage.charX.isNaN() || (wasHidden && mode != CharacterMode.HIDDEN)) park()
+        // When it isn't pointing at anything, walk back to its resting spot, so it never sits on
+        // a Submit/Send button while listening, waiting for approval or after finishing.
+        else if (mode in REST_MODES && move?.isRunning != true) walkToRest()
         armAutoHide()
         if (animates(mode)) startPulse() else stopPulse()
         // Pop in when it appears or starts listening, so "SuuS" visibly wakes it.
@@ -142,6 +145,20 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
         }
     }
 
+    /**
+     * Shows what the user is saying, live (not part of the core Overlay contract; the app calls it
+     * through [showHeard]). A final transcript stays for a moment, then fades; null clears it.
+     */
+    fun showHeard(text: String?, final: Boolean) = ui {
+        main.removeCallbacks(clearHeard)
+        stage.heard = text
+        stage.heardAlpha = 1f
+        stage.invalidate()
+        if (text != null && final) main.postDelayed(clearHeard, HEARD_LINGER_MS)
+    }
+
+    private val clearHeard = Runnable { stage.heard = null; stage.invalidate() }
+
     // ---------- internals (main thread) ----------
 
     /** Caption goes to the end of the screen that covers the focused target and highlights least. */
@@ -192,6 +209,33 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
     }
 
     /** Resting spot: bottom-right of the safe area, out of the way of most content. */
+    /** Walk (with the walking frames) to the resting spot, if it isn't already there. */
+    private fun walkToRest() {
+        refreshScreen()
+        val p = OverlayLayout.restingSpot(stage.screen, stage.characterSize, stage.gap)
+        val fromX = stage.charX
+        val fromY = stage.charY
+        if (kotlin.math.abs(p.cx - fromX) + kotlin.math.abs(p.cy - fromY) < stage.gap) return
+        stage.facingLeft = p.cx < fromX
+        move?.cancel()
+        move = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = MOVE_MS
+            interpolator = DecelerateInterpolator()
+            addUpdateListener {
+                val t = it.animatedValue as Float
+                stage.charX = fromX + (p.cx - fromX) * t
+                stage.charY = fromY + (p.cy - fromY) * t
+                stage.frame = ((it.currentPlayTime / WALK_FRAME_MS) % StageView.FRAME_COUNT).toInt()
+                placeCaption()
+                stage.invalidate()
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) { stage.frame = 0; stage.invalidate() }
+            })
+            start()
+        }
+    }
+
     private fun park() {
         refreshScreen()
         val p = OverlayLayout.restingSpot(stage.screen, stage.characterSize, stage.gap)
@@ -257,5 +301,9 @@ class CharacterOverlay(private val service: AccessibilityService) : Overlay {
         private const val RESULT_MS = 200L
         private const val AUTO_HIDE_MS = 6_000L
         private const val POP_MS = 380L
+        private val REST_MODES = setOf(
+            CharacterMode.LISTENING, CharacterMode.WAITING_APPROVAL, CharacterMode.IDLE, CharacterMode.PROBLEM,
+        )
+        private const val HEARD_LINGER_MS = 2_500L
     }
 }

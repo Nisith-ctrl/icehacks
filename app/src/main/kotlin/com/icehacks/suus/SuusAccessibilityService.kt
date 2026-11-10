@@ -17,8 +17,10 @@ import com.icehacks.suus.device.DeviceScreenController
 import com.icehacks.suus.device.EventSettler
 import com.icehacks.suus.device.Sha256Fingerprinter
 import com.icehacks.suus.overlay.createOverlay
+import com.icehacks.suus.overlay.showHeard
 import com.icehacks.suus.voice.createApprovalGate
 import com.icehacks.suus.voice.createVoice
+import com.icehacks.suus.voice.heardSpeech
 import com.icehacks.suus.voice.wakeSignals
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -100,6 +102,19 @@ class SuusAccessibilityService : AccessibilityService() {
                         overlay.setMode(CharacterMode.IDLE)
                     }
                 }
+            }
+        }
+
+        // Live transcription: show what the user says in a bubble as they say it, but only speech
+        // meant for SuuS (answers, "SuuS, …", requests in a session), never room chatter.
+        scope.launch {
+            heardSpeech(voice).collect { h ->
+                if (!h.forSuus) {
+                    if (h.final) showHeard(overlay, null, final = true)
+                    return@collect
+                }
+                if (current?.isActive != true) overlay.setMode(CharacterMode.LISTENING) // pops up on the first words
+                showHeard(overlay, h.text, h.final)
             }
         }
 

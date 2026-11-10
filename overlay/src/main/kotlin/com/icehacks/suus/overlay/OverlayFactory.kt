@@ -20,6 +20,11 @@ fun createOverlay(service: AccessibilityService): Overlay {
     return overlay
 }
 
+/** Live "you said…" bubble, if [overlay] is the real character overlay. */
+fun showHeard(overlay: Overlay, text: String?, final: Boolean) {
+    (overlay as? CharacterOverlay)?.showHeard(text, final)
+}
+
 private const val TAG = "SUUS-Overlay"
 
 /** Logs calls only. Useful in tests and when the overlay can't be shown. */

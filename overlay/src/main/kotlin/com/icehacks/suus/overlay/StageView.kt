@@ -45,6 +45,8 @@ internal class StageView(context: Context) : View(context) {
     var focusAlpha = 0f
     var highlights: List<Bounds> = emptyList()
     var caption: String? = null
+    var heard: String? = null          // live "you said…" text from the microphone
+    var heardAlpha = 1f
     var captionTop = false
     var result: Pair<Bounds, Boolean>? = null
     var screen = ScreenArea(1, 1, 0, 0)
@@ -87,7 +89,55 @@ internal class StageView(context: Context) : View(context) {
         focus?.let { ring(canvas, it, FOCUS, (focusAlpha * 255).toInt()) }
         result?.let { (b, ok) -> mark(canvas, b, ok) }
         if (mode != CharacterMode.HIDDEN && !charX.isNaN()) character(canvas)
-        caption?.takeIf { it.isNotBlank() && mode != CharacterMode.HIDDEN }?.let { captionBubble(canvas, it) }
+        val captionBox = caption?.takeIf { it.isNotBlank() && mode != CharacterMode.HIDDEN }?.let { captionBubble(canvas, it) }
+        heard?.takeIf { it.isNotBlank() && mode != CharacterMode.HIDDEN }?.let { heardBubble(canvas, it, captionBox) }
+    }
+
+    private val heardText = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = BUBBLE_INK; textSize = 20 * dp * fontScale
+        typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD_ITALIC)
+    }
+
+    /**
+     * What the user is saying, live, in the same pixel-bubble style but mint, right-aligned, with
+     * a speaker mark: the user's side of the conversation. Sits next to the caption bubble.
+     */
+    private fun heardBubble(c: Canvas, text: String, captionBox: RectF?) {
+        val s = (3 * dp).toInt().coerceAtLeast(2).toFloat()
+        val margin = 16 * dp
+        val pad = 12 * dp + 2 * s
+        val maxW = (screen.width * 0.8f - 2 * pad).toInt().coerceAtLeast(1)
+        val shown = "\u201C" + text.trim() + "\u201D"
+        val layout = StaticLayout.Builder.obtain(shown, 0, shown.length, heardText, maxW)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+            .setMaxLines(2)
+            .setEllipsize(android.text.TextUtils.TruncateAt.START) // keep the newest words
+            .build()
+        var w = 0f
+        for (i in 0 until layout.lineCount) w = maxOf(w, layout.getLineWidth(i))
+        val bw = w + 2 * pad
+        val bh = layout.height + 2 * pad
+        val gapY = 10 * dp
+        val top = when {
+            captionBox == null -> screen.safeBottom - margin - bh - 90 * dp
+            captionTop -> captionBox.bottom + gapY + 4 * s
+            else -> captionBox.top - gapY - bh
+        }
+        val box = RectF(screen.width - margin - bw, top, screen.width - margin, top + bh)
+        val a = (heardAlpha * 255).toInt()
+        bubblePaint.alpha = 255
+        bubblePaint.color = BUBBLE_OUTLINE; bubblePaint.alpha = a
+        c.drawPath(steppedBubble(box, s, 0f, Float.NaN, 0f), bubblePaint)
+        bubblePaint.color = BUBBLE_FILL; bubblePaint.alpha = a
+        c.drawPath(steppedBubble(box, s, s, Float.NaN, 0f), bubblePaint)
+        bubblePaint.color = BUBBLE_MINT; bubblePaint.alpha = a
+        c.drawPath(steppedBubble(box, s, 2 * s, Float.NaN, 0f), bubblePaint)
+        bubblePaint.alpha = 255
+        heardText.alpha = a
+        c.save()
+        c.translate(box.left + pad, box.top + pad)
+        layout.draw(c)
+        c.restore()
     }
 
     private fun ring(c: Canvas, b: Bounds, color: Int, alpha: Int) {
@@ -209,14 +259,14 @@ internal class StageView(context: Context) : View(context) {
      * Cream bubble, mint inner line, dark green outline, with stepped "pixel" corners and a small
      * stepped tail pointing toward the robot. Dark green text on cream is far above 7:1 contrast.
      */
-    private fun captionBubble(c: Canvas, text: String) {
+    private fun captionBubble(c: Canvas, text: String): RectF {
         val s = (3 * dp).toInt().coerceAtLeast(2).toFloat() // one bubble "pixel"
         val margin = 16 * dp
         val pad = 14 * dp + 2 * s
         val width = (screen.width - 2 * margin - 2 * pad).toInt().coerceAtLeast(1)
         val layout = StaticLayout.Builder.obtain(text, 0, text.length, captionText, width)
             .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-            .setMaxLines(3)
+            .setMaxLines(if (text.contains('\n')) 6 else 3) // questions list their choices on extra lines
             .setEllipsize(android.text.TextUtils.TruncateAt.END)
             .build()
         val h = layout.height + 2 * pad
@@ -240,6 +290,7 @@ internal class StageView(context: Context) : View(context) {
         c.translate(box.left + pad, box.top + pad)
         layout.draw(c)
         c.restore()
+        return box
     }
 
     /**

@@ -22,7 +22,10 @@ import com.icehacks.suus.agent.form.sameLabel
 import com.icehacks.suus.agent.form.sameChoice
 import com.icehacks.suus.agent.form.normalizeLabel
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -122,7 +125,7 @@ class AgentLoop(
             }
 
             overlay.setMode(CharacterMode.THINKING)
-            val step = planner.next(
+            val step = withWaitingHint { planner.next(
                 PlannerTurn(
                     goal = goal,
                     takeOver = takeOver,
@@ -134,7 +137,7 @@ class AgentLoop(
                     screen = screenText,
                     form = form,
                 ),
-            )
+            ) }
             log("turn $turn: ${step.tool} ${step.input}")
             feedback = null
             val input = step.input
@@ -213,11 +216,13 @@ class AgentLoop(
 
                 "ask_user" -> {
                     val question = s("question") ?: "What should I do?"
-                    val choices = input["choices"]?.let { runCatching { it.jsonArray.map { e -> e.jsonPrimitive.content } }.getOrNull() } ?: emptyList()
+                    val given = input["choices"]?.let { runCatching { it.jsonArray.map { e -> e.jsonPrimitive.content } }.getOrNull() } ?: emptyList()
+                    // The model sometimes asks about a form field without listing its options; take them from the form.
+                    val choices = given.ifEmpty { formOptionsFor(question) }
                     overlay.setMode(CharacterMode.LISTENING)
-                    overlay.caption(question)
+                    overlay.caption(withChoiceList(question, choices))
                     val answer = voice.ask(question, choices)
-                        ?: return stop("I didn't hear an answer, so I stopped. Nothing was submitted.")
+                        ?: return stop("No worries, I'll pause here. Nothing was submitted. Say SuuS when you're ready.")
                     if (answer.trim().lowercase().trimEnd('.', '!') in setOf("stop", "cancel", "never mind")) {
                         return stop("Okay, I stopped.")
                     }
@@ -232,7 +237,10 @@ class AgentLoop(
                         voice.say("Saved: ${saved.spoken()}.")
                     }
                     remember("asked \"$question\" -> \"$answer\"" + (chosen?.let { " (= $it)" } ?: "") + if (saved != null) " [saved preference]" else "")
-                    val applied = if (config.autoFillForms) applyAnswerToForm(question, choices, chosen ?: answer.trim(), goal) else null
+                    // Only put a real choice into the form: a stray sentence would just make the dropdown fail.
+                    val applied = if (config.autoFillForms && (chosen != null || choices.isEmpty())) {
+                        applyAnswerToForm(question, choices, chosen ?: answer.trim(), goal)
+                    } else null
                     feedback = "The user answered: \"$answer\"" + (chosen?.let { " (choice: $it)" } ?: "") +
                         when {
                             saved != null -> ". Saved as a preference. Saving is not approval to submit."
@@ -429,6 +437,37 @@ class AgentLoop(
      * the question, or the offered choices are that field's options), put the answer in that field.
      * Returns the filler's report for the model, or null if nothing matched.
      */
+    /**
+     * Runs [block] (a model call). If it takes longer than a moment (slow network or a free-tier
+     * rate-limit wait), show a friendly line so the user knows SuuS is still on it.
+     */
+    private suspend fun <T> withWaitingHint(block: suspend () -> T): T = coroutineScope {
+        val hint = launch {
+            delay(1_500)
+            overlay.caption(WAITING_LINES.random())
+            delay(4_000)
+            overlay.caption("Still on it, almost there…")
+        }
+        try { block() } finally { hint.cancel() }
+    }
+
+    /** The question with its choices numbered underneath, for the speech bubble. */
+    private fun withChoiceList(question: String, choices: List<String>): String =
+        if (choices.isEmpty()) question
+        else question + "\n" + choices.mapIndexed { i, c -> "${i + 1}. $c" }.joinToString("   ")
+
+    /** Options of the form field the question is about (by label words), if the page has one. */
+    private suspend fun formOptionsFor(question: String): List<String> {
+        val snap = screen.snapshot()
+        if (ScreenText.chromeUrl(snap) == null) return emptyList()
+        val q = " " + normalizeLabel(question) + " "
+        val field = FormReader.read(snap).fields.filter { it.options.isNotEmpty() }.firstOrNull { f ->
+            val words = normalizeLabel(f.label).split(" ").filter { it.length > 3 }
+            words.isNotEmpty() && words.count { q.contains(" $it ") } * 2 >= words.size
+        } ?: return emptyList()
+        return field.options.map { it.label.trim() }.filter { it.isNotEmpty() && !it.startsWith("Choose", ignoreCase = true) }
+    }
+
     private suspend fun applyAnswerToForm(question: String, choices: List<String>, value: String, goal: String): String? {
         val snap = screen.snapshot()
         val url = ScreenText.chromeUrl(snap) ?: return null
@@ -494,6 +533,7 @@ class AgentLoop(
     }
 
     companion object {
+        private val WAITING_LINES = listOf("One sec…", "Thinking…", "Just a moment…", "Working it out…")
         private val FORM_GOAL = Regex(
             "\\b(form|fill|sign (me )?up|signup|register|registration|rsvp|volunteer|enrol+|apply|application|book|join|shift)",
             RegexOption.IGNORE_CASE,

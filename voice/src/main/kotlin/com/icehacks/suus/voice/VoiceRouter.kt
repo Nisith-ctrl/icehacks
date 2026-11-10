@@ -67,6 +67,13 @@ class VoiceRouter(
         return Routed.COMMAND
     }
 
+    /** True if SuuS would act on [text] right now (for showing live transcripts). Doesn't change state. */
+    fun attentive(text: String): Boolean {
+        val p = pending
+        return (p != null && !p.isCompleted) || CommandParser.afterWake(text) != null ||
+            now() - wokeAt < followUpMs || (sessionActive && CommandParser.looksLikeRequest(text))
+    }
+
     /** Call before speaking the question, so a quick answer can't slip past as a command. */
     fun expectAnswer(): CompletableDeferred<String> = CompletableDeferred<String>().also { pending = it }
 

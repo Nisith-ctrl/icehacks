@@ -13,6 +13,8 @@ import com.icehacks.suus.agent.data.NoOpRunLogger
 import com.icehacks.suus.agent.data.RunLogger
 import com.icehacks.suus.agent.data.sessionOutcome
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
 /**
  * Routes each command: goals run the [AgentLoop]; "undo …" removes exactly one of the agent's
@@ -35,7 +37,14 @@ class SuusAgent(
         try {
             when (command) {
                 is UserCommand.Goal -> {
-                    val outcome = loop.run(command.text, command.takeOver)
+                    // Acknowledge at once (while the first model call runs), so the user knows it heard them.
+                    val ack = ACKS.random()
+                    overlay.setMode(CharacterMode.THINKING)
+                    overlay.caption(ack)
+                    val outcome = coroutineScope {
+                        launch { voice.say(ack) }
+                        loop.run(command.text, command.takeOver)
+                    }
                     log("outcome $outcome")
                     runLog.sessionOutcome(outcome)
                     if (loop.submitted) loop.notes.clear()
@@ -138,5 +147,9 @@ class SuusAgent(
         overlay.setMode(CharacterMode.IDLE)
         overlay.caption(text)
         voice.say(text)
+    }
+
+    private companion object {
+        val ACKS = listOf("On it!", "Sure thing!", "Got it, let's do this!", "Okay, on my way!", "You got it!")
     }
 }
