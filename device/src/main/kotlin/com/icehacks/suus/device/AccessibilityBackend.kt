@@ -27,17 +27,22 @@ class AccessibilityBackend(
     private val maxNodes: Int = 2_000,
 ) : ScreenBackend<AccessibilityNodeInfo> {
 
-    /** True if [n]'s subtree shows any text (checked breadth-first, at most [limit] nodes). */
-    private fun hasContent(n: AccessibilityNodeInfo, limit: Int = 300): Boolean {
+    /** The box around the visible text/descriptions in [n]'s subtree (breadth-first, at most [limit] nodes), or null. */
+    private fun contentBounds(n: AccessibilityNodeInfo, limit: Int = 300): Bounds? {
         val queue = ArrayDeque<AccessibilityNodeInfo>().apply { add(n) }
         var seen = 0
+        var l = Int.MAX_VALUE; var t = Int.MAX_VALUE; var r = Int.MIN_VALUE; var b = Int.MIN_VALUE
+        val box = Rect()
         while (queue.isNotEmpty() && seen++ < limit) {
             val x = queue.removeFirst()
             if (!x.isVisibleToUser) continue
-            if (!x.text.isNullOrBlank() || !x.contentDescription.isNullOrBlank()) return true
+            if (!x.text.isNullOrBlank() || !x.contentDescription.isNullOrBlank()) {
+                x.getBoundsInScreen(box)
+                l = minOf(l, box.left); t = minOf(t, box.top); r = maxOf(r, box.right); b = maxOf(b, box.bottom)
+            }
             for (c in 0 until x.childCount) x.getChild(c)?.let(queue::add)
         }
-        return false
+        return if (r > l && b > t) Bounds(l, t, r, b) else null
     }
 
     override suspend fun capture(): Captured<AccessibilityNodeInfo> {
@@ -80,7 +85,7 @@ class AccessibilityBackend(
             val children = (0 until info.childCount).mapNotNull { info.getChild(it) }.filter { it.isVisibleToUser }
             val hidden = if (children.size < 2) emptySet() else Occlusion.covered(children.map { c ->
                 val cr = Rect().also { c.getBoundsInScreen(it) }
-                Occlusion.Sibling(Bounds(cr.left, cr.top, cr.right, cr.bottom), c.drawingOrder, hasContent(c))
+                Occlusion.Sibling(Bounds(cr.left, cr.top, cr.right, cr.bottom), c.drawingOrder, contentBounds(c))
             })
             children.forEachIndexed { i, c -> if (i !in hidden) visit(c, id, false) }
         }
