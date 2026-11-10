@@ -49,7 +49,7 @@ class FormAgentLoopTest {
             PlannerStep("done", tool("summary" to "You're signed up for Sunday morning.")),
         ))
 
-        val out = loop(page, voice, planner).run("Sign me up for the volunteer shift that fits my calendar", false)
+        val out = loop(page, voice, planner).run("Sign me up on this form for the volunteer shift that fits my calendar", false)
 
         assertEquals(Outcome.Done("You're signed up for Sunday morning."), out)
         assertEquals("Email", page.confirmBy)              // saved preference reused, not asked
@@ -85,6 +85,32 @@ class FormAgentLoopTest {
         val page = FakeChromeForm()
         val planner = FakePlanner(listOf(PlannerStep("stop", tool("reason" to "test end"))))
         loop(page, TestVoice(), planner).run("open Gmail", false)
+        assertTrue(page.performed.toString(), page.performed.isEmpty())
+        assertEquals(null, planner.turns[0].feedback)
+    }
+
+    @Test
+    fun aVerifiedSubmitFinishesEvenIfTheModelSkipsTheToolCall() = runTest {
+        val page = FakeChromeForm()
+        val planner = FakePlanner(listOf(
+            PlannerStep("ask_user", tool("question" to "Which volunteer role would you like?")),
+            PlannerStep("fill_form", tool("caption" to "Choosing your shift", "answers" to buildJsonObject {
+                put("Shift", "Sunday, November 15, 9:00 AM to 12:00 PM")
+            })),
+            PlannerStep("submit", tool("node_id" to "go", "commit_word" to "Submit", "readback" to "Sunday morning, food serving.")),
+            PlannerStep("none", buildJsonObject {}, null),
+        ))
+        val out = loop(page, TestVoice(listOf("Food serving")), planner).run("Sign me up for the volunteer shift on this form", false)
+        assertEquals(Outcome.Done("All set, it went through. Your confirmation number is VOL-123456."), out)
+        assertEquals(4, planner.turns.size)
+    }
+
+    @Test
+    fun aFormLeftOpenIsNotFilledForAnotherGoal() = runTest {
+        // Goal is the library workshop; the volunteer form happens to be open in Chrome.
+        val page = FakeChromeForm()
+        val planner = FakePlanner(listOf(PlannerStep("stop", tool("reason" to "test end"))))
+        loop(page, TestVoice(), planner).run("Sign me up for the library workshop that fits my calendar", false)
         assertTrue(page.performed.toString(), page.performed.isEmpty())
         assertEquals(null, planner.turns[0].feedback)
     }

@@ -76,9 +76,11 @@ class AgentLoop(
 
     /** Form pages already auto-filled in this run (keyed by URL without the query). */
     private val autoFilled = mutableSetOf<String>()
+    private var confirmedAfterSubmit: ConfirmationCheck.Result? = null
 
     suspend fun run(goal: String, takeOver: Boolean): Outcome {
         val formGoal = isFormGoal(goal, takeOver)
+        var openedFromEmail = false
         val history = ArrayDeque<String>()
         var feedback: String? = null
         var actions = 0
@@ -88,6 +90,7 @@ class AgentLoop(
         formValues.clear()
         filler.reset()
         autoFilled.clear()
+        confirmedAfterSubmit = null
 
         overlay.setMode(CharacterMode.THINKING)
         overlay.caption("Working on it…")
@@ -95,8 +98,11 @@ class AgentLoop(
         for (turn in 1..config.maxTurns) {
             currentCoroutineContext().ensureActive()
             val snap = settledOnAllowedHost(screen.snapshot())
-            // The form block is only for form goals: "open Gmail" with a form left on screen must not fill it.
-            val form = if (formGoal) formSummary(snap) else null
+            // A form is handled in code only if it's the goal's form: one the agent opened from an email
+            // link in this run, or the one the user points at ("take over", "this form"). A form left open
+            // in Chrome from an earlier run (or "open Gmail" with a form on screen) is just a page.
+            val formIsTheGoals = formGoal && (openedFromEmail || takeOver || THIS_FORM.containsMatchIn(goal))
+            val form = if (formIsTheGoals) formSummary(snap) else null
             val screenText = ScreenText.render(snap, skipFormFields = form != null)
 
             // ---- guards ----
@@ -186,6 +192,8 @@ class AgentLoop(
                     }
                     val r = act(action, snap, node, caption)
                     actions++
+                    if (action is DeviceAction.Tap && snap.packageName == GMAIL_PACKAGE && r is ActionResult.Done &&
+                        r.after.packageName == CHROME_PACKAGE) openedFromEmail = true
                     when (r) {
                         is ActionResult.Done -> {
                             errors = 0
@@ -352,6 +360,14 @@ class AgentLoop(
                 "stop" -> return stop(s("reason") ?: "I stopped.")
 
                 "none" -> {
+                    // Submitted and the confirmation page was verified in code: finish without the model.
+                    confirmedAfterSubmit?.takeIf { submitted }?.let { c ->
+                        val summary = "All set, it went through." + (c.number?.let { " Your confirmation number is $it." } ?: "")
+                        overlay.setMode(CharacterMode.IDLE)
+                        overlay.caption(summary)
+                        voice.say(summary)
+                        return Outcome.Done(summary)
+                    }
                     errors++
                     feedback = step.text?.takeIf { it.startsWith("Your last tool call was malformed") }
                         ?: "Call exactly one tool each turn."
@@ -496,6 +512,7 @@ class AgentLoop(
             result = ConfirmationCheck.check(screen.snapshot(), formValues)
         }
         log("confirmation check: $result")
+        if (result.confirmed) confirmedAfterSubmit = result
         return result.describe()
     }
 
@@ -553,6 +570,9 @@ class AgentLoop(
 
     companion object {
         private val WAITING_LINES = listOf("One sec…", "Thinking…", "Just a moment…", "Working it out…")
+        private const val GMAIL_PACKAGE = "com.google.android.gm"
+        private const val CHROME_PACKAGE = "com.android.chrome"
+        private val THIS_FORM = Regex("\\bth(is|e) (form|page)\\b", RegexOption.IGNORE_CASE)
         private val FORM_GOAL = Regex(
             "\\b(form|fill|sign (me )?up|signup|register|registration|rsvp|volunteer|enrol+|apply|application|book|join|shift)",
             RegexOption.IGNORE_CASE,

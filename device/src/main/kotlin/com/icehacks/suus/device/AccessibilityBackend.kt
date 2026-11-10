@@ -194,9 +194,10 @@ class AccessibilityBackend(
 
     override suspend fun back(): Boolean = service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
 
-    override suspend fun launch(packageName: String): Boolean {
+    override suspend fun launch(packageName: String, fresh: Boolean): Boolean {
         val intent = service.packageManager.getLaunchIntentForPackage(packageName) ?: return false
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+        if (fresh) intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
         return runCatching { service.startActivity(intent) }.isSuccess
     }
 

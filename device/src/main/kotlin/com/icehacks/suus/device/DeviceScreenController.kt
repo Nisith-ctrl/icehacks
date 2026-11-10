@@ -25,7 +25,8 @@ interface ScreenBackend<H> {
     /** [handle] null = the main scrollable area of the screen. */
     suspend fun scroll(handle: H?, direction: ScrollDirection): Boolean
     suspend fun back(): Boolean
-    suspend fun launch(packageName: String): Boolean
+    /** [fresh] = start the app at its main screen, closing whatever its task was showing. */
+    suspend fun launch(packageName: String, fresh: Boolean = false): Boolean
 }
 
 fun interface Settler {
@@ -118,10 +119,28 @@ class DeviceScreenController<H>(
         fun pending(s: ScreenSnapshot) = s.nodes.isEmpty() ||
             (action is DeviceAction.LaunchApp && s.packageName != action.packageName)
         // Cold app starts on the emulator can take several seconds (first-run screens).
+        var relaunched = false
         repeat(if (action is DeviceAction.LaunchApp) maxEmptyRetries * 3 else maxEmptyRetries) {
             if (!pending(after)) return@repeat
+            // The app's task was showing another app's screen on top, e.g. a Chrome tab opened from a
+            // Gmail link lives in Gmail's task. Start the app fresh once so its own main screen shows.
+            if (action is DeviceAction.LaunchApp && !relaunched && after.nodes.isNotEmpty() && after.packageName != action.packageName) {
+                relaunched = true
+                backend.launch(action.packageName, fresh = true)
+            }
             settler.awaitSettled()
             after = backend.capture().snapshot
+        }
+        if (action is DeviceAction.LaunchApp && after.packageName == action.packageName) {
+            // A cold start (or a fresh relaunch) draws its frame first and its content later, e.g.
+            // Gmail's search bar before the inbox. Wait (bounded) until the screen stops filling in.
+            for (round in 1..maxEmptyRetries) {
+                settler.awaitSettled()
+                val next = backend.capture().snapshot
+                val grew = next.nodes.size > after.nodes.size + 5
+                after = next
+                if (!grew) break
+            }
         }
         if (action !is DeviceAction.LaunchApp && fingerprinter.of(after) == beforeFp) {
             settler.awaitSettled() // one more round for slow UI responses
