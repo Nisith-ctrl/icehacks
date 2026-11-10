@@ -51,9 +51,11 @@ class FakeBackend(var screen: ScreenSnapshot) : ScreenBackend<Int> {
     }
     override suspend fun scroll(handle: Int?, direction: ScrollDirection) = true.also { log += "scroll $direction" }
     override suspend fun back() = true.also { log += "back" }
-    override suspend fun launch(packageName: String) = true.also {
-        log += "launch $packageName"
-        screen = screen.copy(packageName = packageName)
+    /** Set to make the first (non-fresh) launch show this package instead, like a Chrome tab in Gmail's task. */
+    var taskShows: String? = null
+    override suspend fun launch(packageName: String, fresh: Boolean) = true.also {
+        log += if (fresh) "launch fresh $packageName" else "launch $packageName"
+        screen = screen.copy(packageName = if (!fresh && taskShows != null) taskShows!! else packageName)
     }
 }
 
@@ -122,6 +124,15 @@ class DeviceScreenControllerTest {
         val b = FakeBackend(snap(submit, pkg = "com.google.android.apps.nexuslauncher"))
         val r = controller(b).perform(DeviceAction.LaunchApp("com.google.android.gm"), b.screen)
         assertTrue(r is ActionResult.Done && r.after.packageName == "com.google.android.gm")
+    }
+
+    @Test
+    fun launchStartsFreshWhenTheTaskShowsAnotherApp() = runTest {
+        // A registration link opened from Gmail leaves a Chrome tab in Gmail's task.
+        val b = FakeBackend(snap(submit, pkg = "com.google.android.apps.nexuslauncher")).apply { taskShows = "com.android.chrome" }
+        val r = controller(b).perform(DeviceAction.LaunchApp("com.google.android.gm"), b.screen)
+        assertTrue(r.toString(), r is ActionResult.Done && r.after.packageName == "com.google.android.gm")
+        assertTrue(b.log.toString(), "launch fresh com.google.android.gm" in b.log)
     }
 
     @Test

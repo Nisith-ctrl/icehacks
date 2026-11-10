@@ -154,7 +154,7 @@ class GroqPlanner(
             }
             code == 429 -> {
                 val wait = retryAfter?.toDoubleOrNull()?.toLong() ?: 20
-                log("rate limited, retry-after=$retryAfter")
+                log("rate limited, retry-after=$retryAfter: ${text.take(240).replace("\n", " ")}")
                 if (wait > config.maxRateLimitWaitSec) return Reply.Fail("I've hit the free usage limit. Please try again later.")
                 sleep(wait * 1000 + 250)
                 return Reply.Retry

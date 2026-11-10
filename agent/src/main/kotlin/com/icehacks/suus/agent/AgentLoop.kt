@@ -76,9 +76,11 @@ class AgentLoop(
 
     /** Form pages already auto-filled in this run (keyed by URL without the query). */
     private val autoFilled = mutableSetOf<String>()
+    private var confirmedAfterSubmit: ConfirmationCheck.Result? = null
 
     suspend fun run(goal: String, takeOver: Boolean): Outcome {
         val formGoal = isFormGoal(goal, takeOver)
+        var openedFromEmail = false
         val history = ArrayDeque<String>()
         var feedback: String? = null
         var actions = 0
@@ -88,15 +90,19 @@ class AgentLoop(
         formValues.clear()
         filler.reset()
         autoFilled.clear()
+        confirmedAfterSubmit = null
 
         overlay.setMode(CharacterMode.THINKING)
         overlay.caption("Working on it…")
 
         for (turn in 1..config.maxTurns) {
             currentCoroutineContext().ensureActive()
-            val snap = screen.snapshot()
-            // The form block is only for form goals: "open Gmail" with a form left on screen must not fill it.
-            val form = if (formGoal) formSummary(snap) else null
+            val snap = settledOnAllowedHost(screen.snapshot())
+            // A form is handled in code only if it's the goal's form: one the agent opened from an email
+            // link in this run, or the one the user points at ("take over", "this form"). A form left open
+            // in Chrome from an earlier run (or "open Gmail" with a form on screen) is just a page.
+            val formIsTheGoals = formGoal && (openedFromEmail || takeOver || THIS_FORM.containsMatchIn(goal))
+            val form = if (formIsTheGoals) formSummary(snap) else null
             val screenText = ScreenText.render(snap, skipFormFields = form != null)
 
             // ---- guards ----
@@ -104,7 +110,10 @@ class AgentLoop(
                 return stop("I ended up outside the apps I'm allowed to use, so I stopped.")
             }
             ScreenText.chromeUrl(snap)?.let { url ->
-                if (looksLikeUrl(url) && !hostAllowed(url)) return stop("That page isn't one of the registration forms, so I stopped.")
+                if (looksLikeUrl(url) && !hostAllowed(url)) {
+                    log("host not allowed: $url")
+                    return stop("That page isn't one of the registration forms, so I stopped.")
+                }
             }
             if (errors >= 3) return stop("I couldn't get that to work, so I stopped.")
             if (actions >= config.maxActions) return stop("This is taking too many steps, so I stopped.")
@@ -183,6 +192,8 @@ class AgentLoop(
                     }
                     val r = act(action, snap, node, caption)
                     actions++
+                    if (action is DeviceAction.Tap && snap.packageName == GMAIL_PACKAGE && r is ActionResult.Done &&
+                        r.after.packageName == CHROME_PACKAGE) openedFromEmail = true
                     when (r) {
                         is ActionResult.Done -> {
                             errors = 0
@@ -349,6 +360,14 @@ class AgentLoop(
                 "stop" -> return stop(s("reason") ?: "I stopped.")
 
                 "none" -> {
+                    // Submitted and the confirmation page was verified in code: finish without the model.
+                    confirmedAfterSubmit?.takeIf { submitted }?.let { c ->
+                        val summary = "All set, it went through." + (c.number?.let { " Your confirmation number is $it." } ?: "")
+                        overlay.setMode(CharacterMode.IDLE)
+                        overlay.caption(summary)
+                        voice.say(summary)
+                        return Outcome.Done(summary)
+                    }
                     errors++
                     feedback = step.text?.takeIf { it.startsWith("Your last tool call was malformed") }
                         ?: "Call exactly one tool each turn."
@@ -493,6 +512,7 @@ class AgentLoop(
             result = ConfirmationCheck.check(screen.snapshot(), formValues)
         }
         log("confirmation check: $result")
+        if (result.confirmed) confirmedAfterSubmit = result
         return result.describe()
     }
 
@@ -527,6 +547,22 @@ class AgentLoop(
         }.joinToString("; ")
     }
 
+    /**
+     * A link from Gmail goes through a redirect (google.com/url…), so Chrome briefly shows another host.
+     * Give it up to [AgentConfig.redirectWaitMs] to land before the host guard decides.
+     */
+    private suspend fun settledOnAllowedHost(first: ScreenSnapshot): ScreenSnapshot {
+        var snap = first
+        var waited = 0L
+        while (waited < config.redirectWaitMs) {
+            val url = ScreenText.chromeUrl(snap) ?: return snap
+            if (!looksLikeUrl(url) || hostAllowed(url)) return snap
+            delay(500); waited += 500
+            snap = screen.snapshot()
+        }
+        return snap
+    }
+
     private fun hostAllowed(url: String): Boolean {
         val host = ScreenText.host(url)
         return config.formHosts.any { host == it || host.endsWith(".$it") }
@@ -534,6 +570,9 @@ class AgentLoop(
 
     companion object {
         private val WAITING_LINES = listOf("One sec…", "Thinking…", "Just a moment…", "Working it out…")
+        private const val GMAIL_PACKAGE = "com.google.android.gm"
+        private const val CHROME_PACKAGE = "com.android.chrome"
+        private val THIS_FORM = Regex("\\bth(is|e) (form|page)\\b", RegexOption.IGNORE_CASE)
         private val FORM_GOAL = Regex(
             "\\b(form|fill|sign (me )?up|signup|register|registration|rsvp|volunteer|enrol+|apply|application|book|join|shift)",
             RegexOption.IGNORE_CASE,
