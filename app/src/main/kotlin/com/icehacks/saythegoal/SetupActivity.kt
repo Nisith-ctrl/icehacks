@@ -32,6 +32,7 @@ import com.icehacks.saythegoal.ui.page
 import com.icehacks.saythegoal.ui.roundedBox
 import com.icehacks.saythegoal.ui.themeColor
 import com.icehacks.saythegoal.ui.titleText
+import com.icehacks.saythegoal.voice.wakeSignals
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
@@ -275,9 +276,9 @@ class SetupActivity : AppCompatActivity() {
     // ---------- wake phrase check ----------
 
     /**
-     * Listens to the running service's own command stream for 30 s. It passes when the service
-     * hears a wake phrase followed by a request, which is exactly the path a real task takes, so a
-     * pass here means the microphone, the recogniser and the wake phrase all work on this phone.
+     * Waits up to 30 s for the running service to hear the wake word ("Suus", alone or before a
+     * request). It uses the same recogniser and wake matching as a real task, so a pass means the
+     * microphone, the recogniser and the wake word all work on this phone.
      */
     private fun startWakeCheck() {
         val service = SayTheGoalAccessibilityService.instance
@@ -291,7 +292,7 @@ class SetupActivity : AppCompatActivity() {
         wakeNote = null
         refresh()
         wakeJob = scope.launch {
-            val heard = withTimeoutOrNull(WAKE_TIMEOUT_MS) { service.voice.commands.first() }
+            val heard = withTimeoutOrNull(WAKE_TIMEOUT_MS) { wakeSignals(service.voice).first() }
             wakeListening = false
             if (heard != null) {
                 settings.edit().putBoolean(KEY_WAKE_OK, true).apply()

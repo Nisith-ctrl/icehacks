@@ -7,7 +7,7 @@
     <string name="setup_subtitle">Set up once. After that, just say what you need.</string>
     <string name="setup_progress">%1$d of %2$d steps done</string>
     <string name="setup_all_done_title">You\'re ready</string>
-    <string name="setup_all_done_body">Say \"Hey Goal\", then what you want. For example: \"Hey Goal, find the library workshop invite and register me.\" Say \"Stop\" at any time.</string>
+    <string name="setup_all_done_body">Say \"Suus\", then what you want. For example: \"Suus, find the library workshop invite and register me.\" Say \"Stop\" at any time.</string>
     <string name="step_done">Done</string>
     <string name="step_not_done">Not done yet</string>
     <string name="step_number_done">Step %1$d, done</string>
@@ -18,7 +18,7 @@
     <string name="step_service_action">Open Accessibility settings</string>
 
     <string name="step_mic_title">Allow the microphone</string>
-    <string name="step_mic_detail">So the app can hear \"Hey Goal\" and your answers. Choose \"While using the app\".</string>
+    <string name="step_mic_detail">So the app can hear \"Suus\" and your answers. Choose \"While using the app\".</string>
     <string name="step_mic_action">Allow microphone</string>
 
     <string name="step_calendar_title">Allow the calendar</string>
@@ -34,12 +34,12 @@
     <string name="step_notifications_action">Allow notifications</string>
 
     <string name="step_wake_title">Check that it hears you</string>
-    <string name="step_wake_detail">Press the button, then say: \"Hey Goal, what do you remember?\" The app should answer out loud.</string>
+    <string name="step_wake_detail">Press the button, then say \"Suus\" (it sounds like \"soose\"). The app should answer \"Yes?\" out loud.</string>
     <string name="step_wake_action">Start the check</string>
     <string name="step_wake_again">Check again</string>
-    <string name="wake_listening">Listening for 30 seconds. Say: \"Hey Goal, what do you remember?\"</string>
+    <string name="wake_listening">Listening for 30 seconds. Say \"Suus\".</string>
     <string name="wake_heard">It heard you.</string>
-    <string name="wake_not_heard">It didn\'t hear \"Hey Goal\". Move closer to the phone and try again.</string>
+    <string name="wake_not_heard">It didn\'t hear \"Suus\". Move closer to the phone and try again.</string>
     <string name="wake_needs_setup">Finish the steps above first: turn on Suus and allow the microphone.</string>
 
     <string name="open_memory">What I remember</string>
