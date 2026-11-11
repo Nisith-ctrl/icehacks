@@ -161,6 +161,7 @@ class AgentLoop(
                 "tap", "enter_text", "scroll", "back", "launch_app" -> {
                     val caption = s("caption") ?: "Working"
                     val node = s("node_id")?.let { id -> snap.nodes.firstOrNull { it.id == id } }
+                        ?.let { if (step.tool == "tap") pickInsteadOfPreview(snap, it) else it }
                     val invalid: String? = when (step.tool) {
                         "tap" -> when {
                             node == null -> "There is no node ${s("node_id")} on this screen."
@@ -201,6 +202,11 @@ class AgentLoop(
                             val target = node?.let { describe(it) } ?: s("app") ?: s("direction") ?: ""
                             remember("${step.tool} $target -> ok, now ${ScreenText.appName(r.after.packageName)}" + if (!r.screenChanged) " (screen didn't change)" else "")
                             if (!r.screenChanged) feedback = "The screen did not change after that."
+                            // Messages without MMS (the emulator) can't take any attachment: stop, draft untouched.
+                            if (attachmentsUnsupported(r.after)) {
+                                r.after.nodes.firstOrNull { it.text == "OK" }?.let { ok -> screen.perform(DeviceAction.Tap(ok.id), r.after, null) }
+                                return stop("Messages can't add photos in this conversation on this phone, so I left your draft as it was.")
+                            }
                             val key = ScreenText.render(r.after).hashCode()
                             val seen = (screensAfterActions[key] ?: 0) + 1
                             screensAfterActions[key] = seen
@@ -230,6 +236,13 @@ class AgentLoop(
                     val given = input["choices"]?.let { runCatching { it.jsonArray.map { e -> e.jsonPrimitive.content } }.getOrNull() } ?: emptyList()
                     // The model sometimes asks about a form field without listing its options; take them from the form.
                     val choices = given.ifEmpty { formOptionsFor(question) }
+                    // People can't say "IMG_0418.png (12.62 KB)". Photos get plain-word choices from find_photos.
+                    if (choices.any { FILE_NAME.containsMatchIn(it) }) {
+                        errors++
+                        feedback = "Don't offer file names as choices. Call find_photos for the day first, then ask with " +
+                            "plain-word choices from its descriptions, e.g. \"The one in the yard\" and \"The one by the door\"."
+                        continue
+                    }
                     overlay.setMode(CharacterMode.LISTENING)
                     overlay.caption(withChoiceList(question, choices))
                     val answer = voice.ask(question, choices)
@@ -601,6 +614,7 @@ class AgentLoop(
         private val WAITING_LINES = listOf("One sec…", "Thinking…", "Just a moment…", "Working it out…")
         private const val GMAIL_PACKAGE = "com.google.android.gm"
         private const val CHROME_PACKAGE = "com.android.chrome"
+        private val FILE_NAME = Regex("\\.(png|jpe?g|gif|heic|webp)\\b", RegexOption.IGNORE_CASE)
         private val THIS_FORM = Regex("\\bth(is|e) (form|page)\\b", RegexOption.IGNORE_CASE)
         private val FORM_GOAL = Regex(
             "\\b(form|fill|sign (me )?up|signup|register|registration|rsvp|volunteer|enrol+|apply|application|book|join|shift)",
@@ -613,6 +627,21 @@ class AgentLoop(
         private val COMMIT_ID = Regex("(^|[/:_.-])(send|submit)([_-]?(button|btn))?$", RegexOption.IGNORE_CASE)
 
         /** The node a tap really activates: itself if clickable, else its nearest clickable ancestor (as the device layer does). */
+        private val PREVIEW = Regex("^Preview the file (.+)$")
+
+        fun attachmentsUnsupported(s: ScreenSnapshot) =
+            s.packageName == "com.google.android.apps.messaging" &&
+                s.nodes.any { (it.text ?: it.contentDescription)?.contains("Attachments are not supported", ignoreCase = true) == true }
+
+        /**
+         * In the file chooser, each file has a "Preview the file X" button that opens X in a viewer
+         * app instead of picking it. A tap meant to pick the file goes to its name X instead.
+         */
+        fun pickInsteadOfPreview(s: ScreenSnapshot, n: UiNode): UiNode {
+            val name = PREVIEW.find(n.contentDescription ?: n.text ?: return n)?.groupValues?.get(1) ?: return n
+            return s.nodes.firstOrNull { it.text == name } ?: n
+        }
+
         fun clickTarget(s: ScreenSnapshot, n: UiNode): UiNode {
             val byId = s.nodes.associateBy { it.id }
             var cur: UiNode? = n

@@ -54,7 +54,9 @@ object ChoiceMatcher {
         if (answerTokens.isEmpty()) return null
         val compact = a.replace(" ", "")
         fun hit(t: String) = t in answerTokens || (t.length >= 4 && compact.contains(t)) ||
-            (t.length >= 5 && answerTokens.any { w -> w.length >= 5 && w.take(5) == t.take(5) })
+            (t.length >= 5 && answerTokens.any { w -> w.length >= 5 && w.take(5) == t.take(5) }) ||
+            // "the one in the yard" -> "backyard": a spoken word inside a longer choice word.
+            answerTokens.any { w -> w.length >= 4 && w != t && t.contains(w) }
         val scores = choices.associateWith { c -> tokens(c).count { hit(it) } }
         val best = scores.values.max()
         if (best == 0) return null
