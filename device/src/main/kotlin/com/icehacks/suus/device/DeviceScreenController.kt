@@ -11,6 +11,7 @@ import com.icehacks.suus.core.ScreenController
 import com.icehacks.suus.core.ScreenSnapshot
 import com.icehacks.suus.core.ScrollDirection
 import com.icehacks.suus.core.signature
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -47,6 +48,8 @@ class DeviceScreenController<H>(
     private val allowedPackages: Set<String> = AllowedApps.packages,
     private val maxStalledActions: Int = 3,
     private val maxEmptyRetries: Int = 10,
+    private val slowResponseRounds: Int = 4,
+    private val slowResponsePauseMs: Long = 500,
     private val log: (String) -> Unit = { runCatching { Log.i(TAG, it) } },
 ) : ScreenController {
 
@@ -118,9 +121,11 @@ class DeviceScreenController<H>(
         // has no readable tree yet. Settle again (bounded) until the expected state shows up.
         fun pending(s: ScreenSnapshot) = s.nodes.isEmpty() ||
             (action is DeviceAction.LaunchApp && s.packageName != action.packageName)
-        // Cold app starts on the emulator can take several seconds (first-run screens).
+        // Cold app starts on the emulator can take several seconds (first-run screens). A tap on a
+        // home-screen icon starts an app just like LaunchApp does.
+        val opensApp = action is DeviceAction.LaunchApp || action is DeviceAction.Tap
         var relaunched = false
-        repeat(if (action is DeviceAction.LaunchApp) maxEmptyRetries * 3 else maxEmptyRetries) {
+        repeat(if (opensApp) maxEmptyRetries * 3 else maxEmptyRetries) {
             if (!pending(after)) return@repeat
             // The app's task was showing another app's screen on top, e.g. a Chrome tab opened from a
             // Gmail link lives in Gmail's task. Start the app fresh once so its own main screen shows.
@@ -131,7 +136,11 @@ class DeviceScreenController<H>(
             settler.awaitSettled()
             after = backend.capture().snapshot
         }
-        if (action is DeviceAction.LaunchApp && after.packageName == action.packageName) {
+        val switchedApp = when (action) {
+            is DeviceAction.LaunchApp -> after.packageName == action.packageName
+            else -> after.nodes.isNotEmpty() && after.packageName != before.snapshot.packageName
+        }
+        if (switchedApp) {
             // A cold start (or a fresh relaunch) draws its frame first and its content later, e.g.
             // Gmail's search bar before the inbox. Wait (bounded) until the screen stops filling in.
             for (round in 1..maxEmptyRetries) {
@@ -143,8 +152,15 @@ class DeviceScreenController<H>(
             }
         }
         if (action !is DeviceAction.LaunchApp && fingerprinter.of(after) == beforeFp) {
-            settler.awaitSettled() // one more round for slow UI responses
-            after = backend.capture().snapshot
+            // Slow UI responses: a link opening Chrome for the first time after boot can take a few
+            // seconds before anything changes. Look again a few times before calling it "no change".
+            for (round in 1..slowResponseRounds) {
+                settler.awaitSettled()
+                after = backend.capture().snapshot
+                if (fingerprinter.of(after) != beforeFp) break
+                if (action !is DeviceAction.Tap) break
+                delay(slowResponsePauseMs)
+            }
         }
         if (action is DeviceAction.LaunchApp && after.packageName != action.packageName) {
             return ActionResult.Failed("${action.packageName} did not come to the front")
