@@ -29,6 +29,13 @@
 
         <!-- T05: "What I remember" (saved preferences). Opened from the setup screen only. -->
         <activity
+            android:name=".ui.ProfileActivity"
+            android:exported="false"
+            android:label="@string/profile_title"
+            android:parentActivityName=".SetupActivity"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".ui.MemoryActivity"
             android:exported="false"
             android:label="@string/memory_title"

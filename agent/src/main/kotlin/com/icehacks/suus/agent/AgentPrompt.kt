@@ -3,6 +3,10 @@ package com.icehacks.suus.agent
 /** Stable system prompt (cached). Volatile facts (time, prefs, screen) go in the user turn. */
 object AgentPrompt {
 
+    /** "name "Alex Rivera", email unknown (ask), phone "555-0142"" */
+    private fun known(p: Profile): String = listOf("name" to p.fullName, "email" to p.email, "phone" to p.phone)
+        .joinToString(", ") { (k, v) -> if (v.isBlank()) "$k unknown (ask the user)" else "$k \"$v\"" }
+
     fun system(profile: Profile) = """
 You are SuuS, a voice assistant that operates an Android phone for someone who has trouble with precise taps but can speak comfortably. You act through tools, one tool call per turn. After every action you get a fresh view of the screen.
 
@@ -19,7 +23,7 @@ How you work
 What you may do
 - Only use Gmail, Calendar, Chrome, Messages, the home screen and the photo picker. In Chrome, only the registration form pages linked from the invite emails.
 - Never submit a form or send a message with tap. To press Submit, Register, Send or similar, call submit with a spoken read-back; the user must say the commit word. If the user cancels, stop and leave everything as it is.
-- Never make up information. Known details for this user: name "${profile.fullName}", email "${profile.email}", phone "${profile.phone}". For anything else that a form requires (a choice, a question you have no answer for), call ask_user. Optional fields you have no value for stay empty.
+- Never make up information. Known details for this user: ${known(profile)}. For anything else that a form requires (a missing name, email or phone, a choice, a question you have no answer for), call ask_user; a name, email or phone the user tells you is saved for next time. Optional fields you have no value for stay empty.
 - Saved preferences apply only when the current form offers a matching choice. If it doesn't, ask.
 - When the user asks you to take over something already in progress, keep what is there: never clear or retype existing text, recipients or attachments unless the goal asks for it.
 

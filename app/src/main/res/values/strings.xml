@@ -38,6 +38,11 @@
     <string name="step_notifications_detail">So the app can show that it is listening.</string>
     <string name="step_notifications_action">Allow notifications</string>
 
+    <string name="step_profile_title">Tell SuuS about you</string>
+    <string name="step_profile_detail">Your name, email and phone, so SuuS can fill in forms for you. You only do this once. Anything you skip, SuuS asks for by voice the first time and remembers.</string>
+    <string name="step_profile_action">Add your details</string>
+    <string name="step_profile_again">Change your details</string>
+
     <string name="step_wake_title">Check that it hears you</string>
     <string name="step_wake_detail">Press the button, then say \"SuuS\" (it sounds like \"soose\"). The app should answer \"Yes?\" out loud.</string>
     <string name="step_wake_action">Start the check</string>
@@ -51,6 +56,18 @@
     <string name="open_memory_body">See and remove the choices SuuS saved for you.</string>
     <string name="open_memory_action">Open What I remember</string>
     <string name="debug_note">Debug build: adb hooks are active while the service is on.</string>
+
+    <!-- About you -->
+    <string name="profile_title">About you</string>
+    <string name="profile_intro">SuuS uses these to fill in forms for you, every time.</string>
+    <string name="profile_name">Your name</string>
+    <string name="profile_email">Email</string>
+    <string name="profile_phone">Phone</string>
+    <string name="profile_not_set">Not set yet</string>
+    <string name="profile_save">Save</string>
+    <string name="profile_saved">Saved. SuuS will use these from now on.</string>
+    <string name="profile_bad_email">That email doesn\'t look right. Check it and save again.</string>
+    <string name="profile_voice_hint">Prefer talking? Leave a box empty and SuuS will ask for it out loud the first time a form needs it, then save it here.</string>
 
     <!-- Appearance -->
     <string name="theme_title">Appearance</string>

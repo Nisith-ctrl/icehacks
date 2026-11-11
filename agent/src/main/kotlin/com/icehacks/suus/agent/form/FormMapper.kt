@@ -62,9 +62,10 @@ object FormMapper {
         }
         if (f.kind == FieldKind.TEXT) {
             when {
-                EMAIL.containsMatchIn(f.label) -> return FieldPlan(f, Source.PROFILE, profile.email, "known email")
-                PHONE.containsMatchIn(f.label) -> return FieldPlan(f, Source.PROFILE, profile.phone, "known phone")
-                NAME.containsMatchIn(f.label) -> return FieldPlan(f, Source.PROFILE, profile.fullName, "known name")
+                // Only details the user actually gave; a blank one falls through to "ask the user".
+                EMAIL.containsMatchIn(f.label) && profile.email.isNotBlank() -> return FieldPlan(f, Source.PROFILE, profile.email, "known email")
+                PHONE.containsMatchIn(f.label) && profile.phone.isNotBlank() -> return FieldPlan(f, Source.PROFILE, profile.phone, "known phone")
+                NAME.containsMatchIn(f.label) && profile.fullName.isNotBlank() -> return FieldPlan(f, Source.PROFILE, profile.fullName, "known name")
             }
         }
         if (f.kind == FieldKind.CHOICE || f.kind == FieldKind.SELECT) {

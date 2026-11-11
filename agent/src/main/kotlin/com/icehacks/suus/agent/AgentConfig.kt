@@ -1,6 +1,9 @@
 package com.icehacks.suus.agent
 
-/** The test persona's "known details". Must match fixtures/seed/README.md (T04). */
+/**
+ * The user's "known details". The defaults are the test persona (fixtures/seed/README.md, T04) and
+ * are only used in tests; the app reads the real ones from [AgentConfig.profileStore].
+ */
 data class Profile(
     val fullName: String = "Alex Rivera",
     val email: String = "alex.rivera.test@example.com",
@@ -14,6 +17,8 @@ data class AgentConfig(
     val model: String = BuildConfig.GROQ_MODEL,
     val visionModel: String = BuildConfig.GROQ_VISION_MODEL,
     val profile: Profile = Profile(),
+    /** Where the app keeps the user's details ("About you" screen). When set, it replaces [profile]. */
+    val profileStore: ProfileStore? = null,
     /**
      * Chrome may only be used on these hosts (exact host or a subdomain of it). The deployed forms
      * are on saythegoal-forms-nisith.vercel.app (decision 2026-11-09-test-form-urls);
@@ -34,7 +39,10 @@ data class AgentConfig(
     val autoFillForms: Boolean = false,
     /** How long to let a link's redirect land before the form-host guard stops the run. */
     val redirectWaitMs: Long = 4_000,
-)
+) {
+    /** The details to use right now: the saved profile in the app, the test persona in tests. */
+    fun currentProfile(): Profile = profileStore?.load() ?: profile
+}
 
 /** Spoken app names the model may launch, mapped to packages (all in core.AllowedApps). */
 val LAUNCHABLE_APPS = mapOf(

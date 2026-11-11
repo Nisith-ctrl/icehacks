@@ -62,7 +62,8 @@ class GroqPlanner(
         })
     }
 
-    private val system = AgentPrompt.system(config.profile)
+    /** Rebuilt each turn, so details saved on the "About you" screen are used straight away. */
+    private val system get() = AgentPrompt.system(config.currentProfile())
 
     override suspend fun next(turn: PlannerTurn): PlannerStep = withContext(Dispatchers.IO) {
         repeat(3) {
