@@ -36,7 +36,12 @@ class FakeBackend(var screen: ScreenSnapshot) : ScreenBackend<Int> {
     var onClick: (Int) -> Unit = {}
     var applyText = true
 
-    override suspend fun capture() = Captured(screen, screen.nodes.indices.toList())
+    /** Screens shown by the next captures, one each, like an app that is still starting. */
+    val upcoming = ArrayDeque<ScreenSnapshot>()
+    override suspend fun capture(): Captured<Int> {
+        upcoming.removeFirstOrNull()?.let { screen = it }
+        return Captured(screen, screen.nodes.indices.toList())
+    }
     override suspend fun click(handle: Int, bounds: Bounds): Boolean {
         log += "click ${screen.nodes[handle].text}"
         onClick(handle)
@@ -182,5 +187,27 @@ class DeviceScreenControllerTest {
         assertNotEquals(fp.of(a), fp.of(snap(submit, name)))
         assertNotEquals(fp.of(a), fp.of(a.copy(packageName = "com.google.android.gm")))
         assertEquals(64, fp.of(a).length)
+    }
+
+    @Test
+    fun tapOnAnAppIconWaitsForTheAppToStart() = runTest {
+        // Cold start after boot: the tap on Gmail's icon shows an empty window for a while.
+        val icon = node("n0", "Gmail")
+        val b = FakeBackend(snap(icon, pkg = "com.google.android.apps.nexuslauncher"))
+        val inbox = snap(node("n0", "Search in mail"), node("n1", "Workshop registration"), pkg = "com.google.android.gm")
+        b.onClick = { b.upcoming.addAll(List(14) { snap(pkg = "") } + inbox) }
+        val r = controller(b).perform(DeviceAction.Tap("n0"), b.screen)
+        assertTrue(r.toString(), r is ActionResult.Done && r.screenChanged && r.after.packageName == "com.google.android.gm")
+    }
+
+    @Test
+    fun aSlowTapResultIsNotReportedAsNoChange() = runTest {
+        // A Gmail link opening Chrome for the first time: nothing changes for a few looks.
+        val link = node("n0", "Register here")
+        val b = FakeBackend(snap(link, pkg = "com.google.android.gm"))
+        val gmail = b.screen
+        b.onClick = { b.upcoming.addAll(listOf(gmail, gmail, gmail, snap(node("n0", "Full name"), pkg = "com.android.chrome"))) }
+        val r = controller(b).perform(DeviceAction.Tap("n0"), b.screen)
+        assertTrue(r.toString(), r is ActionResult.Done && r.screenChanged && r.after.packageName == "com.android.chrome")
     }
 }
