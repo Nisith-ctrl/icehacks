@@ -254,6 +254,8 @@ class RunLogTest {
         now = 4_000
         logger.sessionEnded("finished", "last words")
         logger.userTouch("tap in launcher") // between commands: goes on the last session
+        now = 4_000 + DbRunLogger.TOUCH_GRACE_MS + 1
+        logger.userTouch("tap in Play Store") // long after it ended: not part of that run
 
         val (first, second) = logger.sessions()
         assertEquals("unknown", first.outcome)
