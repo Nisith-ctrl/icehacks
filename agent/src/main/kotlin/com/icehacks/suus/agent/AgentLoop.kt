@@ -123,7 +123,7 @@ class AgentLoop(
             if (config.autoFillForms && form != null && page != null && !submitted && autoFilled.add(page)) {
                 overlay.setMode(CharacterMode.ACTING)
                 overlay.caption("Filling in what I know")
-                val report = filler.fill(config.profile, prefs.all(), emptyMap(), hints = hintsFor(goal),
+                val report = filler.fill(config.currentProfile(), prefs.all(), emptyMap(), hints = hintsFor(goal),
                     maxActions = (config.maxActions - actions).coerceAtLeast(1))
                 actions += report.actions
                 formValues.putAll(report.values)
@@ -237,7 +237,9 @@ class AgentLoop(
                     if (answer.trim().lowercase().trimEnd('.', '!') in setOf("stop", "cancel", "never mind")) {
                         return stop("Okay, I stopped.")
                     }
-                    val chosen = choices.firstOrNull { it.equals(answer.trim(), ignoreCase = true) } ?: choiceIn(answer, choices)
+                    var chosen = choices.firstOrNull { it.equals(answer.trim(), ignoreCase = true) } ?: choiceIn(answer, choices)
+                    // A missing email / phone / name: tidy the spoken answer and keep it for every form.
+                    if (choices.isEmpty()) learnProfileDetail(question, answer)?.let { chosen = it }
                     var saved: SavedPreference? = null
                     val scope = s("remember_scope")
                     val key = s("remember_key")
@@ -276,7 +278,7 @@ class AgentLoop(
                         (v as? JsonPrimitive)?.contentOrNull?.let { k to it }
                     }?.toMap() ?: emptyMap()
                     overlay.setMode(CharacterMode.ACTING)
-                    val report = filler.fill(config.profile, prefs.all(), answers, maxActions = (config.maxActions - actions).coerceAtLeast(1))
+                    val report = filler.fill(config.currentProfile(), prefs.all(), answers, maxActions = (config.maxActions - actions).coerceAtLeast(1))
                     actions += report.actions
                     formValues.putAll(report.values)
                     if (report.filled.isNotEmpty() || report.needs.isEmpty()) errors = 0
@@ -429,7 +431,7 @@ class AgentLoop(
         if (!looksLikeUrl(url) || !hostAllowed(url)) return null
         val form = FormReader.read(snap)
         if (form.fields.isEmpty()) return null
-        val plans = FormMapper.plan(form, config.profile, prefs.all())
+        val plans = FormMapper.plan(form, config.currentProfile(), prefs.all())
         return buildString {
             form.title?.let { appendLine("Form: $it") }
             for (p in plans) {
@@ -470,6 +472,33 @@ class AgentLoop(
         try { block() } finally { hint.cancel() }
     }
 
+    /**
+     * If [question] asks for the user's email, phone or name, turns the spoken [answer] into the
+     * written form ("alex dot rivera at gmail dot com" -> "alex.rivera@gmail.com"), saves it to the
+     * profile (when the app has one) and returns it. Null if the question isn't about those.
+     */
+    private suspend fun learnProfileDetail(question: String, answer: String): String? {
+        val detail = ProfileText.detailIn(question) ?: return null
+        val value = when (detail) {
+            ProfileDetail.EMAIL -> ProfileText.email(answer)
+            ProfileDetail.PHONE -> ProfileText.phone(answer)
+            ProfileDetail.NAME -> ProfileText.name(answer)
+        } ?: return null
+        val store = config.profileStore ?: return value
+        val p = store.load()
+        store.save(
+            when (detail) {
+                ProfileDetail.EMAIL -> p.copy(email = value)
+                ProfileDetail.PHONE -> p.copy(phone = value)
+                ProfileDetail.NAME -> p.copy(fullName = value)
+            },
+        )
+        val what = detail.name.lowercase()
+        overlay.caption("Saved your $what: $value")
+        voice.say("Got it. I'll remember your $what for next time.")
+        return value
+    }
+
     /** The question with its choices numbered underneath, for the speech bubble. */
     private fun withChoiceList(question: String, choices: List<String>): String =
         if (choices.isEmpty()) question
@@ -499,7 +528,7 @@ class AgentLoop(
                 (choices.isNotEmpty() && f.options.isNotEmpty() && choices.all { c -> f.options.any { sameChoice(it.label, c) } })
         } ?: return null
         overlay.setMode(CharacterMode.ACTING)
-        val report = filler.fill(config.profile, prefs.all(), mapOf(field.label to value), hints = hintsFor(goal))
+        val report = filler.fill(config.currentProfile(), prefs.all(), mapOf(field.label to value), hints = hintsFor(goal))
         formValues.putAll(report.values)
         return "I put it in \"${field.label}\". " + report.describe()
     }

@@ -23,7 +23,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import com.icehacks.suus.ui.ButtonKind
 import com.icehacks.suus.ui.ChipKind
+import com.icehacks.suus.agent.createProfileStore
 import com.icehacks.suus.ui.MemoryActivity
+import com.icehacks.suus.ui.ProfileActivity
 import com.icehacks.suus.ui.addSpaced
 import com.icehacks.suus.ui.addWrapped
 import com.icehacks.suus.ui.appearanceCard
@@ -117,8 +119,12 @@ class SetupActivity : AppCompatActivity() {
             Step(4, { granted(photosPermission) }, R.string.step_photos_action)) { askFor(photosPermission) }
         addStep(column, R.string.step_notifications_title, R.string.step_notifications_detail,
             Step(5, ::notificationsAllowed, R.string.step_notifications_action)) { askFor(Manifest.permission.POST_NOTIFICATIONS) }
+        addStep(column, R.string.step_profile_title, R.string.step_profile_detail,
+            Step(6, ::profileComplete, R.string.step_profile_action, R.string.step_profile_again)) {
+            startActivity(Intent(this, ProfileActivity::class.java))
+        }
         addStep(column, R.string.step_wake_title, R.string.step_wake_detail,
-            Step(6, { settings.getBoolean(KEY_WAKE_OK, false) }, R.string.step_wake_action, R.string.step_wake_again),
+            Step(7, { settings.getBoolean(KEY_WAKE_OK, false) }, R.string.step_wake_action, R.string.step_wake_again),
             withNote = true) { startWakeCheck() }
 
         column.addSpaced(sectionLabel(getString(R.string.section_more)), 28)
@@ -282,7 +288,7 @@ class SetupActivity : AppCompatActivity() {
         progressFill.visibility = if (doneCount == 0) View.GONE else View.VISIBLE
         progressFill.requestLayout()
         // The wake check: say what it is doing, and don't let it start twice.
-        steps.lastOrNull()?.let { wake ->
+        steps.firstOrNull { it.note != null }?.let { wake ->
             val note = if (wakeListening) getString(R.string.wake_listening) else wakeNote
             wake.note?.text = note ?: ""
             wake.note?.visibility = if (note.isNullOrEmpty()) View.GONE else View.VISIBLE
@@ -293,6 +299,11 @@ class SetupActivity : AppCompatActivity() {
         }
         progress.text = getString(R.string.setup_progress, doneCount, steps.size)
         readyCard.visibility = if (doneCount == steps.size) View.VISIBLE else View.GONE
+    }
+
+    /** Name, email and phone saved on the "About you" screen. */
+    private fun profileComplete(): Boolean = createProfileStore(this).load().let {
+        it.fullName.isNotBlank() && it.email.isNotBlank() && it.phone.isNotBlank()
     }
 
     private fun granted(permission: String) =
