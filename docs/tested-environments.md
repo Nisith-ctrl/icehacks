@@ -5,7 +5,6 @@
 | Device | Android | Status |
 |---|---|---|
 | Emulator `stg_pixel_35` (Pixel 7 profile, Google Play image, x86_64) | 15 (API 35), build `AE3A.240806.036` | Library and volunteer demos pass end to end, hands-free (2026-11-11) |
-| Samsung Galaxy S21 | not recorded yet | Voice wake on real speech still to be checked by guru |
 
 ## App versions on the emulator
 
@@ -43,12 +42,13 @@ fingerprint still matches; if anything on screen changed after you approved, it 
 ## Controlled tests and limits
 
 - Demo runs on the emulator were driven with `DEBUG_UTTERANCE` (the same text the recognizer would
-  produce) because the emulator's microphone isn't reliable. Real-speech wake-up is checked on the S21.
+  produce) so runs are repeatable. Real-speech wake-up was tested on the emulator with the laptop microphone
+  (start it with `-allow-host-audio`). We test only on the emulator; no physical phone was used.
 - The two forms and the invite emails are test fixtures we built (`fixtures/forms`); no real
   registration happens.
 - Messages: the May 2024 build hid its text box and photo grid from accessibility, so the photo demo
   couldn't see the draft. It was updated from the Play Store on 2026-11-11 and is being re-checked.
-  MMS usually doesn't deliver on the emulator, so the photo demo may stop at a verified draft there
-  (labelled draft-only), with a real send on the S21.
+  The emulator has no MMS, so Messages refuses photo attachments ("Attachments are not supported in
+  this conversation") and the photo demo stops cleanly before attaching, leaving the draft as it was.
 - Free-tier rate limits (8K tokens per minute, 200K per day) slow some turns; SuuS waits and retries.
   Don't rehearse many runs back to back before recording.

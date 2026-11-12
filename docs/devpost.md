@@ -28,7 +28,8 @@ the form, the date picker, the attachment.
   next form. "What do you remember?" and "Forget …" work by voice, and on a big-button screen.
 - **Hand off what you started:** with a text half-written in Messages, "Suus, attach yesterday's
   dog photo." Then "Undo the photo" removes only the photo and leaves your words alone.
-  <!-- team: only keep this once the S21 run works; the emulator has no MMS, see docs/metrics.md -->
+  <!-- team: the emulator has no MMS, so this only runs up to the attach step in Messages (see
+  docs/submission-notes.md 3.12). Rewrite or drop this bullet once the Demo 2 route is decided. -->
 - **See what it's doing:** a small robot points at each control before tapping it, with a short caption.
 - **"Stop" works any time**: once SuuS hears it, the current action is cancelled at once and it says "Stopped." in about a tenth of a second.
 
@@ -50,8 +51,8 @@ the form, the date picker, the attachment.
   Calendar lays an invisible full-screen layer over its event list, and older Messages builds
   hid the text box entirely.
 - Timing: cold app starts and slow first launches look like "nothing happened" unless you wait carefully.
-- Free-tier rate limits: small, stateless prompts, code doing the exact parts (3–4 model calls per form
-  instead of 15+), and automatic waits. The waits are why parts of our video are sped up and labelled;
+- Free-tier rate limits: small, stateless prompts, code doing the exact parts (3–4 model calls to fill a
+  form, 8–11 for a whole run from the home screen), and automatic waits. The waits are why parts of our video are sped up and labelled;
   a paid API tier removes most of them.
 
 ## Accomplishments

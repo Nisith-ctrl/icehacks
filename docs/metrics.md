@@ -14,13 +14,14 @@ SuuS isn't acting.
 | Photo message takeover + undo | | | | | | | Not run yet |
 
 Notes:
-- Spoken commands were injected as text (`DEBUG_UTTERANCE`) on the emulator; the S21 run uses real speech.
+- Spoken commands were injected as text (`DEBUG_UTTERANCE`) on the emulator. Real speech was tested separately on the emulator with the laptop microphone. We
+  test only on the emulator (team decision, Nov 12).
 - The library run reused the "Email for event signups" preference saved in an earlier run. On a
   fresh device it asks once ("How should they confirm?"), which adds 1 question and 1 spoken command.
 - Time includes waiting on the free-tier rate limit (a few 1 to 17 s pauses per run).
 - Run log sessions 25 and 26 in `suus-sessions-20261111-113432.csv`. (Session 26 showed 4 touches
-  in that export: they were taps made about 50 minutes after the run ended. The run log now only
-  counts touches within 60 s of a run.)
+  in that export: they were taps made about 50 minutes after the run ended. PR 28 limits the
+  count to touches within 60 s of a run; until it's merged, clear the log before each run.)
 
 ## Manual runs (to measure)
 
