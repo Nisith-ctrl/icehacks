@@ -17,6 +17,7 @@ import com.icehacks.suus.core.VoiceIO
 import com.icehacks.suus.agent.form.ConfirmationCheck
 import com.icehacks.suus.agent.form.FormFiller
 import com.icehacks.suus.agent.form.FormMapper
+import com.icehacks.suus.agent.form.FieldKind
 import com.icehacks.suus.agent.form.FormReader
 import com.icehacks.suus.agent.form.sameLabel
 import com.icehacks.suus.agent.form.sameChoice
@@ -239,7 +240,8 @@ class AgentLoop(
                     }
                     var chosen = choices.firstOrNull { it.equals(answer.trim(), ignoreCase = true) } ?: choiceIn(answer, choices)
                     // A missing email / phone / name: tidy the spoken answer and keep it for every form.
-                    if (choices.isEmpty()) learnProfileDetail(question, answer)?.let { chosen = it }
+                    val learned = if (choices.isEmpty()) learnProfileDetail(question, answer) else null
+                    if (learned != null) chosen = learned
                     var saved: SavedPreference? = null
                     val scope = s("remember_scope")
                     val key = s("remember_key")
@@ -251,9 +253,13 @@ class AgentLoop(
                     }
                     remember("asked \"$question\" -> \"$answer\"" + (chosen?.let { " (= $it)" } ?: "") + if (saved != null) " [saved preference]" else "")
                     // Only put a real choice into the form: a stray sentence would just make the dropdown fail.
-                    val applied = if (config.autoFillForms && (chosen != null || choices.isEmpty())) {
-                        applyAnswerToForm(question, choices, chosen ?: answer.trim(), goal)
-                    } else null
+                    val applied = when {
+                        !config.autoFillForms -> null
+                        // The detail is in the profile now: let the filler put it in (it scrolls to the field).
+                        learned != null -> refillFromProfile(goal)
+                        chosen != null || choices.isEmpty() -> applyAnswerToForm(question, choices, chosen ?: answer.trim(), goal)
+                        else -> null
+                    }
                     feedback = "The user answered: \"$answer\"" + (chosen?.let { " (choice: $it)" } ?: "") +
                         when {
                             saved != null -> ". Saved as a preference. Saving is not approval to submit."
@@ -504,16 +510,36 @@ class AgentLoop(
         if (choices.isEmpty()) question
         else question + "\n" + choices.mapIndexed { i, c -> "${i + 1}. $c" }.joinToString("   ")
 
+    /** Fills the form again from the (just updated) profile, so a learned email/phone/name lands in its box. */
+    private suspend fun refillFromProfile(goal: String): String? {
+        val snap = screen.snapshot()
+        val url = ScreenText.chromeUrl(snap) ?: return null
+        if (!looksLikeUrl(url) || !hostAllowed(url)) return null
+        overlay.setMode(CharacterMode.ACTING)
+        val report = filler.fill(config.currentProfile(), prefs.all(), emptyMap(), hints = hintsFor(goal))
+        formValues.putAll(report.values)
+        return "I put it in the form. " + report.describe()
+    }
+
     /** Options of the form field the question is about (by label words), if the page has one. */
     private suspend fun formOptionsFor(question: String): List<String> {
+        val q0 = " " + normalizeLabel(question) + " "
+        // Options the filler already read (dropdowns are only known after opening them once).
+        filler.knownOptions.entries.firstOrNull { (label, _) ->
+            val words = normalizeLabel(label).split(" ").filter { it.length > 3 }
+            words.isNotEmpty() && words.count { q0.contains(" $it ") } * 2 >= words.size
+        }?.let { return it.value }
         val snap = screen.snapshot()
         if (ScreenText.chromeUrl(snap) == null) return emptyList()
         val q = " " + normalizeLabel(question) + " "
-        val field = FormReader.read(snap).fields.filter { it.options.isNotEmpty() }.firstOrNull { f ->
-            val words = normalizeLabel(f.label).split(" ").filter { it.length > 3 }
-            words.isNotEmpty() && words.count { q.contains(" $it ") } * 2 >= words.size
-        } ?: return emptyList()
-        return field.options.map { it.label.trim() }.filter { it.isNotEmpty() && !it.startsWith("Choose", ignoreCase = true) }
+        val field = FormReader.read(snap).fields
+            .filter { it.options.isNotEmpty() || it.kind == FieldKind.SELECT }
+            .firstOrNull { f ->
+                val words = normalizeLabel(f.label).split(" ").filter { it.length > 3 }
+                words.isNotEmpty() && words.count { q.contains(" $it ") } * 2 >= words.size
+            } ?: return emptyList()
+        // A dropdown's options are only on screen once it's opened: open it once to read them.
+        return filler.optionsOf(snap, field).map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("Choose", ignoreCase = true) }
     }
 
     private suspend fun applyAnswerToForm(question: String, choices: List<String>, value: String, goal: String): String? {

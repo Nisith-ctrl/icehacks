@@ -28,7 +28,17 @@ class FormFiller(
     private val chosenInSelects = HashMap<String, String>()
 
     /** Forget dropdown choices: call at the start of each run (a new tab of the same form starts empty). */
-    fun reset() = chosenInSelects.clear()
+    /**
+     * Options of fields the user must be asked about, by field label, as last read on the page
+     * (a dropdown's options are only known after it has been opened once). Used to show and speak
+     * the choices when SuuS asks, even if the model leaves them out.
+     */
+    val knownOptions = mutableMapOf<String, List<String>>()
+
+    fun reset() {
+        chosenInSelects.clear()
+        knownOptions.clear()
+    }
 
     data class Report(
         val filled: List<String>,
@@ -145,9 +155,11 @@ class FormFiller(
                             val r = readSelectOptions(snap, f)
                             actions += r.second
                             opts = r.first
+                            if (opts.isNotEmpty()) knownOptions[f.label] = opts
                             needs += "${f.label}: $why" + (if (opts.isNotEmpty()) " (options: ${opts.joinToString()})" else "")
                             continue@outer
                         }
+                        if (opts.isNotEmpty()) knownOptions[f.label] = opts
                         needs += "${f.label}: $why" + (if (opts.isNotEmpty()) " (options: ${opts.joinToString()})" else "")
                     }
                     Source.SKIP -> {}
@@ -216,6 +228,18 @@ class FormFiller(
                 return Applied(r is ActionResult.Done, 2, opt.label, problem = r.toString())
             }
         }
+    }
+
+    /**
+     * Options of the dropdown [field] on [snap], opening it once if they aren't known yet (cached in
+     * [knownOptions]). For showing and speaking the choices when SuuS asks about it.
+     */
+    suspend fun optionsOf(snap: ScreenSnapshot, field: FormField): List<String> {
+        knownOptions[field.label]?.let { return it }
+        if (field.kind != FieldKind.SELECT) return field.options.map { it.label }
+        val opts = readSelectOptions(snap, field).first
+        if (opts.isNotEmpty()) knownOptions[field.label] = opts
+        return opts
     }
 
     /** Opens a dropdown just to read its options, then closes it. Returns (options, actions used). */
