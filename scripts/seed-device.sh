@@ -22,6 +22,10 @@ REMOTE=/sdcard/Pictures
 
 sh_dev() { "$ADB" shell "$@" | tr -d '\r'; }
 
+# Local file path for adb. With MSYS_NO_PATHCONV set, Git Bash passes /c/Users/... to the Windows
+# adb.exe unchanged and it can't find the file, so convert local paths to Windows form.
+winpath() { if command -v cygpath >/dev/null 2>&1; then cygpath -w "$1"; else echo "$1"; fi; }
+
 require_device() {
   if ! "$ADB" get-state >/dev/null 2>&1; then
     echo "No device found. Start the emulator or plug in the phone (adb devices)." >&2
@@ -35,8 +39,8 @@ seed_photos() {
   day="$(sh_dev 'date -d @$(( $(date +%s) - 86400 )) +%Y%m%d')"
   echo "Photos: dating them $day (yesterday on the device)"
   sh_dev "mkdir -p $REMOTE && rm -f $REMOTE/IMG_0418.png $REMOTE/IMG_0422.png"
-  "$ADB" push "$PHOTOS/IMG_0418.png" "$REMOTE/IMG_0418.png" >/dev/null
-  "$ADB" push "$PHOTOS/IMG_0422.png" "$REMOTE/IMG_0422.png" >/dev/null
+  "$ADB" push "$(winpath "$PHOTOS/IMG_0418.png")" "$REMOTE/IMG_0418.png" >/dev/null
+  "$ADB" push "$(winpath "$PHOTOS/IMG_0422.png")" "$REMOTE/IMG_0422.png" >/dev/null
   sh_dev "touch -t ${day}1730 $REMOTE/IMG_0418.png"   # dog in the yard, 5:30 PM
   sh_dev "touch -t ${day}1810 $REMOTE/IMG_0422.png"   # dog by the front door, 6:10 PM
   sh_dev "content call --uri content://media --method scan_volume --arg external_primary" >/dev/null \
