@@ -34,6 +34,7 @@ import android.view.animation.OvershootInterpolator
 import android.view.animation.PathInterpolator
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -60,9 +61,9 @@ internal fun Context.themeColor(id: Int): Int = ContextCompat.getColor(this, id)
  * The app's two typefaces, bundled under assets/fonts (SIL Open Font License, licences alongside):
  * - **Atkinson Hyperlegible** for reading: drawn by the Braille Institute for low-vision readers, with
  *   letters that are easy to tell apart (I l 1, O 0, b d). Body text, fields, labels, chips.
- * - **Fraunces** for headings, buttons and the robot's captions: a soft, warm serif with rounded
- *   "wonky" curves, set with its SOFT axis at 100 so it feels friendly rather than formal. Variable:
- *   each weight and optical size is cut from one file.
+ * - **Pixelify Sans** for headings, buttons and the robot's captions: a clean, readable pixel font in
+ *   the same 8-bit language as guru's robot and its stepped speech bubble. Variable: each weight is cut
+ *   from one file. Only used at 18 sp and up; all reading text stays in Atkinson.
  */
 internal object SuusFonts {
     private var body: Typeface? = null
@@ -75,16 +76,10 @@ internal object SuusFonts {
     fun bodyBold(ctx: Context): Typeface =
         bodyBold ?: load { Typeface.createFromAsset(ctx.assets, "fonts/AtkinsonHyperlegible-Bold.ttf") }.also { bodyBold = it }
 
-    /**
-     * Fraunces at [weight] (400 … 900) and optical size [opsz] (9 … 144: higher = display shapes for big
-     * text, lower = sturdier shapes for small text). Soft and "wonky" on, for warmth.
-     */
-    fun heading(ctx: Context, weight: Int = 600, opsz: Int = 36): Typeface = headings.getOrPut(weight * 1000 + opsz) {
-        load {
-            Typeface.Builder(ctx.assets, "fonts/Fraunces-Variable.ttf")
-                .setFontVariationSettings("'wght' $weight, 'opsz' $opsz, 'SOFT' 100, 'WONK' 1")
-                .build()
-        }
+    /** Pixelify Sans at [weight] (400 … 700). [opsz] is accepted for older call sites and ignored. */
+    @Suppress("UNUSED_PARAMETER")
+    fun heading(ctx: Context, weight: Int = 600, opsz: Int = 0): Typeface = headings.getOrPut(weight) {
+        load { Typeface.Builder(ctx.assets, "fonts/PixelifySans-Variable.ttf").setFontVariationSettings("'wght' $weight").build() }
     }
 
     private fun load(make: () -> Typeface?): Typeface = runCatching(make).getOrNull() ?: Typeface.DEFAULT
@@ -330,7 +325,7 @@ internal fun Context.heroHeader(
                 this.text = headline
                 textSize = 30f
                 typeface = SuusFonts.heading(this@heroHeader, 650, opsz = 96)
-                letterSpacing = -0.005f
+                letterSpacing = 0.01f
                 setLineSpacing(0f, 1.06f)
                 ViewCompat.setAccessibilityHeading(this, true)
             },
@@ -391,6 +386,74 @@ internal fun Context.speechBubble(text: CharSequence): View {
         gravity = Gravity.END
         addView(bubble, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
     }
+}
+
+/**
+ * The robot saying something to you, in the overlay's own style: guru's pixel robot on the left and a
+ * stepped 8-bit speech bubble (dark outline, mint border, cream fill) with a stair-step tail pointing
+ * at it. The bubble keeps the overlay's fixed colours in both themes, like the real one on screen.
+ */
+internal fun Context.robotSays(content: View): View = LinearLayout(this).apply {
+    orientation = LinearLayout.HORIZONTAL
+    gravity = Gravity.BOTTOM
+    addView(suusSprite(), LinearLayout.LayoutParams(dp(60), dp(84)))
+    addView(FrameLayout(context).apply {
+        background = PixelBubbleDrawable(dp(3).toFloat())
+        val px = dp(3)
+        // Room for the 3-px-step outline and border, plus the tail on the left.
+        setPadding(px * 6 + dp(14), px * 3 + dp(14), px * 3 + dp(16), px * 3 + dp(16))
+        addView(content)
+    }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginStart = dp(2) })
+}
+
+/** Ink for text inside [robotSays]: the overlay's dark green, 14:1 on its cream fill. */
+internal const val PIXEL_INK = 0xFF0A2913.toInt()
+
+private class PixelBubbleDrawable(private val s: Float) : Drawable() {
+    private val paint = Paint() // no anti-aliasing: crisp pixel edges, like the overlay
+    private val outline = 0xFF0A2913.toInt()
+    private val mint = 0xFF95CBA7.toInt()
+    private val cream = 0xFFFDF6ED.toInt()
+
+    override fun draw(canvas: Canvas) {
+        val b = RectF(bounds)
+        b.left += 3 * s // the tail lives in this strip
+        for ((i, c) in listOf(outline, mint, cream).withIndex()) {
+            paint.color = c
+            canvas.drawPath(shape(b, i * s), paint)
+        }
+    }
+
+    /** A rectangle with 3-step pixel corners and a stair-step tail out of the left edge near the bottom. */
+    private fun shape(box: RectF, inset: Float): Path {
+        val l = box.left + inset; val t = box.top + inset; val r = box.right - inset; val bt = box.bottom - inset
+        val k = 3 * s
+        val tailY = bt - 7 * s
+        val len = 3 * s - inset
+        return Path().apply {
+            moveTo(l + k, t)
+            lineTo(r - k, t); lineTo(r - k, t + s); lineTo(r - 2 * s, t + s); lineTo(r - 2 * s, t + 2 * s)
+            lineTo(r - s, t + 2 * s); lineTo(r - s, t + k); lineTo(r, t + k)
+            lineTo(r, bt - k); lineTo(r - s, bt - k); lineTo(r - s, bt - 2 * s); lineTo(r - 2 * s, bt - 2 * s)
+            lineTo(r - 2 * s, bt - s); lineTo(r - k, bt - s); lineTo(r - k, bt)
+            lineTo(l + k, bt); lineTo(l + k, bt - s); lineTo(l + 2 * s, bt - s); lineTo(l + 2 * s, bt - 2 * s)
+            lineTo(l + s, bt - 2 * s); lineTo(l + s, bt - k); lineTo(l, bt - k)
+            // Tail: steps out to the left toward the robot, then back.
+            if (len > 0) {
+                lineTo(l, tailY + 2 * s); lineTo(l - len / 2, tailY + 2 * s); lineTo(l - len / 2, tailY + s)
+                lineTo(l - len, tailY + s); lineTo(l - len, tailY - s); lineTo(l - len / 2, tailY - s)
+                lineTo(l - len / 2, tailY - 2 * s); lineTo(l, tailY - 2 * s)
+            }
+            lineTo(l, t + k); lineTo(l + s, t + k); lineTo(l + s, t + 2 * s); lineTo(l + 2 * s, t + 2 * s)
+            lineTo(l + 2 * s, t + s); lineTo(l + k, t + s)
+            close()
+        }
+    }
+
+    override fun setAlpha(alpha: Int) {}
+    override fun setColorFilter(colorFilter: ColorFilter?) {}
+    @Deprecated("Deprecated in Java")
+    override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
 }
 
 /** A quiet closing promise: one short centred line, with a small green check in front. */
