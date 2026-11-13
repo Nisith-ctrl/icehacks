@@ -31,6 +31,7 @@ class SuusAgent(
     private val ledger: DraftLedger,
     private val log: (String) -> Unit = { runCatching { Log.i(AgentLoop.TAG, it) } },
     private val runLog: RunLogger = NoOpRunLogger,
+    private val settings: () -> SuusSettings = { SuusSettings() },
 ) : AgentRunner {
 
     override suspend fun handle(command: UserCommand) {
@@ -39,11 +40,13 @@ class SuusAgent(
             when (command) {
                 is UserCommand.Goal -> {
                     // Acknowledge at once (while the first model call runs), so the user knows it heard them.
-                    val ack = ACKS.random()
+                    val style = settings()
+                    val ack = SuusVoiceLines.acks(style.tone).random()
                     overlay.setMode(CharacterMode.THINKING)
                     overlay.caption(ack)
                     val outcome = coroutineScope {
-                        launch { voice.say(ack) }
+                        // "Just do it" users get the acknowledgement on screen only.
+                        if (style.detail != Detail.QUIET) launch { voice.say(ack) }
                         loop.run(command.text, command.takeOver)
                     }
                     log("outcome $outcome")
@@ -157,7 +160,4 @@ class SuusAgent(
         voice.say(text)
     }
 
-    private companion object {
-        val ACKS = listOf("On it!", "Sure thing!", "Got it, let's do this!", "Okay, on my way!", "You got it!")
-    }
 }

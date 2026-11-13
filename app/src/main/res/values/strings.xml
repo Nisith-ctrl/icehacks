@@ -109,4 +109,83 @@
     <string name="memory_removed">Removed: %1$s</string>
     <string name="back">Back</string>
     <string name="back_arrow">←  Back</string>
+    <!-- First-run setup -->
+    <string name="onb_step">Step %1$d of %2$d</string>
+    <string name="onb_welcome_eyebrow">Welcome</string>
+    <string name="onb_welcome_title">Hi, I\'m SuuS</string>
+    <string name="onb_welcome_body">I tap, type and scroll for you when you ask out loud. It takes about two minutes, and you only do it once.</string>
+    <string name="onb_welcome_short">Let\'s get you set up.</string>
+    <string name="onb_perm_short">Allow what SuuS needs.</string>
+    <string name="onb_perm_head">Permissions</string>
+    <string name="onb_about_short">This is your account.</string>
+    <string name="onb_style_head">Your style</string>
+    <string name="onb_done_short">Just say \"SuuS\".</string>
+    <string name="onb_welcome_points">• First, allow what I need on this phone.\n• Then tell me your name, email and phone, for forms.\n• Last, choose how I talk to you.</string>
+    <string name="onb_start">Get started</string>
+    <string name="onb_perm_eyebrow">Permissions</string>
+    <string name="onb_perm_title">Allow what SuuS needs</string>
+    <string name="onb_perm_body">Turn these on once. SuuS only acts in Gmail, Calendar, Chrome and Messages, and asks you before it submits or sends anything.</string>
+    <string name="onb_perm_allow_all">Allow all of these</string>
+    <string name="onb_perm_required">Needed</string>
+    <string name="onb_perm_optional">For some tasks</string>
+    <string name="onb_perm_missing">Turn on SuuS and the microphone to continue. The others can wait.</string>
+    <string name="onb_about_eyebrow">Your account</string>
+    <string name="onb_about_title">About you</string>
+    <string name="onb_about_body">SuuS fills these into forms for you, every time. You can change them later.</string>
+    <string name="onb_style_eyebrow">Make it yours</string>
+    <string name="onb_style_title">How should SuuS talk?</string>
+    <string name="onb_style_body">Pick what feels right. You can change any of this later in the app.</string>
+    <string name="onb_done_eyebrow">All set</string>
+    <string name="onb_done_title">You\'re ready</string>
+    <string name="onb_done_body">Say \"SuuS\", then what you want. For example: \"SuuS, find the library workshop invite and register me.\" Say \"Stop\" at any time.</string>
+    <string name="onb_allow_one">Allow</string>
+    <string name="onb_continue">Continue</string>
+    <string name="onb_skip">Skip for now</string>
+    <string name="onb_back">Back</string>
+    <string name="onb_finish">Start using SuuS</string>
+    <string name="onb_again">Run setup again</string>
+
+    <!-- Make SuuS yours -->
+    <string name="custom_title">Make SuuS yours</string>
+    <string name="custom_intro">How SuuS talks, how much it explains, and how it looks.</string>
+    <string name="custom_short">Your way.</string>
+    <string name="custom_eyebrow">Settings</string>
+    <string name="custom_open_body">Tone of voice, how much it explains, voice speed, robot size and colours.</string>
+    <string name="custom_open_action">Open Make SuuS yours</string>
+    <string name="custom_saved">Saved. SuuS uses this from now on.</string>
+    <string name="about_card_title">About you</string>
+    <string name="about_card_body">Your name, email and phone for forms.</string>
+    <string name="about_card_action">Open About you</string>
+    <string name="custom_try">Hear how it sounds</string>
+    <string name="custom_try_unavailable">Turn on SuuS first to hear it.</string>
+
+    <string name="tone_title">Tone</string>
+    <string name="tone_friendly">Friendly and upbeat</string>
+    <string name="tone_friendly_ex">\"All done! You\'re signed up for Friday.\"</string>
+    <string name="tone_calm">Calm and gentle</string>
+    <string name="tone_calm_ex">\"Done. You\'re signed up for Friday.\"</string>
+    <string name="tone_brief">Short and to the point</string>
+    <string name="tone_brief_ex">\"Done. Friday, 2 PM.\"</string>
+
+    <string name="detail_title">How much to explain</string>
+    <string name="detail_quiet">Just do it</string>
+    <string name="detail_quiet_ex">Only questions and the result are spoken.</string>
+    <string name="detail_main">Tell me the main steps</string>
+    <string name="detail_main_ex">A quick \"On it\", questions, and the result.</string>
+    <string name="detail_every">Explain every step</string>
+    <string name="detail_every_ex">Each action is said out loud as it happens. Slower, but nothing is a surprise.</string>
+
+    <string name="speed_title">Voice speed</string>
+    <string name="speed_slower">Slower</string>
+    <string name="speed_normal">Normal</string>
+    <string name="speed_faster">Faster</string>
+
+    <string name="robot_title">Robot size</string>
+    <string name="robot_body">The helper that points at what SuuS is about to tap.</string>
+    <string name="robot_small">Small</string>
+    <string name="robot_medium">Medium</string>
+    <string name="robot_large">Large</string>
+
+    <string name="option_selected">%1$s, selected</string>
+    <string name="option_choose">%1$s, not selected. Double-tap to choose.</string>
 </resources>

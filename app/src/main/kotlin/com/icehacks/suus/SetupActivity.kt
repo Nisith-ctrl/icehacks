@@ -26,13 +26,15 @@ import androidx.core.view.ViewCompat
 import com.icehacks.suus.ui.ButtonKind
 import com.icehacks.suus.ui.ChipKind
 import com.icehacks.suus.agent.createProfileStore
+import com.icehacks.suus.agent.createSettingsStore
+import com.icehacks.suus.ui.CustomizeActivity
 import com.icehacks.suus.ui.MemoryActivity
+import com.icehacks.suus.ui.OnboardingActivity
 import com.icehacks.suus.ui.ProfileActivity
 import com.icehacks.suus.ui.addSpaced
 import com.icehacks.suus.ui.SPRING_OUT
 import com.icehacks.suus.ui.addWrapped
 import com.icehacks.suus.ui.animateLayoutChanges
-import com.icehacks.suus.ui.appearanceCard
 import com.icehacks.suus.ui.applySavedTheme
 import com.icehacks.suus.ui.bigButton
 import com.icehacks.suus.ui.bodyText
@@ -88,6 +90,7 @@ class SetupActivity : AppCompatActivity() {
     private lateinit var progressRow: View
     private lateinit var progressFill: View
     private lateinit var readyCard: View
+    private lateinit var setupLabel: View
     private val steps = mutableListOf<Step>()
 
     private var wakeJob: Job? = null
@@ -101,6 +104,18 @@ class SetupActivity : AppCompatActivity() {
         applySavedTheme()
         super.onCreate(savedInstanceState)
         settings = getSharedPreferences("setup", Context.MODE_PRIVATE)
+        // First launch: the step-by-step setup (permissions, About you, how SuuS talks). Someone who
+        // already did all of it before setup existed goes straight to this home screen.
+        val store = createSettingsStore(this)
+        if (!store.load().onboarded) {
+            if (alreadySetUp()) {
+                store.save(store.load().copy(onboarded = true))
+            } else {
+                startActivity(Intent(this, OnboardingActivity::class.java))
+                finish()
+                return
+            }
+        }
         val (root, column) = page()
 
         column.addSpaced(heroHeader(getString(R.string.app_name), getString(R.string.setup_subtitle), getString(R.string.hero_eyebrow_setup)))
@@ -115,7 +130,8 @@ class SetupActivity : AppCompatActivity() {
 
         column.addSpaced(progressCard(), 16)
 
-        column.addSpaced(sectionLabel(getString(R.string.section_setup)), 28)
+        setupLabel = sectionLabel(getString(R.string.section_setup))
+        column.addSpaced(setupLabel, 28)
         addStep(column, R.string.step_service_title, R.string.step_service_detail,
             Step(1, ::serviceEnabled, R.string.step_service_action)) { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
         addStep(column, R.string.step_mic_title, R.string.step_mic_detail,
@@ -135,6 +151,12 @@ class SetupActivity : AppCompatActivity() {
             withNote = true) { startWakeCheck() }
 
         column.addSpaced(sectionLabel(getString(R.string.section_more)), 28)
+        column.addSpaced(linkCard(R.string.custom_title, R.string.custom_open_body, R.string.custom_open_action, ButtonKind.PRIMARY) {
+            startActivity(Intent(this, CustomizeActivity::class.java))
+        }, 12)
+        column.addSpaced(linkCard(R.string.about_card_title, R.string.about_card_body, R.string.about_card_action, ButtonKind.TONAL) {
+            startActivity(Intent(this, ProfileActivity::class.java))
+        }, 16)
         column.addSpaced(
             card().apply {
                 addSpaced(titleText(getString(R.string.open_memory), 22f))
@@ -146,9 +168,11 @@ class SetupActivity : AppCompatActivity() {
                     16,
                 )
             },
-            12,
+            16,
         )
-        column.addSpaced(appearanceCard(), 16)
+        column.addSpaced(bigButton(getString(R.string.onb_again), ButtonKind.SECONDARY) {
+            startActivity(Intent(this, OnboardingActivity::class.java))
+        }, 20)
         column.addSpaced(bodyText(getString(R.string.setup_privacy), 16f).apply { gravity = Gravity.CENTER }, 24)
         if (BuildConfig.DEBUG) column.addSpaced(bodyText(getString(R.string.debug_note), 14f).apply { gravity = Gravity.CENTER }, 12)
 
@@ -304,6 +328,8 @@ class SetupActivity : AppCompatActivity() {
             )
             // Done steps shrink to their title and chip; repeatable ones keep their explanation.
             step.detail.visibility = if (done && step.doneActionLabel == null) View.GONE else View.VISIBLE
+            // Home shows only what still needs attention; finished steps live in "Run setup again".
+            step.box.visibility = if (done) View.GONE else View.VISIBLE
             step.box.background =
                 if (isNext) roundedBox(themeColor(R.color.suus_surface), 24, themeColor(R.color.suus_primary), 2)
                 else roundedBox(themeColor(R.color.suus_surface), 24, themeColor(R.color.suus_outline), 1)
@@ -334,6 +360,19 @@ class SetupActivity : AppCompatActivity() {
         progress.text = getString(R.string.setup_progress_count, doneCount, steps.size)
         progressRow.contentDescription = getString(R.string.setup_progress, doneCount, steps.size)
         readyCard.visibility = if (doneCount == steps.size) View.VISIBLE else View.GONE
+        setupLabel.visibility = if (doneCount == steps.size) View.GONE else View.VISIBLE
+    }
+
+    /** Every permission and the profile already in place (set up before first-run setup existed). */
+    private fun alreadySetUp(): Boolean =
+        serviceEnabled() && granted(Manifest.permission.RECORD_AUDIO) && granted(Manifest.permission.READ_CALENDAR) &&
+            granted(photosPermission) && notificationsAllowed() && profileComplete()
+
+    /** A card with a title, a line, and one button that opens another screen. */
+    private fun linkCard(title: Int, body: Int, action: Int, kind: ButtonKind, open: () -> Unit): View = card().apply {
+        addSpaced(titleText(getString(title), 22f))
+        addSpaced(bodyText(getString(body)), 6)
+        addSpaced(bigButton(getString(action), kind, open), 16)
     }
 
     /** Name, email and phone saved on the "About you" screen. */

@@ -36,6 +36,20 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+
+            android:name=".ui.OnboardingActivity"
+
+            android:exported="false"
+
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+
+            android:name=".ui.CustomizeActivity"
+
+            android:exported="false" />
+
+        <activity
             android:name=".ui.MemoryActivity"
             android:exported="false"
             android:label="@string/memory_title"

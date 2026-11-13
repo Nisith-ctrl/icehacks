@@ -478,6 +478,8 @@ class AgentLoop(
     ): ActionResult {
         overlay.setMode(CharacterMode.ACTING)
         if (node != null) overlay.pointAt(node.bounds, caption) else overlay.caption(caption)
+        // "Explain every step": say what's about to happen before doing it, so nothing is a surprise.
+        if (config.currentSettings().detail == Detail.EVERY_STEP && approvalToken == null) voice.say(caption)
         val r = screen.perform(action, snap, approvalToken)
         if (node != null) overlay.showResult(node.bounds, r is ActionResult.Done)
         log("perform $action -> ${r::class.simpleName}")

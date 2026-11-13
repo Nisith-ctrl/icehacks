@@ -26,7 +26,11 @@ fun createAgent(
     val loggedVoice = runLog.voice(voice)
     val loggedApproval = runLog.approval(approval)
     // The user's own details from the app's "About you" screen (blank ones are asked for, then saved).
-    val config = AgentConfig(autoFillForms = true, profileStore = createProfileStore(context))
+    val config = AgentConfig(
+        autoFillForms = true,
+        profileStore = createProfileStore(context),
+        settingsStore = createSettingsStore(context), // tone, how much to explain (app: "Make SuuS yours")
+    )
     val planner: Planner = if (config.apiKey.isBlank()) NoKeyPlanner else GroqPlanner(config)
     val prefs = sharedPreferenceStore(context)
     val ledger = DraftLedger()
@@ -37,7 +41,7 @@ fun createAgent(
         config = config,
     )
     Log.i(AgentLoop.TAG, "agent ready: model=${config.model}, key set=${config.apiKey.isNotBlank()}")
-    return runLog.agent(SuusAgent(loggedScreen, loggedVoice, overlay, loop, prefs, ledger, runLog = runLog.logger))
+    return runLog.agent(SuusAgent(loggedScreen, loggedVoice, overlay, loop, prefs, ledger, runLog = runLog.logger, settings = config::currentSettings))
 }
 
 /**
