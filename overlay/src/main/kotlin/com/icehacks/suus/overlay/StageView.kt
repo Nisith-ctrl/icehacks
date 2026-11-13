@@ -30,7 +30,7 @@ internal class StageView(context: Context) : View(context) {
     private val fontScale = context.resources.configuration.fontScale.coerceIn(1f, 1.3f)
 
     /** Height of the robot. Placement treats it as a square of this size, so it never covers the target. */
-    val characterSize = 88 * dp
+    val characterSize get() = 88 * dp * OverlayStyle.robotScale
     val gap = 12 * dp
 
     var mode = CharacterMode.HIDDEN

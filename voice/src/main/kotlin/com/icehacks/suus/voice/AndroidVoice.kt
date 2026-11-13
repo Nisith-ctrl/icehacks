@@ -79,6 +79,7 @@ class AndroidVoice(
         speaking = true
         main.post { pauseEar() }
         try {
+            engine.setSpeechRate(VoiceStyle.speechRate) // the user's speed choice, applied per line
             engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, id)
             withTimeoutOrNull(30_000) { done.await() }
         } finally {
@@ -144,7 +145,7 @@ class AndroidVoice(
             if (ok) {
                 tts?.language = Locale.US
                 // A livelier voice: a touch faster and brighter, and the best installed US voice.
-                tts?.setSpeechRate(1.12f)
+                tts?.setSpeechRate(VoiceStyle.speechRate)
                 tts?.setPitch(1.08f)
                 runCatching {
                     tts?.voices

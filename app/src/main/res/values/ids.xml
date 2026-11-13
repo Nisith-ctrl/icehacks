@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Whether an option row in "Make SuuS yours" is the chosen one (read by TalkBack as checked). -->
+    <item name="suus_option_checked" type="id" />
+</resources>

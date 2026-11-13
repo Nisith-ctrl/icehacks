@@ -17,6 +17,7 @@ import com.icehacks.suus.device.DeviceScreenController
 import com.icehacks.suus.device.EventSettler
 import com.icehacks.suus.device.Sha256Fingerprinter
 import com.icehacks.suus.overlay.createOverlay
+import com.icehacks.suus.ui.applySuusStyle
 import com.icehacks.suus.overlay.showHeard
 import com.icehacks.suus.voice.createApprovalGate
 import com.icehacks.suus.voice.createVoice
@@ -61,6 +62,7 @@ class SuusAccessibilityService : AccessibilityService() {
         super.onServiceConnected()
         fingerprinter = Sha256Fingerprinter()
         screen = DeviceScreenController(AccessibilityBackend(this), fingerprinter, settler)
+        applySuusStyle() // the user's voice speed and robot size ("Make SuuS yours")
         overlay = createOverlay(this)
         voice = createVoice(this, scope)
         val approval = createApprovalGate(voice, fingerprinter)
