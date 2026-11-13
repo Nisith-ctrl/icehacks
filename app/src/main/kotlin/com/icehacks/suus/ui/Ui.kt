@@ -61,9 +61,10 @@ internal fun Context.themeColor(id: Int): Int = ContextCompat.getColor(this, id)
  * The app's two typefaces, bundled under assets/fonts (SIL Open Font License, licences alongside):
  * - **Atkinson Hyperlegible** for reading: drawn by the Braille Institute for low-vision readers, with
  *   letters that are easy to tell apart (I l 1, O 0, b d). Body text, fields, labels, chips.
- * - **Pixelify Sans** for headings, buttons and the robot's captions: a clean, readable pixel font in
- *   the same 8-bit language as guru's robot and its stepped speech bubble. Variable: each weight is cut
- *   from one file. Only used at 18 sp and up; all reading text stays in Atkinson.
+ * - **Pixelify Sans** only for big, short display lines (each screen's headline, "Try saying:"): the
+ *   8-bit accent that matches guru's robot. Set at a lighter weight with extra letter spacing so the
+ *   pixels don't clump. Everything people read to act on (buttons, titles, list rows, the robot's
+ *   captions) is Atkinson Hyperlegible Bold instead.
  */
 internal object SuusFonts {
     private var body: Typeface? = null
@@ -145,7 +146,7 @@ internal fun Context.bigButton(label: CharSequence, kind: ButtonKind = ButtonKin
         contentDescription = label
         setAllCaps(false)
         textSize = 20f
-        typeface = SuusFonts.heading(this@bigButton, 600, opsz = 24)
+        typeface = SuusFonts.bodyBold(this@bigButton)
         letterSpacing = 0f
         setTextColor(ink)
         background = RippleDrawable(pressed, roundedBox(fill, 32, stroke), null)
@@ -210,7 +211,7 @@ internal fun ViewGroup.animateLayoutChanges() {
 internal fun Context.titleText(text: CharSequence, sizeSp: Float = 30f, color: Int = R.color.suus_text): TextView = TextView(this).apply {
     this.text = text
     textSize = sizeSp
-    typeface = SuusFonts.heading(this@titleText, 600, opsz = 36)
+    typeface = SuusFonts.bodyBold(this@titleText)
     setTextColor(themeColor(color))
     ViewCompat.setAccessibilityHeading(this, true)
 }
@@ -324,9 +325,9 @@ internal fun Context.heroHeader(
             TextView(context).apply {
                 this.text = headline
                 textSize = 30f
-                typeface = SuusFonts.heading(this@heroHeader, 650, opsz = 96)
-                letterSpacing = 0.01f
-                setLineSpacing(0f, 1.06f)
+                typeface = SuusFonts.heading(this@heroHeader, 500)
+                letterSpacing = 0.03f
+                setLineSpacing(0f, 1.12f)
                 ViewCompat.setAccessibilityHeading(this, true)
             },
             if (eyebrow != null) 10 else 0,
