@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -14,6 +15,7 @@ import android.provider.Settings
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -27,7 +29,9 @@ import com.icehacks.suus.agent.createProfileStore
 import com.icehacks.suus.ui.MemoryActivity
 import com.icehacks.suus.ui.ProfileActivity
 import com.icehacks.suus.ui.addSpaced
+import com.icehacks.suus.ui.SPRING_OUT
 import com.icehacks.suus.ui.addWrapped
+import com.icehacks.suus.ui.animateLayoutChanges
 import com.icehacks.suus.ui.appearanceCard
 import com.icehacks.suus.ui.applySavedTheme
 import com.icehacks.suus.ui.bigButton
@@ -36,7 +40,10 @@ import com.icehacks.suus.ui.card
 import com.icehacks.suus.ui.chip
 import com.icehacks.suus.ui.dp
 import com.icehacks.suus.ui.heroHeader
+import com.icehacks.suus.ui.liftTo
+import com.icehacks.suus.ui.motionAllowed
 import com.icehacks.suus.ui.page
+import com.icehacks.suus.ui.revealChildren
 import com.icehacks.suus.ui.roundedBox
 import com.icehacks.suus.ui.sectionLabel
 import com.icehacks.suus.ui.setChip
@@ -78,8 +85,8 @@ class SetupActivity : AppCompatActivity() {
     private val scope: CoroutineScope = MainScope()
     private lateinit var settings: SharedPreferences
     private lateinit var progress: TextView
+    private lateinit var progressRow: View
     private lateinit var progressFill: View
-    private lateinit var progressRest: View
     private lateinit var readyCard: View
     private val steps = mutableListOf<Step>()
 
@@ -96,7 +103,7 @@ class SetupActivity : AppCompatActivity() {
         settings = getSharedPreferences("setup", Context.MODE_PRIVATE)
         val (root, column) = page()
 
-        column.addSpaced(heroHeader(getString(R.string.app_name), getString(R.string.setup_subtitle)))
+        column.addSpaced(heroHeader(getString(R.string.app_name), getString(R.string.setup_subtitle), getString(R.string.hero_eyebrow_setup)))
 
         // Ready card sits right under the header once everything is done: it's what the user needs then.
         readyCard = card().apply {
@@ -146,6 +153,8 @@ class SetupActivity : AppCompatActivity() {
         if (BuildConfig.DEBUG) column.addSpaced(bodyText(getString(R.string.debug_note), 14f).apply { gravity = Gravity.CENTER }, 12)
 
         setContentView(root)
+        column.animateLayoutChanges()
+        if (savedInstanceState == null) column.revealChildren()
     }
 
     override fun onResume() {
@@ -171,22 +180,44 @@ class SetupActivity : AppCompatActivity() {
 
     // ---------- building ----------
 
-    /** "4 of 6 steps done" and a thick bar. Two weighted views, so no drawable work is needed. */
+    /**
+     * A big "5/7" with "steps done" beside it, and a thick bar filled with the hero's ribbon colours
+     * that grows to the new value (scaleX from the left edge, so nothing re-lays out). TalkBack reads
+     * the full sentence ("5 of 7 steps done") from the row's description.
+     */
     private fun progressCard(): View = card().apply {
-        progress = titleText("", 22f).apply {
-            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
-            ViewCompat.setAccessibilityHeading(this, false) // a status line, not a heading
+        progress = TextView(context).apply {
+            textSize = 34f
+            typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
+            letterSpacing = -0.02f
+            fontFeatureSettings = "tnum" // steady digits as the count changes
+            setTextColor(themeColor(R.color.suus_text))
         }
-        addSpaced(progress)
-        progressFill = View(context).apply { background = roundedBox(themeColor(R.color.suus_ok), 8) }
-        progressRest = View(context)
+        val row = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.BOTTOM
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+            addView(progress)
+            addView(bodyText(getString(R.string.setup_progress_label), 18f), LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                marginStart = dp(10); bottomMargin = dp(6)
+            })
+        }
+        progressRow = row
+        addSpaced(row)
+        progressFill = View(context).apply {
+            background = GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                intArrayOf(themeColor(R.color.suus_ribbon_1), themeColor(R.color.suus_ribbon_3), themeColor(R.color.suus_ribbon_4)),
+            ).apply { cornerRadius = dp(8).toFloat() }
+            pivotX = 0f
+            scaleX = 0f
+        }
         addSpaced(
-            LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
+            FrameLayout(context).apply {
                 background = roundedBox(themeColor(R.color.suus_surface_alt), 8)
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS // the text says it
-                addView(progressFill, LinearLayout.LayoutParams(0, dp(14), 0f))
-                addView(progressRest, LinearLayout.LayoutParams(0, dp(14), 1f))
+                addView(progressFill, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, dp(14)))
             },
             14,
         )
@@ -274,8 +305,9 @@ class SetupActivity : AppCompatActivity() {
             // Done steps shrink to their title and chip; repeatable ones keep their explanation.
             step.detail.visibility = if (done && step.doneActionLabel == null) View.GONE else View.VISIBLE
             step.box.background =
-                if (isNext) roundedBox(themeColor(R.color.suus_surface), 24, themeColor(R.color.suus_primary), 3)
+                if (isNext) roundedBox(themeColor(R.color.suus_surface), 24, themeColor(R.color.suus_primary), 2)
                 else roundedBox(themeColor(R.color.suus_surface), 24, themeColor(R.color.suus_outline), 1)
+            step.box.liftTo(if (isNext) 10 else 2) // the next step floats above the rest
             step.button.visibility = if (isNext) View.VISIBLE else View.GONE
             step.buttonAgain.visibility = when {
                 done -> if (step.doneActionLabel != null) View.VISIBLE else View.GONE
@@ -283,10 +315,12 @@ class SetupActivity : AppCompatActivity() {
                 else -> View.VISIBLE // a later step: outlined, so it doesn't compete with the next one
             }
         }
-        (progressFill.layoutParams as LinearLayout.LayoutParams).weight = doneCount.toFloat()
-        (progressRest.layoutParams as LinearLayout.LayoutParams).weight = (steps.size - doneCount).toFloat()
-        progressFill.visibility = if (doneCount == 0) View.GONE else View.VISIBLE
-        progressFill.requestLayout()
+        val fraction = doneCount.toFloat() / steps.size
+        if (motionAllowed()) {
+            progressFill.animate().scaleX(fraction).setStartDelay(200).setDuration(600).setInterpolator(SPRING_OUT).start()
+        } else {
+            progressFill.scaleX = fraction
+        }
         // The wake check: say what it is doing, and don't let it start twice.
         steps.firstOrNull { it.note != null }?.let { wake ->
             val note = if (wakeListening) getString(R.string.wake_listening) else wakeNote
@@ -297,7 +331,8 @@ class SetupActivity : AppCompatActivity() {
             wake.button.alpha = if (wakeListening) 0.5f else 1f
             wake.buttonAgain.alpha = if (wakeListening) 0.5f else 1f
         }
-        progress.text = getString(R.string.setup_progress, doneCount, steps.size)
+        progress.text = getString(R.string.setup_progress_count, doneCount, steps.size)
+        progressRow.contentDescription = getString(R.string.setup_progress, doneCount, steps.size)
         readyCard.visibility = if (doneCount == steps.size) View.VISIBLE else View.GONE
     }
 
