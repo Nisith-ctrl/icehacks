@@ -21,4 +21,11 @@
     <color name="suus_hero_start">#0A2913</color>
     <color name="suus_hero_end">#1C4A31</color>
     <color name="suus_on_hero">#FDF6ED</color>
+    <color name="suus_ribbon_1">#C99A2E</color>
+    <color name="suus_ribbon_2">#C2634A</color>
+    <color name="suus_ribbon_3">#4E9C74</color>
+    <color name="suus_ribbon_4">#1C4A31</color>
+    <!-- 8.9:1 on suus_surface (dark). -->
+    <color name="suus_headline_accent">#95CBA7</color>
+    <color name="suus_shadow">#000000</color>
 </resources>

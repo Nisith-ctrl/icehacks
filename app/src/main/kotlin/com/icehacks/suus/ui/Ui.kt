@@ -1,15 +1,40 @@
 package com.icehacks.suus.ui
 
+import android.animation.LayoutTransition
+import android.animation.ObjectAnimator
+import android.animation.PropertyValuesHolder
+import android.animation.StateListAnimator
+import android.animation.ValueAnimator
 import android.content.Context
 import android.content.res.ColorStateList
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.ColorFilter
+import android.graphics.LinearGradient
+import android.graphics.Outline
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.PixelFormat
+import android.graphics.RectF
+import android.graphics.Shader
 import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
+import android.view.ViewOutlineProvider
+import android.view.animation.DecelerateInterpolator
+import android.view.animation.Interpolator
+import android.view.animation.OvershootInterpolator
+import android.view.animation.PathInterpolator
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -31,6 +56,35 @@ import kotlin.math.roundToInt
 internal fun Context.dp(value: Int): Int = (value * resources.displayMetrics.density).roundToInt()
 
 internal fun Context.themeColor(id: Int): Int = ContextCompat.getColor(this, id)
+
+/**
+ * The app's two typefaces, bundled under assets/fonts (SIL Open Font License, licences alongside):
+ * - **Atkinson Hyperlegible** for reading: drawn by the Braille Institute for low-vision readers, with
+ *   letters that are easy to tell apart (I l 1, O 0, b d). Body text, fields, labels, chips.
+ * - **Pixelify Sans** only for big, short display lines (each screen's headline, "Try saying:"): the
+ *   8-bit accent that matches guru's robot. Set at a lighter weight with extra letter spacing so the
+ *   pixels don't clump. Everything people read to act on (buttons, titles, list rows, the robot's
+ *   captions) is Atkinson Hyperlegible Bold instead.
+ */
+internal object SuusFonts {
+    private var body: Typeface? = null
+    private var bodyBold: Typeface? = null
+    private val headings = HashMap<Int, Typeface>()
+
+    fun body(ctx: Context): Typeface =
+        body ?: load { Typeface.createFromAsset(ctx.assets, "fonts/AtkinsonHyperlegible-Regular.ttf") }.also { body = it }
+
+    fun bodyBold(ctx: Context): Typeface =
+        bodyBold ?: load { Typeface.createFromAsset(ctx.assets, "fonts/AtkinsonHyperlegible-Bold.ttf") }.also { bodyBold = it }
+
+    /** Pixelify Sans at [weight] (400 … 700). [opsz] is accepted for older call sites and ignored. */
+    @Suppress("UNUSED_PARAMETER")
+    fun heading(ctx: Context, weight: Int = 600, opsz: Int = 0): Typeface = headings.getOrPut(weight) {
+        load { Typeface.Builder(ctx.assets, "fonts/PixelifySans-Variable.ttf").setFontVariationSettings("'wght' $weight").build() }
+    }
+
+    private fun load(make: () -> Typeface?): Typeface = runCatching(make).getOrNull() ?: Typeface.DEFAULT
+}
 
 internal fun Context.roundedBox(fill: Int, radiusDp: Int, strokeColor: Int? = null, strokeDp: Int = 2): GradientDrawable =
     GradientDrawable().apply {
@@ -86,13 +140,17 @@ internal fun Context.bigButton(label: CharSequence, kind: ButtonKind = ButtonKin
     }
     val pressed = ColorStateList.valueOf(Color.argb(60, Color.red(ink), Color.green(ink), Color.blue(ink)))
     return AppCompatButton(this).apply {
-        text = label
+        // Primary actions end in an arrow, like a "Get started →" button: it says "this moves you on".
+        // TalkBack reads the label without it.
+        text = if (kind == ButtonKind.PRIMARY && !label.endsWith("→")) "$label  →" else label
+        contentDescription = label
         setAllCaps(false)
         textSize = 20f
-        typeface = Typeface.DEFAULT_BOLD
+        typeface = SuusFonts.bodyBold(this@bigButton)
+        letterSpacing = 0f
         setTextColor(ink)
         background = RippleDrawable(pressed, roundedBox(fill, 32, stroke), null)
-        stateListAnimator = null
+        stateListAnimator = pressSpring()
         minHeight = dp(64)
         minimumHeight = dp(64)
         setPadding(dp(24), dp(12), dp(24), dp(12))
@@ -100,10 +158,60 @@ internal fun Context.bigButton(label: CharSequence, kind: ButtonKind = ButtonKin
     }
 }
 
+// ---------- motion ----------
+// Framer Motion's ideas, done with Android's own animators: a spring-like ease for things arriving,
+// a quick press-down with a small bounce back, items arriving one after another, layout changes that
+// animate instead of jumping. Everything respects "Remove animations" (animator scale 0) in Settings.
+
+/** Spring-like ease-out (fast start, soft landing), as in `type: "spring"` with no overshoot. */
+internal val SPRING_OUT: Interpolator = PathInterpolator(0.16f, 1f, 0.3f, 1f)
+
+/** True unless the user turned animations off (Settings > Accessibility > Remove animations). */
+internal fun motionAllowed(): Boolean = ValueAnimator.areAnimatorsEnabled()
+
+/** Press feedback: shrink to 97 % in 90 ms while held, spring back with a small overshoot on release. */
+internal fun pressSpring(): StateListAnimator = StateListAnimator().apply {
+    fun scale(to: Float, ms: Long, interp: Interpolator) = ObjectAnimator.ofPropertyValuesHolder(
+        null as View?,
+        PropertyValuesHolder.ofFloat(View.SCALE_X, to),
+        PropertyValuesHolder.ofFloat(View.SCALE_Y, to),
+    ).apply { duration = ms; interpolator = interp }
+    addState(intArrayOf(android.R.attr.state_pressed), scale(0.97f, 90, DecelerateInterpolator()))
+    addState(intArrayOf(), scale(1f, 260, OvershootInterpolator(3f)))
+}
+
+/**
+ * Children arrive one after another: each fades in and rises 16 dp, 45 ms after the previous one,
+ * 320 ms each (like a staggered `initial={{opacity:0, y:16}} animate={{opacity:1, y:0}}`).
+ */
+internal fun ViewGroup.revealChildren(staggerMs: Long = 45) {
+    if (!motionAllowed()) return
+    val rise = context.dp(16).toFloat()
+    for (i in 0 until childCount) {
+        val child = getChildAt(i)
+        child.alpha = 0f
+        child.translationY = rise
+        child.animate().alpha(1f).translationY(0f)
+            .setStartDelay(60 + i * staggerMs).setDuration(320).setInterpolator(SPRING_OUT).start()
+    }
+}
+
+/** Show/hide and size changes inside [this] animate instead of jumping (like Framer's `layout`). */
+internal fun ViewGroup.animateLayoutChanges() {
+    if (!motionAllowed()) return
+    layoutTransition = LayoutTransition().apply {
+        enableTransitionType(LayoutTransition.CHANGING)
+        setDuration(240)
+        setInterpolator(LayoutTransition.CHANGING, SPRING_OUT)
+        setInterpolator(LayoutTransition.CHANGE_APPEARING, SPRING_OUT)
+        setInterpolator(LayoutTransition.CHANGE_DISAPPEARING, SPRING_OUT)
+    }
+}
+
 internal fun Context.titleText(text: CharSequence, sizeSp: Float = 30f, color: Int = R.color.suus_text): TextView = TextView(this).apply {
     this.text = text
     textSize = sizeSp
-    typeface = Typeface.DEFAULT_BOLD
+    typeface = SuusFonts.bodyBold(this@titleText)
     setTextColor(themeColor(color))
     ViewCompat.setAccessibilityHeading(this, true)
 }
@@ -111,6 +219,7 @@ internal fun Context.titleText(text: CharSequence, sizeSp: Float = 30f, color: I
 internal fun Context.bodyText(text: CharSequence, sizeSp: Float = 18f, secondary: Boolean = true): TextView = TextView(this).apply {
     this.text = text
     textSize = sizeSp
+    typeface = SuusFonts.body(this@bodyText)
     setLineSpacing(0f, 1.18f)
     setTextColor(themeColor(if (secondary) R.color.suus_text_secondary else R.color.suus_text))
 }
@@ -120,7 +229,7 @@ internal fun Context.sectionLabel(text: CharSequence): TextView = TextView(this)
     this.text = text.toString().uppercase()
     textSize = 15f
     letterSpacing = 0.08f
-    typeface = Typeface.DEFAULT_BOLD
+    typeface = SuusFonts.bodyBold(this@sectionLabel)
     setTextColor(themeColor(R.color.suus_text_secondary))
     setPadding(dp(4), 0, 0, 0)
     ViewCompat.setAccessibilityHeading(this, true)
@@ -131,7 +240,7 @@ enum class ChipKind { DONE, NEXT, WAITING, INFO }
 /** A rounded status label ("Done", "Do this next"). Colour is never the only signal: the words say it. */
 internal fun Context.chip(): TextView = TextView(this).apply {
     textSize = 16f
-    typeface = Typeface.DEFAULT_BOLD
+    typeface = SuusFonts.bodyBold(this@chip)
     setPadding(dp(14), dp(6), dp(14), dp(6))
 }
 
@@ -146,42 +255,339 @@ internal fun TextView.setChip(text: CharSequence, kind: ChipKind) {
     setTextColor(context.themeColor(fg))
 }
 
-/** A card: surface colour, large rounded corners, a soft outline so it stands out without shadow. */
+/**
+ * A soft surface: large rounded corners, no outline, no shadow. Sections read as one flowing page
+ * instead of a stack of boxes; the surface colour alone sets a group apart from the background.
+ */
 internal fun Context.card(): LinearLayout = LinearLayout(this).apply {
     orientation = LinearLayout.VERTICAL
-    background = roundedBox(themeColor(R.color.suus_surface), 24, themeColor(R.color.suus_outline), 1)
-    setPadding(dp(20), dp(20), dp(20), dp(20))
+    background = roundedBox(themeColor(R.color.suus_surface), 28)
+    setPadding(dp(22), dp(22), dp(22), dp(22))
+}
+
+/** Elevation with a tinted shadow. [liftDp] 2 for resting cards, 8 for the one that needs attention. */
+internal fun View.softShadow(liftDp: Int) {
+    elevation = context.dp(liftDp).toFloat()
+    outlineProvider = ViewOutlineProvider.BACKGROUND
+    val tint = context.themeColor(R.color.suus_shadow)
+    outlineSpotShadowColor = tint
+    outlineAmbientShadowColor = tint
+}
+
+/** Animates a card's lift (its z), e.g. when it becomes the next step. */
+internal fun View.liftTo(liftDp: Int) {
+    val z = context.dp(liftDp).toFloat()
+    if (!motionAllowed()) { elevation = z; return }
+    animate().z(z).setDuration(280).setInterpolator(SPRING_OUT).start()
 }
 
 /**
- * The header at the top of a screen: a big title and a line under it on the left, the SuuS robot on
- * the right. Cream text on a dark green gradient (contrast above 10:1 at both ends).
+ * The header at the top of a screen, after Stripe's hero: a small eyebrow line, then one big two-tone
+ * sentence ("SuuS." in ink, the subtitle in green), with a flowing colour ribbon behind the robot on
+ * the right. The ribbon fades out before the text column, so all text sits on the plain surface
+ * (ink 15:1, green 6.1:1 in light mode). The whole header reads as one sentence in TalkBack.
  */
-internal fun Context.heroHeader(title: CharSequence, subtitle: CharSequence): View {
+internal fun Context.heroHeader(
+    title: CharSequence,
+    subtitle: CharSequence,
+    eyebrow: CharSequence? = null,
+    onBack: (() -> Unit)? = null,
+    below: View? = null,
+): View {
+    val ink = themeColor(R.color.suus_text)
+    val accent = themeColor(R.color.suus_headline_accent)
+    val headline = SpannableStringBuilder().apply {
+        append(title.toString().trimEnd('.', ' ') + ".", ForegroundColorSpan(ink), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        append(" ")
+        append(subtitle, ForegroundColorSpan(accent), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+    }
     val text = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
-        addSpaced(titleText(title, 36f, R.color.suus_on_hero))
+        if (onBack != null) {
+            // Back lives in the header: a pill at its own width, still 56 dp tall.
+            addWrapped(bigButton(getString(R.string.back_arrow), ButtonKind.TONAL) { onBack() }.apply {
+                contentDescription = getString(R.string.back)
+                minHeight = dp(56); minimumHeight = dp(56)
+                textSize = 18f
+            })
+            addSpaced(View(context), 18)
+        }
+        if (eyebrow != null) {
+            addSpaced(TextView(context).apply {
+                this.text = eyebrow.toString().uppercase()
+                textSize = 14f
+                letterSpacing = 0.1f
+                typeface = SuusFonts.bodyBold(this@heroHeader)
+                setTextColor(themeColor(R.color.suus_text_secondary))
+            })
+        }
         addSpaced(
             TextView(context).apply {
-                this.text = subtitle
-                textSize = 19f
-                setLineSpacing(0f, 1.15f)
-                setTextColor(themeColor(R.color.suus_on_hero))
+                this.text = headline
+                textSize = 30f
+                typeface = SuusFonts.heading(this@heroHeader, 500)
+                letterSpacing = 0.03f
+                setLineSpacing(0f, 1.12f)
+                ViewCompat.setAccessibilityHeading(this, true)
             },
-            6,
+            if (eyebrow != null) 10 else 0,
         )
     }
-    return LinearLayout(this).apply {
+    val top = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        background = GradientDrawable(
-            GradientDrawable.Orientation.TL_BR,
-            intArrayOf(themeColor(R.color.suus_hero_start), themeColor(R.color.suus_hero_end)),
-        ).apply { cornerRadius = dp(28).toFloat() }
-        setPadding(dp(24), dp(22), dp(16), dp(22))
         addView(text, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-        addView(suusSprite(), LinearLayout.LayoutParams(dp(80), dp(110)).apply { marginStart = dp(8) })
+        addView(suusSprite(), LinearLayout.LayoutParams(dp(84), dp(116)).apply { marginStart = dp(8) })
     }
+    return LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        background = RibbonDrawable(this@heroHeader)
+        setPadding(dp(28), dp(8), dp(16), dp(36))
+        addSpaced(top)
+        below?.let { addSpaced(it, 18) }
+    }
+}
+
+/**
+ * Adds a [heroHeader] edge to edge: it cancels the page's side padding (and the top padding when it is
+ * the first thing on the page), so the ribbon runs to the screen edges and fades into the page.
+ */
+internal fun LinearLayout.addHero(hero: View, first: Boolean = true) {
+    val gutter = context.dp(16)
+    // An explicit width: LinearLayout doesn't widen MATCH_PARENT children for negative side margins.
+    val lp = LinearLayout.LayoutParams(context.resources.displayMetrics.widthPixels, WRAP_CONTENT)
+    lp.gravity = Gravity.START
+    lp.leftMargin = -gutter
+    lp.topMargin = if (first) -gutter else context.dp(8)
+    clipToPadding = false // otherwise the page's padding clips the header's edges
+    addView(hero, lp)
+}
+
+/**
+ * Something the user could say, as their own speech bubble: right-aligned, mint, with one squarer
+ * corner on the speaker's side, at most 86 % of the width so it reads as a message, not a box.
+ */
+internal fun Context.speechBubble(text: CharSequence): View {
+    val r = dp(24).toFloat(); val tail = dp(6).toFloat()
+    val bubble = TextView(this).apply {
+        this.text = text
+        textSize = 19f
+        setLineSpacing(0f, 1.15f)
+        typeface = SuusFonts.body(this@speechBubble)
+        setTextColor(themeColor(R.color.suus_on_primary_soft))
+        setPadding(dp(20), dp(14), dp(20), dp(15))
+        maxWidth = (resources.displayMetrics.widthPixels * 0.86f).toInt()
+        background = GradientDrawable().apply {
+            setColor(themeColor(R.color.suus_primary_soft))
+            // top-left, top-right, bottom-right (the speaker's corner), bottom-left
+            cornerRadii = floatArrayOf(r, r, r, r, tail, tail, r, r)
+        }
+    }
+    return LinearLayout(this).apply {
+        gravity = Gravity.END
+        addView(bubble, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
+    }
+}
+
+/**
+ * The robot saying something to you, in the overlay's own style: guru's pixel robot on the left and a
+ * stepped 8-bit speech bubble (dark outline, mint border, cream fill) with a stair-step tail pointing
+ * at it. The bubble keeps the overlay's fixed colours in both themes, like the real one on screen.
+ */
+internal fun Context.robotSays(content: View): View = LinearLayout(this).apply {
+    orientation = LinearLayout.HORIZONTAL
+    gravity = Gravity.BOTTOM
+    addView(suusSprite(), LinearLayout.LayoutParams(dp(60), dp(84)))
+    addView(FrameLayout(context).apply {
+        background = PixelBubbleDrawable(dp(3).toFloat())
+        val px = dp(3)
+        // Room for the 3-px-step outline and border, plus the tail on the left.
+        setPadding(px * 6 + dp(14), px * 3 + dp(14), px * 3 + dp(16), px * 3 + dp(16))
+        addView(content)
+    }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginStart = dp(2) })
+}
+
+/** Ink for text inside [robotSays]: the overlay's dark green, 14:1 on its cream fill. */
+internal const val PIXEL_INK = 0xFF0A2913.toInt()
+
+private class PixelBubbleDrawable(private val s: Float) : Drawable() {
+    private val paint = Paint() // no anti-aliasing: crisp pixel edges, like the overlay
+    private val outline = 0xFF0A2913.toInt()
+    private val mint = 0xFF95CBA7.toInt()
+    private val cream = 0xFFFDF6ED.toInt()
+
+    override fun draw(canvas: Canvas) {
+        val b = RectF(bounds)
+        b.left += 3 * s // the tail lives in this strip
+        for ((i, c) in listOf(outline, mint, cream).withIndex()) {
+            paint.color = c
+            canvas.drawPath(shape(b, i * s), paint)
+        }
+    }
+
+    /** A rectangle with 3-step pixel corners and a stair-step tail out of the left edge near the bottom. */
+    private fun shape(box: RectF, inset: Float): Path {
+        val l = box.left + inset; val t = box.top + inset; val r = box.right - inset; val bt = box.bottom - inset
+        val k = 3 * s
+        val tailY = bt - 7 * s
+        val len = 3 * s - inset
+        return Path().apply {
+            moveTo(l + k, t)
+            lineTo(r - k, t); lineTo(r - k, t + s); lineTo(r - 2 * s, t + s); lineTo(r - 2 * s, t + 2 * s)
+            lineTo(r - s, t + 2 * s); lineTo(r - s, t + k); lineTo(r, t + k)
+            lineTo(r, bt - k); lineTo(r - s, bt - k); lineTo(r - s, bt - 2 * s); lineTo(r - 2 * s, bt - 2 * s)
+            lineTo(r - 2 * s, bt - s); lineTo(r - k, bt - s); lineTo(r - k, bt)
+            lineTo(l + k, bt); lineTo(l + k, bt - s); lineTo(l + 2 * s, bt - s); lineTo(l + 2 * s, bt - 2 * s)
+            lineTo(l + s, bt - 2 * s); lineTo(l + s, bt - k); lineTo(l, bt - k)
+            // Tail: steps out to the left toward the robot, then back.
+            if (len > 0) {
+                lineTo(l, tailY + 2 * s); lineTo(l - len / 2, tailY + 2 * s); lineTo(l - len / 2, tailY + s)
+                lineTo(l - len, tailY + s); lineTo(l - len, tailY - s); lineTo(l - len / 2, tailY - s)
+                lineTo(l - len / 2, tailY - 2 * s); lineTo(l, tailY - 2 * s)
+            }
+            lineTo(l, t + k); lineTo(l + s, t + k); lineTo(l + s, t + 2 * s); lineTo(l + 2 * s, t + 2 * s)
+            lineTo(l + 2 * s, t + s); lineTo(l + k, t + s)
+            close()
+        }
+    }
+
+    override fun setAlpha(alpha: Int) {}
+    override fun setColorFilter(colorFilter: ColorFilter?) {}
+    @Deprecated("Deprecated in Java")
+    override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
+}
+
+/** A quiet closing promise: one short centred line, with a small green check in front. */
+internal fun Context.promiseLine(text: CharSequence): View = TextView(this).apply {
+    val check = "✓  "
+    this.text = SpannableStringBuilder().apply {
+        append(check, ForegroundColorSpan(themeColor(R.color.suus_ok)), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        append(text)
+    }
+    contentDescription = text
+    textSize = 15f
+    gravity = Gravity.CENTER
+    setTextColor(themeColor(R.color.suus_text_secondary))
+}
+
+/** One row in a [listGroup]: a title, a line under it, and what tapping it does. */
+internal class ListRow(val title: CharSequence, val body: CharSequence?, val onClick: () -> Unit)
+
+/**
+ * Several destinations in one rounded surface, separated by thin dividers, like a settings list.
+ * Each row is tappable anywhere (at least 80 dp tall) and ends in a chevron; TalkBack reads it as a
+ * button with its title and line.
+ */
+internal fun Context.listGroup(rows: List<ListRow>): View = LinearLayout(this).apply {
+    orientation = LinearLayout.VERTICAL
+    background = roundedBox(themeColor(R.color.suus_surface), 28)
+    clipToOutline = true
+    outlineProvider = ViewOutlineProvider.BACKGROUND
+    val ink = themeColor(R.color.suus_text)
+    for ((i, row) in rows.withIndex()) {
+        if (i > 0) addView(View(context).apply { setBackgroundColor(themeColor(R.color.suus_outline)) },
+            LinearLayout.LayoutParams(MATCH_PARENT, dp(1)).apply { marginStart = dp(22); marginEnd = dp(22) })
+        val ripple = ColorStateList.valueOf(Color.argb(40, Color.red(ink), Color.green(ink), Color.blue(ink)))
+        addView(LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = dp(80)
+            setPadding(dp(22), dp(16), dp(18), dp(16))
+            background = RippleDrawable(ripple, null, android.graphics.drawable.ColorDrawable(Color.WHITE))
+            isClickable = true
+            isFocusable = true
+            contentDescription = listOfNotNull(row.title, row.body).joinToString(". ")
+            accessibilityDelegate = object : View.AccessibilityDelegate() {
+                override fun onInitializeAccessibilityNodeInfo(host: View, info: android.view.accessibility.AccessibilityNodeInfo) {
+                    super.onInitializeAccessibilityNodeInfo(host, info)
+                    info.className = android.widget.Button::class.java.name
+                }
+            }
+            setOnClickListener { row.onClick() }
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+                addSpaced(titleText(row.title, 21f).apply { ViewCompat.setAccessibilityHeading(this, false) })
+                row.body?.let { addSpaced(bodyText(it, 16f), 3) }
+            }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+            addView(TextView(context).apply {
+                text = "›"
+                textSize = 30f
+                setTextColor(themeColor(R.color.suus_text_secondary))
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                setPadding(dp(12), 0, 0, dp(4))
+            })
+        }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+    }
+}
+
+/**
+ * A rounded surface with four soft diagonal colour bands flowing up to the top-right corner (the
+ * Stripe hero idea, in SuuS's colours). A left-to-right fade from the plain surface keeps the left
+ * 55 % clean for text. Purely decorative.
+ */
+private class RibbonDrawable(ctx: Context) : Drawable() {
+    private val radius = 0f
+    private val surface = ctx.themeColor(R.color.suus_background)
+    private val outline = ctx.themeColor(R.color.suus_outline)
+    private val bands = intArrayOf(
+        ctx.themeColor(R.color.suus_ribbon_1), ctx.themeColor(R.color.suus_ribbon_2),
+        ctx.themeColor(R.color.suus_ribbon_3), ctx.themeColor(R.color.suus_ribbon_4),
+    )
+    private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = ctx.dp(1).toFloat() }
+    private val clip = Path()
+    private val box = RectF()
+
+    override fun draw(canvas: Canvas) {
+        val b = bounds
+        box.set(b)
+        clip.reset(); clip.addRoundRect(box, radius, radius, Path.Direction.CW)
+        canvas.save()
+        canvas.clipPath(clip)
+        fill.shader = null; fill.color = surface
+        canvas.drawRect(box, fill)
+        // Bands: each a wide stripe from the bottom edge up past the top-right corner.
+        val w = b.width().toFloat(); val h = b.height().toFloat()
+        val bandW = w * 0.16f
+        for ((i, c) in bands.withIndex()) {
+            val x0 = b.left + w * (0.50f + i * 0.12f)
+            val p = Path().apply {
+                moveTo(x0, b.bottom.toFloat())
+                cubicTo(x0 + w * 0.10f, b.top + h * 0.55f, x0 + w * 0.22f, b.top + h * 0.25f, x0 + w * 0.40f, b.top.toFloat() - 1)
+                lineTo(x0 + w * 0.40f + bandW, b.top.toFloat() - 1)
+                cubicTo(x0 + w * 0.22f + bandW, b.top + h * 0.25f, x0 + w * 0.10f + bandW, b.top + h * 0.55f, x0 + bandW, b.bottom.toFloat())
+                close()
+            }
+            val next = bands[(i + 1) % bands.size]
+            fill.shader = LinearGradient(x0, b.bottom.toFloat(), x0 + w * 0.4f, b.top.toFloat(), c, next, Shader.TileMode.CLAMP)
+            fill.alpha = 230
+            canvas.drawPath(p, fill)
+        }
+        fill.alpha = 255
+        // Fade from the plain surface: solid up to 58 %, gone by 80 %, so the text column never sits on colour.
+        fill.shader = LinearGradient(
+            b.left.toFloat(), 0f, b.right.toFloat(), 0f,
+            intArrayOf(surface, surface, Color.argb(0, Color.red(surface), Color.green(surface), Color.blue(surface))),
+            floatArrayOf(0f, 0.58f, 0.80f), Shader.TileMode.CLAMP,
+        )
+        canvas.drawRect(box, fill)
+        // And from the bottom: the ribbon melts into the page instead of ending on an edge.
+        fill.shader = LinearGradient(
+            0f, b.top + h * 0.55f, 0f, b.bottom.toFloat(),
+            intArrayOf(Color.argb(0, Color.red(surface), Color.green(surface), Color.blue(surface)), surface),
+            null, Shader.TileMode.CLAMP,
+        )
+        canvas.drawRect(box, fill)
+        fill.shader = null
+        canvas.restore()
+    }
+
+    override fun getOutline(outline: Outline) { outline.setRoundRect(bounds, radius) }
+    override fun setAlpha(alpha: Int) {}
+    override fun setColorFilter(colorFilter: ColorFilter?) {}
+    @Deprecated("Deprecated in Java")
+    override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
 }
 
 /** guru's SuuS robot (the overlay's standing frame) as a still picture. Decorative. */
@@ -228,17 +634,7 @@ internal fun Context.page(): Pair<ScrollView, LinearLayout> {
 }
 
 /** The appearance card: three full-width choices, the current one filled and marked. */
-internal fun Context.appearanceCard(): View = card().apply {
-    addSpaced(titleText(getString(R.string.theme_title), 22f))
-    addSpaced(bodyText(getString(R.string.theme_body)), 6)
-    val current = savedTheme()
-    for ((i, choice) in ThemeChoice.entries.withIndex()) {
-        val selected = choice == current
-        val label = (if (selected) "✓  " else "") + getString(choice.label)
-        val button = bigButton(label, if (selected) ButtonKind.PRIMARY else ButtonKind.SECONDARY) {
-            if (!selected) chooseTheme(choice)
-        }
-        button.contentDescription = getString(if (selected) R.string.theme_selected else R.string.theme_choose, getString(choice.label))
-        addSpaced(button, if (i == 0) 16 else 12)
+internal fun Context.appearanceCard(): View =
+    optionGroup(R.string.theme_title, R.string.theme_body, ThemeChoice.entries.map { Option(it, it.label) }, savedTheme()) { choice ->
+        if (choice != savedTheme()) chooseTheme(choice) // recreates the screen in the new colours
     }
-}

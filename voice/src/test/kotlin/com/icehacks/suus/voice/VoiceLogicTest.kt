@@ -58,6 +58,13 @@ class ChoiceMatcherTest {
         assertEquals("Email", ChoiceMatcher.match("the first one", methods))
         assertEquals("The one by the door", ChoiceMatcher.match("use the one by the door", photos))
         assertEquals("The one in the yard", ChoiceMatcher.match("yard", photos))
+        // Real vision descriptions vary run to run (emulator, Nov 13).
+        val described = listOf("brown dog in the grass", "dog sitting by the blue front door")
+        assertEquals("brown dog in the grass", ChoiceMatcher.match("the one in the yard", described))
+        assertEquals("dog sitting by the blue front door", ChoiceMatcher.match("the one by the door", described))
+        val fenced = listOf("dog standing in grass near fence", "dog on the doorstep")
+        assertEquals("dog standing in grass near fence", ChoiceMatcher.match("the one in the yard", fenced))
+        assertEquals("dog on the doorstep", ChoiceMatcher.match("use the one by the door", fenced))
         assertEquals("Text message", ChoiceMatcher.match("the last one", methods))
         assertNull(ChoiceMatcher.match("pizza", methods))
     }
@@ -103,6 +110,12 @@ class VoiceRouterTest {
         assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("undo the photo"))
         assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("use the one by the door"))
         assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("what are the options"))
+        // Heard from a lecture near the mic on Nov 13: starts like a request, but asks nothing of SuuS.
+        for (chatter in listOf("I guess we're doing", "how to get a woman wolf", "so when you get into Jackson's presidency")) {
+            assertEquals(chatter, VoiceRouter.Routed.IGNORED, router.onTranscript(chatter))
+        }
+        assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("can you open Gmail"))
+        assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("I want the morning shift"))
     }
 
     @Test
@@ -136,6 +149,11 @@ class VoiceRouterTest {
         assertEquals("Food serving", ChoiceMatcher.match("number two", roles))
         assertEquals(null, ChoiceMatcher.match("what's up what's up", roles))
         assertEquals(null, ChoiceMatcher.match("I'm going to make a costume", roles))
+
+        // The model once offered photo file names with a short description.
+        val photos = listOf("IMG_0418.png (backyard)", "IMG_0422.png (front door)")
+        assertEquals("IMG_0418.png (backyard)", ChoiceMatcher.match("The one in the yard", photos))
+        assertEquals("IMG_0422.png (front door)", ChoiceMatcher.match("the one by the door", photos))
     }
 
     @Test

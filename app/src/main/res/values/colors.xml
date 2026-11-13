@@ -23,4 +23,14 @@
     <color name="suus_hero_end">#22603F</color>
     <color name="suus_on_hero">#FDF6ED</color>
     <color name="suus_icon_background">#FDF6ED</color>
+    <!-- Hero ribbon (Stripe-style flowing gradient, in the robot's own colours: antenna amber, coral, mint, green).
+         Decorative only: no text sits on it. -->
+    <color name="suus_ribbon_1">#F6C453</color>
+    <color name="suus_ribbon_2">#F08A6B</color>
+    <color name="suus_ribbon_3">#7FC8A0</color>
+    <color name="suus_ribbon_4">#1D6A43</color>
+    <!-- Second half of a two-tone headline: 6.1:1 on suus_surface. -->
+    <color name="suus_headline_accent">#2F6E4E</color>
+    <!-- Tint for card shadows, so they read as soft green rather than grey. -->
+    <color name="suus_shadow">#1D6A43</color>
 </resources>
