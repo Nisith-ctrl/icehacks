@@ -140,7 +140,7 @@ class OnboardingActivity : AppCompatActivity() {
     }
 
     private fun welcomePage() {
-        column.addSpaced(heroHeader(getString(R.string.onb_welcome_title), getString(R.string.onb_welcome_short), getString(R.string.onb_welcome_eyebrow)))
+        column.addHero(heroHeader(getString(R.string.onb_welcome_title), getString(R.string.onb_welcome_short), getString(R.string.onb_welcome_eyebrow)))
         column.addSpaced(card().apply {
             addSpaced(bodyText(getString(R.string.onb_welcome_body), 20f, secondary = false))
             addSpaced(bodyText(getString(R.string.onb_welcome_points), 19f).apply { setLineSpacing(0f, 1.4f) }, 14)
@@ -150,7 +150,7 @@ class OnboardingActivity : AppCompatActivity() {
 
     private fun permissionsPage() {
         column.addSpaced(stepper())
-        column.addSpaced(heroHeader(getString(R.string.onb_perm_head), getString(R.string.onb_perm_short)), 16)
+        column.addHero(heroHeader(getString(R.string.onb_perm_head), getString(R.string.onb_perm_short)), first = false)
         column.addSpaced(bodyText(getString(R.string.onb_perm_body), 18f), 14)
         allowAllButton = bigButton(getString(R.string.onb_perm_allow_all), ButtonKind.PRIMARY) { allowAll() }
         column.addSpaced(allowAllButton!!, 16)
@@ -227,7 +227,7 @@ class OnboardingActivity : AppCompatActivity() {
 
     private fun aboutPage() {
         column.addSpaced(stepper())
-        column.addSpaced(heroHeader(getString(R.string.onb_about_title), getString(R.string.onb_about_short)), 16)
+        column.addHero(heroHeader(getString(R.string.onb_about_title), getString(R.string.onb_about_short)), first = false)
         column.addSpaced(bodyText(getString(R.string.onb_about_body), 18f), 14)
         val form = ProfileForm(this, createProfileStore(this))
         profileForm = form
@@ -247,7 +247,7 @@ class OnboardingActivity : AppCompatActivity() {
 
     private fun stylePage() {
         column.addSpaced(stepper())
-        column.addSpaced(heroHeader(getString(R.string.onb_style_head), getString(R.string.onb_style_title)), 16)
+        column.addHero(heroHeader(getString(R.string.onb_style_head), getString(R.string.onb_style_title)), first = false)
         column.addSpaced(bodyText(getString(R.string.onb_style_body), 18f), 14)
         customizeSections(column, scope) {}
         nav(R.string.onb_continue, { show(4, forward = true) })
@@ -255,7 +255,7 @@ class OnboardingActivity : AppCompatActivity() {
 
     private fun donePage() {
         column.addSpaced(stepper())
-        column.addSpaced(heroHeader(getString(R.string.onb_done_title), getString(R.string.onb_done_short), getString(R.string.onb_done_eyebrow)), 16)
+        column.addHero(heroHeader(getString(R.string.onb_done_title), getString(R.string.onb_done_short), getString(R.string.onb_done_eyebrow)), first = false)
         column.addSpaced(card().apply { addSpaced(bodyText(getString(R.string.onb_done_body), 20f, secondary = false)) }, 16)
         nav(R.string.onb_finish, {
             val store = createSettingsStore(this)

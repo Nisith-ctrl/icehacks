@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">SuuS</string>
-    <string name="service_description">SuuS reads the controls on screen and taps, types and scrolls for you when you ask by voice. It acts only in Gmail, Calendar, Chrome and Messages, and asks before anything is submitted or sent.</string>
+    <string name="service_description">SuuS reads the controls on screen and taps, types and scrolls for you when you ask by voice. It asks you before anything is submitted or sent.</string>
 
     <!-- Setup screen -->
     <string name="hero_eyebrow_setup">Your hands-free helper</string>
@@ -13,7 +13,7 @@
     <string name="setup_progress">%1$d of %2$d steps done</string>
     <string name="setup_all_done_title">You\'re ready</string>
     <string name="setup_all_done_body">Say \"SuuS\", then what you want. For example: \"SuuS, find the library workshop invite and register me.\" Say \"Stop\" at any time.</string>
-    <string name="setup_privacy">SuuS only acts in Gmail, Calendar, Chrome and Messages, and always asks you before it submits or sends anything.</string>
+    <string name="setup_privacy">SuuS always asks you before it submits or sends anything.</string>
     <string name="section_setup">Setup</string>
     <string name="section_more">More</string>
     <string name="step_next">Do this next</string>
@@ -124,7 +124,7 @@
     <string name="onb_start">Get started</string>
     <string name="onb_perm_eyebrow">Permissions</string>
     <string name="onb_perm_title">Allow what SuuS needs</string>
-    <string name="onb_perm_body">Turn these on once. SuuS only acts in Gmail, Calendar, Chrome and Messages, and asks you before it submits or sends anything.</string>
+    <string name="onb_perm_body">Turn these on once. SuuS always asks you before it submits or sends anything.</string>
     <string name="onb_perm_allow_all">Allow all of these</string>
     <string name="onb_perm_required">Needed</string>
     <string name="onb_perm_optional">For some tasks</string>
@@ -188,4 +188,23 @@
 
     <string name="option_selected">%1$s, selected</string>
     <string name="option_choose">%1$s, not selected. Double-tap to choose.</string>
+    <!-- Home -->
+    <string name="home_greeting">Hi %1$s.</string>
+    <string name="home_greeting_anon">Hi there.</string>
+    <string name="home_say">Just say \"SuuS\".</string>
+    <string name="home_status_ready">Ready when you are</string>
+    <plurals name="home_steps_left">
+        <item quantity="one">%1$d step left</item>
+        <item quantity="other">%1$d steps left</item>
+    </plurals>
+    <string name="home_hint">Then say what you need, in your own words. Say \"Stop\" at any time.</string>
+    <string name="home_finish_setup">Finish setting up</string>
+    <string name="try_title">Try saying</string>
+    <string name="try_1">\"SuuS, find the library workshop invite and register me.\"</string>
+    <string name="try_2">\"SuuS, sign me up to volunteer at the harvest festival.\"</string>
+    <string name="try_3">\"SuuS, what do you remember?\"</string>
+    <string name="section_yours">Your SuuS</string>
+    <string name="row_custom_body">Tone, how much it explains, voice and look</string>
+    <string name="row_setup_body">Permissions, your details and style, step by step</string>
+    <string name="row_open">Open %1$s</string>
 </resources>

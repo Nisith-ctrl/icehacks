@@ -225,14 +225,13 @@ internal fun TextView.setChip(text: CharSequence, kind: ChipKind) {
 }
 
 /**
- * A card: surface colour, large rounded corners, a hairline outline and a soft, green-tinted shadow
- * (Stripe-style layered depth). The outline alone still separates it in dark mode, where shadows vanish.
+ * A soft surface: large rounded corners, no outline, no shadow. Sections read as one flowing page
+ * instead of a stack of boxes; the surface colour alone sets a group apart from the background.
  */
 internal fun Context.card(): LinearLayout = LinearLayout(this).apply {
     orientation = LinearLayout.VERTICAL
-    background = roundedBox(themeColor(R.color.suus_surface), 24, themeColor(R.color.suus_outline), 1)
-    setPadding(dp(20), dp(20), dp(20), dp(20))
-    softShadow(2)
+    background = roundedBox(themeColor(R.color.suus_surface), 28)
+    setPadding(dp(22), dp(22), dp(22), dp(22))
 }
 
 /** Elevation with a tinted shadow. [liftDp] 2 for resting cards, 8 for the one that needs attention. */
@@ -257,7 +256,13 @@ internal fun View.liftTo(liftDp: Int) {
  * the right. The ribbon fades out before the text column, so all text sits on the plain surface
  * (ink 15:1, green 6.1:1 in light mode). The whole header reads as one sentence in TalkBack.
  */
-internal fun Context.heroHeader(title: CharSequence, subtitle: CharSequence, eyebrow: CharSequence? = null): View {
+internal fun Context.heroHeader(
+    title: CharSequence,
+    subtitle: CharSequence,
+    eyebrow: CharSequence? = null,
+    onBack: (() -> Unit)? = null,
+    below: View? = null,
+): View {
     val ink = themeColor(R.color.suus_text)
     val accent = themeColor(R.color.suus_headline_accent)
     val headline = SpannableStringBuilder().apply {
@@ -267,6 +272,15 @@ internal fun Context.heroHeader(title: CharSequence, subtitle: CharSequence, eye
     }
     val text = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
+        if (onBack != null) {
+            // Back lives in the header: a pill at its own width, still 56 dp tall.
+            addWrapped(bigButton(getString(R.string.back_arrow), ButtonKind.TONAL) { onBack() }.apply {
+                contentDescription = getString(R.string.back)
+                minHeight = dp(56); minimumHeight = dp(56)
+                textSize = 18f
+            })
+            addSpaced(View(context), 18)
+        }
         if (eyebrow != null) {
             addSpaced(TextView(context).apply {
                 this.text = eyebrow.toString().uppercase()
@@ -288,14 +302,84 @@ internal fun Context.heroHeader(title: CharSequence, subtitle: CharSequence, eye
             if (eyebrow != null) 10 else 0,
         )
     }
-    return LinearLayout(this).apply {
+    val top = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        background = RibbonDrawable(this@heroHeader)
-        softShadow(2)
-        setPadding(dp(24), dp(26), dp(12), dp(26))
         addView(text, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
         addView(suusSprite(), LinearLayout.LayoutParams(dp(84), dp(116)).apply { marginStart = dp(8) })
+    }
+    return LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        background = RibbonDrawable(this@heroHeader)
+        setPadding(dp(28), dp(8), dp(16), dp(36))
+        addSpaced(top)
+        below?.let { addSpaced(it, 18) }
+    }
+}
+
+/**
+ * Adds a [heroHeader] edge to edge: it cancels the page's side padding (and the top padding when it is
+ * the first thing on the page), so the ribbon runs to the screen edges and fades into the page.
+ */
+internal fun LinearLayout.addHero(hero: View, first: Boolean = true) {
+    val gutter = context.dp(16)
+    // An explicit width: LinearLayout doesn't widen MATCH_PARENT children for negative side margins.
+    val lp = LinearLayout.LayoutParams(context.resources.displayMetrics.widthPixels, WRAP_CONTENT)
+    lp.gravity = Gravity.START
+    lp.leftMargin = -gutter
+    lp.topMargin = if (first) -gutter else context.dp(8)
+    clipToPadding = false // otherwise the page's padding clips the header's edges
+    addView(hero, lp)
+}
+
+/** One row in a [listGroup]: a title, a line under it, and what tapping it does. */
+internal class ListRow(val title: CharSequence, val body: CharSequence?, val onClick: () -> Unit)
+
+/**
+ * Several destinations in one rounded surface, separated by thin dividers, like a settings list.
+ * Each row is tappable anywhere (at least 80 dp tall) and ends in a chevron; TalkBack reads it as a
+ * button with its title and line.
+ */
+internal fun Context.listGroup(rows: List<ListRow>): View = LinearLayout(this).apply {
+    orientation = LinearLayout.VERTICAL
+    background = roundedBox(themeColor(R.color.suus_surface), 28)
+    clipToOutline = true
+    outlineProvider = ViewOutlineProvider.BACKGROUND
+    val ink = themeColor(R.color.suus_text)
+    for ((i, row) in rows.withIndex()) {
+        if (i > 0) addView(View(context).apply { setBackgroundColor(themeColor(R.color.suus_outline)) },
+            LinearLayout.LayoutParams(MATCH_PARENT, dp(1)).apply { marginStart = dp(22); marginEnd = dp(22) })
+        val ripple = ColorStateList.valueOf(Color.argb(40, Color.red(ink), Color.green(ink), Color.blue(ink)))
+        addView(LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = dp(80)
+            setPadding(dp(22), dp(16), dp(18), dp(16))
+            background = RippleDrawable(ripple, null, android.graphics.drawable.ColorDrawable(Color.WHITE))
+            isClickable = true
+            isFocusable = true
+            contentDescription = listOfNotNull(row.title, row.body).joinToString(". ")
+            accessibilityDelegate = object : View.AccessibilityDelegate() {
+                override fun onInitializeAccessibilityNodeInfo(host: View, info: android.view.accessibility.AccessibilityNodeInfo) {
+                    super.onInitializeAccessibilityNodeInfo(host, info)
+                    info.className = android.widget.Button::class.java.name
+                }
+            }
+            setOnClickListener { row.onClick() }
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+                addSpaced(titleText(row.title, 21f).apply { ViewCompat.setAccessibilityHeading(this, false) })
+                row.body?.let { addSpaced(bodyText(it, 16f), 3) }
+            }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+            addView(TextView(context).apply {
+                text = "›"
+                textSize = 30f
+                setTextColor(themeColor(R.color.suus_text_secondary))
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                setPadding(dp(12), 0, 0, dp(4))
+            })
+        }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
     }
 }
 
@@ -305,8 +389,8 @@ internal fun Context.heroHeader(title: CharSequence, subtitle: CharSequence, eye
  * 55 % clean for text. Purely decorative.
  */
 private class RibbonDrawable(ctx: Context) : Drawable() {
-    private val radius = ctx.dp(28).toFloat()
-    private val surface = ctx.themeColor(R.color.suus_surface)
+    private val radius = 0f
+    private val surface = ctx.themeColor(R.color.suus_background)
     private val outline = ctx.themeColor(R.color.suus_outline)
     private val bands = intArrayOf(
         ctx.themeColor(R.color.suus_ribbon_1), ctx.themeColor(R.color.suus_ribbon_2),
@@ -350,11 +434,15 @@ private class RibbonDrawable(ctx: Context) : Drawable() {
             floatArrayOf(0f, 0.58f, 0.80f), Shader.TileMode.CLAMP,
         )
         canvas.drawRect(box, fill)
+        // And from the bottom: the ribbon melts into the page instead of ending on an edge.
+        fill.shader = LinearGradient(
+            0f, b.top + h * 0.55f, 0f, b.bottom.toFloat(),
+            intArrayOf(Color.argb(0, Color.red(surface), Color.green(surface), Color.blue(surface)), surface),
+            null, Shader.TileMode.CLAMP,
+        )
+        canvas.drawRect(box, fill)
         fill.shader = null
         canvas.restore()
-        stroke.color = outline
-        box.inset(stroke.strokeWidth / 2, stroke.strokeWidth / 2)
-        canvas.drawRoundRect(box, radius, radius, stroke)
     }
 
     override fun getOutline(outline: Outline) { outline.setRoundRect(bounds, radius) }
@@ -408,17 +496,7 @@ internal fun Context.page(): Pair<ScrollView, LinearLayout> {
 }
 
 /** The appearance card: three full-width choices, the current one filled and marked. */
-internal fun Context.appearanceCard(): View = card().apply {
-    addSpaced(titleText(getString(R.string.theme_title), 22f))
-    addSpaced(bodyText(getString(R.string.theme_body)), 6)
-    val current = savedTheme()
-    for ((i, choice) in ThemeChoice.entries.withIndex()) {
-        val selected = choice == current
-        val label = (if (selected) "✓  " else "") + getString(choice.label)
-        val button = bigButton(label, if (selected) ButtonKind.PRIMARY else ButtonKind.SECONDARY) {
-            if (!selected) chooseTheme(choice)
-        }
-        button.contentDescription = getString(if (selected) R.string.theme_selected else R.string.theme_choose, getString(choice.label))
-        addSpaced(button, if (i == 0) 16 else 12)
+internal fun Context.appearanceCard(): View =
+    optionGroup(R.string.theme_title, R.string.theme_body, ThemeChoice.entries.map { Option(it, it.label) }, savedTheme()) { choice ->
+        if (choice != savedTheme()) chooseTheme(choice) // recreates the screen in the new colours
     }
-}

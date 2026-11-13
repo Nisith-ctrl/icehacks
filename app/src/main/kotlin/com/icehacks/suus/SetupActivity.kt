@@ -31,7 +31,10 @@ import com.icehacks.suus.ui.CustomizeActivity
 import com.icehacks.suus.ui.MemoryActivity
 import com.icehacks.suus.ui.OnboardingActivity
 import com.icehacks.suus.ui.ProfileActivity
+import com.icehacks.suus.ui.ListRow
+import com.icehacks.suus.ui.addHero
 import com.icehacks.suus.ui.addSpaced
+import com.icehacks.suus.ui.listGroup
 import com.icehacks.suus.ui.SPRING_OUT
 import com.icehacks.suus.ui.addWrapped
 import com.icehacks.suus.ui.animateLayoutChanges
@@ -86,10 +89,9 @@ class SetupActivity : AppCompatActivity() {
 
     private val scope: CoroutineScope = MainScope()
     private lateinit var settings: SharedPreferences
-    private lateinit var progress: TextView
-    private lateinit var progressRow: View
+    private lateinit var statusPill: TextView
+    private lateinit var progressTrack: View
     private lateinit var progressFill: View
-    private lateinit var readyCard: View
     private lateinit var setupLabel: View
     private val steps = mutableListOf<Step>()
 
@@ -118,19 +120,11 @@ class SetupActivity : AppCompatActivity() {
         }
         val (root, column) = page()
 
-        column.addSpaced(heroHeader(getString(R.string.app_name), getString(R.string.setup_subtitle), getString(R.string.hero_eyebrow_setup)))
+        val first = createProfileStore(this).load().fullName.trim().substringBefore(' ')
+        val greeting = if (first.isBlank()) getString(R.string.home_greeting_anon) else getString(R.string.home_greeting, first)
+        column.addHero(heroHeader(greeting, getString(R.string.home_say), below = statusBlock()))
 
-        // Ready card sits right under the header once everything is done: it's what the user needs then.
-        readyCard = card().apply {
-            background = roundedBox(themeColor(R.color.suus_ok_soft), 24)
-            addSpaced(titleText(getString(R.string.setup_all_done_title), 24f, R.color.suus_ok))
-            addSpaced(bodyText(getString(R.string.setup_all_done_body), 18f, secondary = false), 8)
-        }
-        column.addSpaced(readyCard, 16)
-
-        column.addSpaced(progressCard(), 16)
-
-        setupLabel = sectionLabel(getString(R.string.section_setup))
+        setupLabel = sectionLabel(getString(R.string.home_finish_setup))
         column.addSpaced(setupLabel, 28)
         addStep(column, R.string.step_service_title, R.string.step_service_detail,
             Step(1, ::serviceEnabled, R.string.step_service_action)) { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
@@ -150,29 +144,31 @@ class SetupActivity : AppCompatActivity() {
             Step(7, { settings.getBoolean(KEY_WAKE_OK, false) }, R.string.step_wake_action, R.string.step_wake_again),
             withNote = true) { startWakeCheck() }
 
-        column.addSpaced(sectionLabel(getString(R.string.section_more)), 28)
-        column.addSpaced(linkCard(R.string.custom_title, R.string.custom_open_body, R.string.custom_open_action, ButtonKind.PRIMARY) {
-            startActivity(Intent(this, CustomizeActivity::class.java))
+        column.addSpaced(sectionLabel(getString(R.string.try_title)), 28)
+        column.addSpaced(card().apply {
+            for ((i, line) in listOf(R.string.try_1, R.string.try_2, R.string.try_3).withIndex()) {
+                addSpaced(bodyText(getString(line), 20f, secondary = false).apply {
+                    setTextColor(themeColor(R.color.suus_headline_accent))
+                    typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                }, if (i == 0) 0 else 14)
+            }
         }, 12)
-        column.addSpaced(linkCard(R.string.about_card_title, R.string.about_card_body, R.string.about_card_action, ButtonKind.TONAL) {
-            startActivity(Intent(this, ProfileActivity::class.java))
-        }, 16)
-        column.addSpaced(
-            card().apply {
-                addSpaced(titleText(getString(R.string.open_memory), 22f))
-                addSpaced(bodyText(getString(R.string.open_memory_body)), 6)
-                addSpaced(
-                    bigButton(getString(R.string.open_memory_action), ButtonKind.TONAL) {
-                        startActivity(Intent(this@SetupActivity, MemoryActivity::class.java))
-                    },
-                    16,
-                )
+
+        column.addSpaced(sectionLabel(getString(R.string.section_yours)), 28)
+        column.addSpaced(listGroup(listOf(
+            ListRow(getString(R.string.custom_title), getString(R.string.row_custom_body)) {
+                startActivity(Intent(this, CustomizeActivity::class.java))
             },
-            16,
-        )
-        column.addSpaced(bigButton(getString(R.string.onb_again), ButtonKind.SECONDARY) {
-            startActivity(Intent(this, OnboardingActivity::class.java))
-        }, 20)
+            ListRow(getString(R.string.about_card_title), getString(R.string.about_card_body)) {
+                startActivity(Intent(this, ProfileActivity::class.java))
+            },
+            ListRow(getString(R.string.open_memory), getString(R.string.open_memory_body)) {
+                startActivity(Intent(this, MemoryActivity::class.java))
+            },
+            ListRow(getString(R.string.onb_again), getString(R.string.row_setup_body)) {
+                startActivity(Intent(this, OnboardingActivity::class.java))
+            },
+        )), 12)
         column.addSpaced(bodyText(getString(R.string.setup_privacy), 16f).apply { gravity = Gravity.CENTER }, 24)
         if (BuildConfig.DEBUG) column.addSpaced(bodyText(getString(R.string.debug_note), 14f).apply { gravity = Gravity.CENTER }, 12)
 
@@ -205,46 +201,34 @@ class SetupActivity : AppCompatActivity() {
     // ---------- building ----------
 
     /**
-     * A big "5/7" with "steps done" beside it, and a thick bar filled with the hero's ribbon colours
-     * that grows to the new value (scaleX from the left edge, so nothing re-lays out). TalkBack reads
-     * the full sentence ("5 of 7 steps done") from the row's description.
+     * Inside the header: a status pill ("Ready when you are" / "2 steps left"), one line on how to use
+     * SuuS, and, while setup isn't finished, a thin bar in the ribbon colours that grows to the new
+     * value (scaleX from the left, so nothing re-lays out). The pill is a live region for TalkBack.
      */
-    private fun progressCard(): View = card().apply {
-        progress = TextView(context).apply {
-            textSize = 34f
-            typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
-            letterSpacing = -0.02f
-            fontFeatureSettings = "tnum" // steady digits as the count changes
-            setTextColor(themeColor(R.color.suus_text))
-        }
-        val row = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.BOTTOM
+    private fun statusBlock(): View = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        statusPill = TextView(context).apply {
+            textSize = 17f
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(dp(16), dp(8), dp(18), dp(8))
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
-            addView(progress)
-            addView(bodyText(getString(R.string.setup_progress_label), 18f), LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                marginStart = dp(10); bottomMargin = dp(6)
-            })
         }
-        progressRow = row
-        addSpaced(row)
+        addWrapped(statusPill)
+        addSpaced(bodyText(getString(R.string.home_hint), 18f), 12)
         progressFill = View(context).apply {
             background = GradientDrawable(
                 GradientDrawable.Orientation.LEFT_RIGHT,
                 intArrayOf(themeColor(R.color.suus_ribbon_1), themeColor(R.color.suus_ribbon_3), themeColor(R.color.suus_ribbon_4)),
-            ).apply { cornerRadius = dp(8).toFloat() }
+            ).apply { cornerRadius = dp(5).toFloat() }
             pivotX = 0f
             scaleX = 0f
         }
-        addSpaced(
-            FrameLayout(context).apply {
-                background = roundedBox(themeColor(R.color.suus_surface_alt), 8)
-                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS // the text says it
-                addView(progressFill, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, dp(14)))
-            },
-            14,
-        )
+        progressTrack = FrameLayout(context).apply {
+            background = roundedBox(themeColor(R.color.suus_surface_alt), 5)
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS // the pill says it
+            addView(progressFill, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, dp(10)))
+        }
+        addSpaced(progressTrack, 16)
     }
 
     private fun addStep(column: LinearLayout, title: Int, detail: Int, step: Step, withNote: Boolean = false, onAction: () -> Unit) {
@@ -333,7 +317,7 @@ class SetupActivity : AppCompatActivity() {
             step.box.background =
                 if (isNext) roundedBox(themeColor(R.color.suus_surface), 24, themeColor(R.color.suus_primary), 2)
                 else roundedBox(themeColor(R.color.suus_surface), 24, themeColor(R.color.suus_outline), 1)
-            step.box.liftTo(if (isNext) 10 else 2) // the next step floats above the rest
+            step.box.liftTo(if (isNext) 3 else 0) // the next step sits slightly above the rest
             step.button.visibility = if (isNext) View.VISIBLE else View.GONE
             step.buttonAgain.visibility = when {
                 done -> if (step.doneActionLabel != null) View.VISIBLE else View.GONE
@@ -357,9 +341,14 @@ class SetupActivity : AppCompatActivity() {
             wake.button.alpha = if (wakeListening) 0.5f else 1f
             wake.buttonAgain.alpha = if (wakeListening) 0.5f else 1f
         }
-        progress.text = getString(R.string.setup_progress_count, doneCount, steps.size)
-        progressRow.contentDescription = getString(R.string.setup_progress, doneCount, steps.size)
-        readyCard.visibility = if (doneCount == steps.size) View.VISIBLE else View.GONE
+        val left = steps.size - doneCount
+        val status = if (left == 0) getString(R.string.home_status_ready)
+            else resources.getQuantityString(R.plurals.home_steps_left, left, left)
+        statusPill.text = "●  $status"
+        statusPill.contentDescription = status
+        statusPill.setTextColor(themeColor(if (left == 0) R.color.suus_ok else R.color.suus_pending))
+        statusPill.background = roundedBox(themeColor(if (left == 0) R.color.suus_ok_soft else R.color.suus_pending_soft), 20)
+        progressTrack.visibility = if (left == 0) View.GONE else View.VISIBLE
         setupLabel.visibility = if (doneCount == steps.size) View.GONE else View.VISIBLE
     }
 
@@ -367,13 +356,6 @@ class SetupActivity : AppCompatActivity() {
     private fun alreadySetUp(): Boolean =
         serviceEnabled() && granted(Manifest.permission.RECORD_AUDIO) && granted(Manifest.permission.READ_CALENDAR) &&
             granted(photosPermission) && notificationsAllowed() && profileComplete()
-
-    /** A card with a title, a line, and one button that opens another screen. */
-    private fun linkCard(title: Int, body: Int, action: Int, kind: ButtonKind, open: () -> Unit): View = card().apply {
-        addSpaced(titleText(getString(title), 22f))
-        addSpaced(bodyText(getString(body)), 6)
-        addSpaced(bigButton(getString(action), kind, open), 16)
-    }
 
     /** Name, email and phone saved on the "About you" screen. */
     private fun profileComplete(): Boolean = createProfileStore(this).load().let {
