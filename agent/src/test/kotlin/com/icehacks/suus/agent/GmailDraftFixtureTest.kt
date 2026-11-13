@@ -71,6 +71,16 @@ class GmailDraftFixtureTest {
     }
 
     @Test
+    fun thePickersOtherAppShortcutsAreRefused() {
+        val picker = fixture("files-picker-recent")
+        for (label in listOf("Photos", "Drive")) {
+            assertTrue(label, picker.nodes.filter { (it.text ?: it.contentDescription) == label }.all { AgentLoop.opensAnotherApp(picker, it) })
+        }
+        assertFalse(AgentLoop.opensAnotherApp(picker, picker.node("Images")))
+        assertFalse(AgentLoop.opensAnotherApp(picker, picker.node("Media picker")))
+    }
+
+    @Test
     fun aLateAttachmentIsRecordedWithItsLabel() {
         val ledger = DraftLedger()
         val e = ledger.recordAttachment("dog photo (door)", "com.google.android.gm", "Remove attachment IMG_0422.png")
