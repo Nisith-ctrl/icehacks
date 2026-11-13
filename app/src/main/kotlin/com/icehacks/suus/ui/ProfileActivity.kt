@@ -35,7 +35,7 @@ class ProfileActivity : AppCompatActivity() {
         column.addSpaced(bigButton(getString(R.string.back_arrow), ButtonKind.TONAL) { finish() }.apply {
             contentDescription = getString(R.string.back)
         })
-        column.addSpaced(heroHeader(getString(R.string.profile_title), getString(R.string.profile_intro)), 16)
+        column.addSpaced(heroHeader(getString(R.string.profile_title), getString(R.string.profile_intro), getString(R.string.hero_eyebrow_profile)), 16)
 
         val p = store.load()
         val form = card()
@@ -56,6 +56,8 @@ class ProfileActivity : AppCompatActivity() {
         column.addSpaced(bigButton(getString(R.string.profile_save), ButtonKind.PRIMARY) { save() }, 16)
         column.addSpaced(bodyText(getString(R.string.profile_voice_hint), 16f), 16)
         setContentView(root)
+        column.animateLayoutChanges()
+        if (savedInstanceState == null) column.revealChildren()
     }
 
     private fun field(parent: LinearLayout, label: Int, value: String, type: Int, hint: String, first: Boolean = false): EditText {

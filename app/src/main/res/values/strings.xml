@@ -4,6 +4,11 @@
     <string name="service_description">SuuS reads the controls on screen and taps, types and scrolls for you when you ask by voice. It acts only in Gmail, Calendar, Chrome and Messages, and asks before anything is submitted or sent.</string>
 
     <!-- Setup screen -->
+    <string name="hero_eyebrow_setup">Your hands-free helper</string>
+    <string name="hero_eyebrow_profile">Set once, used everywhere</string>
+    <string name="hero_eyebrow_memory">Your choices, your control</string>
+    <string name="setup_progress_count">%1$d/%2$d</string>
+    <string name="setup_progress_label">steps done</string>
     <string name="setup_subtitle">Set up once. After that, just say what you need.</string>
     <string name="setup_progress">%1$d of %2$d steps done</string>
     <string name="setup_all_done_title">You\'re ready</string>

@@ -35,7 +35,7 @@ class MemoryActivity : AppCompatActivity() {
         column.addSpaced(bigButton(getString(R.string.back_arrow), ButtonKind.TONAL) { finish() }.apply {
             contentDescription = getString(R.string.back)
         })
-        column.addSpaced(heroHeader(getString(R.string.memory_title), getString(R.string.memory_intro)), 16)
+        column.addSpaced(heroHeader(getString(R.string.memory_title), getString(R.string.memory_intro), getString(R.string.hero_eyebrow_memory)), 16)
         column.addSpaced(
             card().apply {
                 background = roundedBox(themeColor(R.color.suus_primary_soft), 24)
@@ -48,6 +48,9 @@ class MemoryActivity : AppCompatActivity() {
         list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         column.addSpaced(list, 4)
         setContentView(root)
+        column.animateLayoutChanges()
+        list.animateLayoutChanges() // saved items slide in and out as they are added or removed
+        if (savedInstanceState == null) column.revealChildren()
     }
 
     override fun onStart() {
