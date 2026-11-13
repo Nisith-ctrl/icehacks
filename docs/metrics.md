@@ -36,9 +36,9 @@ wheel). Same details as SuuS used (name, email, phone), and the person already k
 
 | Demo | Touches | Time |
 |---|---|---|
-| Library workshop registration | **53** | 2:21 (141 s) |
-| Volunteer shift signup | **44** | 1:24 (84 s) |
-| Photo hand-off + undo (Gmail draft) | not measured yet | |
+| Library workshop registration | **53** | 2:21.24 (141 s) |
+| Volunteer shift signup | **44** | 1:24.42 (84 s) |
+| Photo hand-off + undo (Gmail draft) | not measured (the by-hand run was for the old Messages version) | |
 
 ## Hands-free vs by hand
 
