@@ -82,6 +82,12 @@ class AgentLoop(
     suspend fun run(goal: String, takeOver: Boolean): Outcome {
         val formGoal = isFormGoal(goal, takeOver)
         var openedFromEmail = false
+        var attachedThisRun = false
+        var attachBaseline: Set<String>? = null   // "remove attachment" controls already on screen
+        var pendingAttach: String? = null         // edit_label of a pick whose attachment hasn't shown yet
+        // Submit/Send is offered for form goals ("register me", "take over" on a form) or when the goal
+        // says send. "Attach the dog photo" or "use the one by the door" only change the draft.
+        val sendAllowed = SEND_WORD.containsMatchIn(goal) || (formGoal && !ATTACH_ONLY.containsMatchIn(goal))
         val history = ArrayDeque<String>()
         var feedback: String? = null
         var actions = 0
@@ -105,6 +111,20 @@ class AgentLoop(
             val formIsTheGoals = formGoal && (openedFromEmail || takeOver || THIS_FORM.containsMatchIn(goal))
             val form = if (formIsTheGoals) formSummary(snap) else null
             val screenText = ScreenText.render(snap, skipFormFields = form != null)
+
+            // An attachment can appear a moment after the picker closes (Gmail loads the card), so the
+            // tap that picked it may not have seen it. Catch it here on the next screen.
+            val removeControls = snap.nodes.mapNotNull { DraftLedger.removeControl(it) }.toSet()
+            if (attachBaseline == null) attachBaseline = removeControls
+            val lateAttach = pendingAttach?.let { label -> (removeControls - attachBaseline!!).firstOrNull()?.let { label to it } }
+            if (lateAttach != null) {
+                val e = ledger.recordAttachment(lateAttach.first, snap.packageName, lateAttach.second)
+                attachBaseline = removeControls
+                pendingAttach = null
+                attachedThisRun = true
+                history += "attachment added: ${e.label}"
+                if (!sendAllowed) feedback = "The photo is attached. The goal didn't ask to send, so call done now."
+            }
 
             // ---- guards ----
             if (actions > 0 && snap.packageName.isNotEmpty() && snap.packageName !in AllowedApps.packages) {
@@ -162,11 +182,17 @@ class AgentLoop(
                 "tap", "enter_text", "scroll", "back", "launch_app" -> {
                     val caption = s("caption") ?: "Working"
                     val node = s("node_id")?.let { id -> snap.nodes.firstOrNull { it.id == id } }
-                        ?.let { if (step.tool == "tap") pickInsteadOfPreview(snap, it) else it }
+                        ?.let { if (step.tool == "tap") attachInsteadOfInsert(snap, pickInsteadOfPreview(snap, it)) else it }
                     val invalid: String? = when (step.tool) {
                         "tap" -> when {
                             node == null -> "There is no node ${s("node_id")} on this screen."
                             looksLikeCommit(snap, node) -> "That is a submit/send button: use the submit tool with a read-back."
+                            snap.packageName == GMAIL_PACKAGE && GMAIL_INLINE_INSERT.containsMatchIn(label(node)) ->
+                                "Not that one: it puts the picture inside the email text. Tap \"Attach file\" in this menu instead."
+                            attachedThisRun && ATTACH_BUTTON.containsMatchIn(label(node)) ->
+                                "The photo is already attached. Don't attach it again: call done and say it's attached."
+                            pendingAttach != null && ATTACH_BUTTON.containsMatchIn(label(node)) ->
+                                "You already picked the photo; it can take a moment to show in the draft. Look at the screen again before attaching anything."
                             else -> null
                         }
                         "enter_text" -> when {
@@ -199,7 +225,18 @@ class AgentLoop(
                     when (r) {
                         is ActionResult.Done -> {
                             errors = 0
-                            recordEdit(step.tool, snap, r.after, node, s("text"), s("edit_label"))?.let { remember(it) }
+                            val edit = recordEdit(step.tool, snap, r.after, node, s("text"), s("edit_label"))
+                            edit?.let { remember(it) }
+                            if (edit?.startsWith("attachment added") == true) {
+                                attachedThisRun = true
+                                pendingAttach = null
+                                attachBaseline = r.after.nodes.mapNotNull { DraftLedger.removeControl(it) }.toSet()
+                                if (!sendAllowed) feedback = "The photo is attached. The goal didn't ask to send, so call done now."
+                            } else if (step.tool == "tap" && s("edit_label") != null && !attachedThisRun &&
+                                node != null && !ATTACH_BUTTON.containsMatchIn(label(node)) && !GMAIL_INLINE_INSERT.containsMatchIn(label(node))) {
+                                // A pick in the photo/file picker; the paperclip or a menu item isn't one.
+                                pendingAttach = s("edit_label")
+                            }
                             val target = node?.let { describe(it) } ?: s("app") ?: s("direction") ?: ""
                             remember("${step.tool} $target -> ok, now ${ScreenText.appName(r.after.packageName)}" + if (!r.screenChanged) " (screen didn't change)" else "")
                             if (!r.screenChanged) feedback = "The screen did not change after that."
@@ -321,10 +358,15 @@ class AgentLoop(
                 "submit" -> {
                     val node = s("node_id")?.let { id -> snap.nodes.firstOrNull { it.id == id } }
                     val commitWord = if (s("commit_word") == "Send") "Send" else "Submit"
-                    val readback = s("readback") ?: ""
+                    val readback = spokenFileNames(s("readback") ?: "", ledger.all().lastOrNull { it.kind == DraftLedger.Kind.ATTACHMENT }?.label)
                     when {
                         submitted -> {
                             feedback = "Already submitted once. Never submit twice; check the result and call done."
+                            continue
+                        }
+                        // "Attach the dog photo" is not "send it": sending waits for its own command.
+                        !sendAllowed -> {
+                            feedback = "The goal only asks to attach, not to send. Call done and say what is attached; the user will say Send when ready."
                             continue
                         }
                         node == null -> {
@@ -640,6 +682,13 @@ class AgentLoop(
         private val WAITING_LINES = listOf("One sec…", "Thinking…", "Just a moment…", "Working it out…")
         private const val GMAIL_PACKAGE = "com.google.android.gm"
         private const val CHROME_PACKAGE = "com.android.chrome"
+        /** Gmail's attach menu: these two put the image inside the body, where undo can't find it. */
+        private val GMAIL_INLINE_INSERT = Regex("\\bInsert (photo|from Drive)\\b", RegexOption.IGNORE_CASE)
+        private val ATTACH_BUTTON = Regex("\\b(Attach file|Show attach content screen)\\b|add_attachment", RegexOption.IGNORE_CASE)
+        /** A goal about attaching a photo that doesn't also say to send it. */
+        private val ATTACH_ONLY = Regex("\\b(attach|photo|picture|pic)\\b", RegexOption.IGNORE_CASE)
+        private val SEND_WORD = Regex("\\b(send|submit)\\b", RegexOption.IGNORE_CASE)
+        private fun label(n: UiNode) = listOfNotNull(n.text, n.contentDescription, n.viewId).joinToString(" ").trim()
         private val FILE_NAME = Regex("\\.(png|jpe?g|gif|heic|webp)\\b", RegexOption.IGNORE_CASE)
         private val THIS_FORM = Regex("\\bth(is|e) (form|page)\\b", RegexOption.IGNORE_CASE)
         private val FORM_GOAL = Regex(
@@ -666,6 +715,34 @@ class AgentLoop(
         fun pickInsteadOfPreview(s: ScreenSnapshot, n: UiNode): UiNode {
             val name = PREVIEW.find(n.contentDescription ?: n.text ?: return n)?.groupValues?.get(1) ?: return n
             return s.nodes.firstOrNull { it.text == name } ?: n
+        }
+
+        /**
+         * Gmail's attach menu offers "Attach file", "Insert from Drive" and "Insert photo". The two
+         * "Insert" items put the picture inside the email text, where it can't be undone as an
+         * attachment, and the model tends to pick "Insert photo" for a photo. Tap "Attach file" instead.
+         */
+        fun attachInsteadOfInsert(s: ScreenSnapshot, n: UiNode): UiNode {
+            if (s.packageName != GMAIL_PACKAGE || !GMAIL_INLINE_INSERT.containsMatchIn(label(n))) return n
+            return s.nodes.firstOrNull { it.text == "Attach file" } ?: n
+        }
+
+        /** A read-back says the photo in words, never its file name: "IMG_0422.png" -> "the dog photo by the door". */
+        fun spokenFileNames(readback: String, photoLabel: String?): String =
+            readback.replace(Regex("\\b(the )?(photo |picture |image )?[\\w-]+\\.(png|jpe?g|gif|heic|webp)\\b", RegexOption.IGNORE_CASE)) {
+                "the " + (photoLabel?.let(::spokenLabel) ?: "photo")
+            }
+
+        /** "dog photo (door)" -> "dog photo by the door", "dog photo (yard)" -> "dog photo in the yard". */
+        fun spokenLabel(label: String): String {
+            val m = Regex("^(.*?)\\s*\\((.+)\\)$").find(label.trim()) ?: return label.trim()
+            val (what, where) = m.destructured
+            val place = when {
+                Regex("^(by|in|at|on|from|near|outside) ", RegexOption.IGNORE_CASE).containsMatchIn(where) -> where
+                where.contains("yard", ignoreCase = true) -> "in the $where"
+                else -> "by the $where"
+            }
+            return "$what $place"
         }
 
         fun clickTarget(s: ScreenSnapshot, n: UiNode): UiNode {

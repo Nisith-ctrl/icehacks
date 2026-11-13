@@ -103,6 +103,12 @@ class VoiceRouterTest {
         assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("undo the photo"))
         assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("use the one by the door"))
         assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("what are the options"))
+        // Heard from a lecture near the mic on Nov 13: starts like a request, but asks nothing of SuuS.
+        for (chatter in listOf("I guess we're doing", "how to get a woman wolf", "so when you get into Jackson's presidency")) {
+            assertEquals(chatter, VoiceRouter.Routed.IGNORED, router.onTranscript(chatter))
+        }
+        assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("can you open Gmail"))
+        assertEquals(VoiceRouter.Routed.COMMAND, router.onTranscript("I want the morning shift"))
     }
 
     @Test

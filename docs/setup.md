@@ -58,7 +58,7 @@ Full details: `fixtures/seed/README.md`. Short version, on the recording day:
 2. From the form site's `/seed/` page: send both invite emails to the test account and import
    `stg-conflicts.ics` into its calendar (dentist clashes with library session 1, lunch with volunteer shift B).
 3. `scripts/seed-device.sh`: photos dated yesterday, and the Maya contact.
-4. Before Demo 3 (photo): `scripts/seed-device.sh demo2` opens Messages on a draft to Maya, "Made it home!".
+4. Before the photo demo: `scripts/seed-device.sh demo2` opens a Gmail draft to maya@example.com, "Made it home!". (Messages can't attach photos on the emulator: no MMS.)
 5. Clear saved preferences before the library demo so the "remember Email" step happens fresh.
 
 Test forms: https://saythegoal-forms-nisith.vercel.app (library and volunteer, plus their confirmation pages).
