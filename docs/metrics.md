@@ -23,16 +23,32 @@ Notes:
   in that export: they were taps made about 50 minutes after the run ended. PR 28 limits the
   count to touches within 60 s of a run; until it's merged, clear the log before each run.)
 
-## Manual runs (to measure)
+## Manual runs (emulator, 2026-11-12, by Nisith)
 
-Record the same tasks done by hand with **Developer options → Show taps** on, and count every tap
-(including each keyboard key) from the home screen to the confirmation page.
+The same tasks done by hand on the emulator, from the home screen to the confirmation page.
+Every touch was counted with `adb shell getevent` (each new touch on the screen = 1). Typing used
+the on-screen keyboard, so every key press counts; scrolling was one drag per swipe (no mouse
+wheel). Same details as SuuS used (name, email, phone), and the person already knew the tasks.
 
 | Demo | Touches | Time |
 |---|---|---|
-| Library workshop registration | | |
-| Volunteer shift signup | | |
-| Photo message takeover + undo | | |
+| Library workshop registration | **53** | 2:21 (141 s) |
+| Volunteer shift signup | **44** | 1:24 (84 s) |
+| Photo message takeover + undo | not measured (the emulator has no MMS) | |
+
+## Hands-free vs by hand
+
+| Demo | By hand | With SuuS |
+|---|---|---|
+| Library workshop registration | 53 touches, 141 s | **0 touches**, 2 spoken commands, 85 s |
+| Volunteer shift signup | 44 touches, 84 s | **0 touches**, 3 spoken commands, 101 s |
+
+What this shows, stated plainly:
+- The saving is in **touches**: 97 precise taps across the two tasks by hand, none with SuuS.
+  For someone with arthritis, each of those taps (most of them tiny keyboard keys) is the hard part.
+- Time is similar, not faster: SuuS was quicker on the library task and slower on the volunteer
+  task. Its time includes waiting on the free AI tier's rate limit, and the person doing it by
+  hand has no motor difficulty and already knew the steps.
 
 For reference, the by-hand path includes opening Gmail, finding and opening the invite, opening
 the link, switching to Calendar to check both dates, switching back, choosing the session, typing
