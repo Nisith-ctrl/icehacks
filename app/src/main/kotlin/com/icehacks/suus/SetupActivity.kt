@@ -38,6 +38,7 @@ import com.icehacks.suus.ui.listGroup
 import com.icehacks.suus.ui.promiseLine
 import com.icehacks.suus.ui.speechBubble
 import com.icehacks.suus.ui.SPRING_OUT
+import com.icehacks.suus.ui.SuusFonts
 import com.icehacks.suus.ui.addWrapped
 import com.icehacks.suus.ui.animateLayoutChanges
 import com.icehacks.suus.ui.applySavedTheme
@@ -206,7 +207,7 @@ class SetupActivity : AppCompatActivity() {
         orientation = LinearLayout.VERTICAL
         statusPill = TextView(context).apply {
             textSize = 17f
-            typeface = Typeface.DEFAULT_BOLD
+            typeface = SuusFonts.bodyBold(context)
             setPadding(dp(16), dp(8), dp(18), dp(8))
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         }
@@ -234,7 +235,7 @@ class SetupActivity : AppCompatActivity() {
 
         step.badge = TextView(this).apply {
             textSize = 20f
-            typeface = Typeface.DEFAULT_BOLD
+            typeface = SuusFonts.bodyBold(context)
             gravity = Gravity.CENTER
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO // the chip says the same thing
         }
@@ -255,7 +256,7 @@ class SetupActivity : AppCompatActivity() {
 
         if (withNote) {
             step.note = bodyText("", 18f, secondary = false).apply {
-                typeface = Typeface.DEFAULT_BOLD
+                typeface = SuusFonts.bodyBold(context)
                 accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
             }
             box.addSpaced(step.note!!, 12)
