@@ -154,7 +154,8 @@ class SetupActivity : AppCompatActivity() {
             addSpaced(TextView(context).apply {
                 text = getString(R.string.try_title) + ":"
                 textSize = 20f
-                typeface = SuusFonts.heading(context, 600)
+                letterSpacing = 0.03f
+                typeface = SuusFonts.heading(context, 500)
                 setTextColor(PIXEL_INK)
                 ViewCompat.setAccessibilityHeading(this, true)
             })

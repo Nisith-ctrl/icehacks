@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
 internal fun Context.applySuusStyle(settings: SuusSettings = createSettingsStore(this).load()) {
     VoiceStyle.speechRate = VoiceStyle.DEFAULT_RATE * settings.speed.rate
     OverlayStyle.robotScale = settings.robotSize.scale
-    OverlayStyle.captionTypeface = SuusFonts.heading(this, 600, opsz = 30)
+    OverlayStyle.captionTypeface = SuusFonts.bodyBold(this) // captions are read mid-task: legibility first
     OverlayStyle.heardTypeface = Typeface.create(SuusFonts.body(this), Typeface.ITALIC)
 }
 
