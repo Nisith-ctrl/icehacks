@@ -332,6 +332,49 @@ internal fun LinearLayout.addHero(hero: View, first: Boolean = true) {
     addView(hero, lp)
 }
 
+/**
+ * Something the user could say, as their own speech bubble: right-aligned, mint, with one squarer
+ * corner on the speaker's side, at most 86 % of the width so it reads as a message, not a box.
+ */
+internal fun Context.speechBubble(text: CharSequence): View {
+    val r = dp(24).toFloat(); val tail = dp(6).toFloat()
+    val bubble = TextView(this).apply {
+        this.text = text
+        textSize = 19f
+        setLineSpacing(0f, 1.15f)
+        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        setTextColor(themeColor(R.color.suus_on_primary_soft))
+        setPadding(dp(20), dp(14), dp(20), dp(15))
+        maxWidth = (resources.displayMetrics.widthPixels * 0.86f).toInt()
+        background = GradientDrawable().apply {
+            setColor(themeColor(R.color.suus_primary_soft))
+            // top-left, top-right, bottom-right (the speaker's corner), bottom-left
+            cornerRadii = floatArrayOf(r, r, r, r, tail, tail, r, r)
+        }
+    }
+    return LinearLayout(this).apply {
+        gravity = Gravity.END
+        addView(bubble, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
+    }
+}
+
+/** A quiet closing promise: a small green check badge and one left-aligned line. */
+internal fun Context.promiseLine(text: CharSequence): View = LinearLayout(this).apply {
+    orientation = LinearLayout.HORIZONTAL
+    gravity = Gravity.CENTER_VERTICAL
+    setPadding(dp(6), 0, dp(6), 0)
+    addView(TextView(context).apply {
+        this.text = "✓"
+        textSize = 15f
+        typeface = Typeface.DEFAULT_BOLD
+        gravity = Gravity.CENTER
+        setTextColor(themeColor(R.color.suus_ok))
+        background = roundedBox(themeColor(R.color.suus_ok_soft), 14)
+        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+    }, LinearLayout.LayoutParams(dp(28), dp(28)))
+    addView(bodyText(text, 16f), LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginStart = dp(12) })
+}
+
 /** One row in a [listGroup]: a title, a line under it, and what tapping it does. */
 internal class ListRow(val title: CharSequence, val body: CharSequence?, val onClick: () -> Unit)
 
