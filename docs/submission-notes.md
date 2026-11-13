@@ -216,12 +216,12 @@ Each feature: what the user sees, how it works underneath, and where it was buil
   8 s, attaching took 14–17 s, undo about 2 s ("Removed the dog photo (yard). Everything else is as it
   was."), the swap 13–14 s, and the read-back 1 s ("…and the dog photo by the front door"). On "Send",
   the compose screen closed and the email bounced back from example.com, as expected. The model
-  first tried to tap Send directly and the commit guard refused it [PR 35, PR 36].
+  first tried to tap Send directly and the commit guard refused it [PR 35, PR 37].
 - **Made reliable in code, not by the model:** Gmail's "Insert photo" (puts the image inside the
   text) is redirected to "Attach file"; an attachment that shows up a moment late is still recorded;
   a removed attachment that lingers in the accessibility cache is cleared before undo checks; no Send
   question unless the goal says send; read-backs never say file names; photo descriptions are asked
-  as "subject + place" so they match how people answer ("the one in the yard") [PR 35, PR 36].
+  as "subject + place" so they match how people answer ("the one in the yard") [PR 35, PR 37].
 - **What is built:** `find_photos` lists photos by date via `MediaStore` and asks a vision model
   (`qwen/qwen3.8-27b`) for a short description of each [PR 4, PR 9]. `DraftLedger` records each of the
   agent's own edits (text set, option chosen, attachment added) with before/after state; undo is
@@ -498,7 +498,7 @@ running job and drops the queue [project brief, PR 1].
 | IC2 | Fill the live library form in Chrome by device actions | Passed 2026-11-10: name/email/phone typed and verified, session and Email radios read back CHECKED, keyboard closed [PR 15] |
 | IC3 | Demo 1, library, end to end | Passed 2026-11-11: **LIB-282497**, 5 of 5 values verified [PR 27]. (An earlier pass on 2026-11-10 gave LIB-928519 [PR 24].) |
 | IC4 | Volunteer form, preference reused | Passed 2026-11-11: **VOL-730060**, 6 of 6 values verified [PR 27]. (Earlier: VOL-631528 [PR 24].) |
-| IC5 | Demo 2, photo + undo | Passed 2026-11-13 in a **Gmail draft**: attach, undo only the photo, swap, read-back, Send [PR 35, PR 36]. In Messages only up to attach (no MMS) [PR 30] |
+| IC5 | Demo 2, photo + undo | Passed 2026-11-13 in a **Gmail draft**: attach, undo only the photo, swap, read-back, Send [PR 35, PR 37]. In Messages only up to attach (no MMS) [PR 30] |
 | IC6 | Recorded runs, submission | Not started at the time of writing |
 
 ### 6.2 Demo runs from the run log (emulator, 2026-11-11) [metrics]
