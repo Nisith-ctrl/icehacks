@@ -84,6 +84,8 @@ internal class StageView(context: Context) : View(context) {
         originX = loc[0].toFloat()
         originY = loc[1].toFloat()
         canvas.translate(-originX, -originY)
+        OverlayStyle.captionTypeface?.let { if (captionText.typeface !== it) captionText.typeface = it }
+        OverlayStyle.heardTypeface?.let { if (heardText.typeface !== it) heardText.typeface = it }
 
         for (b in highlights) ring(canvas, b, HIGHLIGHT, 255)
         focus?.let { ring(canvas, it, FOCUS, (focusAlpha * 255).toInt()) }

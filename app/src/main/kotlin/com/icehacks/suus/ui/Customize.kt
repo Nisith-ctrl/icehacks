@@ -37,6 +37,8 @@ import kotlinx.coroutines.launch
 internal fun Context.applySuusStyle(settings: SuusSettings = createSettingsStore(this).load()) {
     VoiceStyle.speechRate = VoiceStyle.DEFAULT_RATE * settings.speed.rate
     OverlayStyle.robotScale = settings.robotSize.scale
+    OverlayStyle.captionTypeface = SuusFonts.heading(this, 600)
+    OverlayStyle.heardTypeface = Typeface.create(SuusFonts.body(this), Typeface.ITALIC)
 }
 
 /** One choice in an option group: a label, an optional line under it, and its value. */
@@ -75,7 +77,7 @@ internal fun <T> Context.optionGroup(title: Int, body: Int?, options: List<Optio
                 addView(TextView(context).apply {
                     gravity = Gravity.CENTER
                     textSize = 18f
-                    typeface = Typeface.DEFAULT_BOLD
+                    typeface = SuusFonts.bodyBold(context)
                     setTextColor(themeColor(R.color.suus_on_primary))
                     importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 }, LinearLayout.LayoutParams(dp(32), dp(32)))
@@ -197,6 +199,7 @@ internal class ProfileForm(private val context: Context, private val store: Prof
             val title = titleText(getString(label), 20f)
             val box = EditText(this).apply {
                 setText(value)
+                typeface = SuusFonts.body(this@with)
                 inputType = type
                 textSize = 22f
                 minHeight = dp(64)

@@ -56,6 +56,32 @@ internal fun Context.dp(value: Int): Int = (value * resources.displayMetrics.den
 
 internal fun Context.themeColor(id: Int): Int = ContextCompat.getColor(this, id)
 
+/**
+ * The app's two typefaces, bundled under assets/fonts (SIL Open Font License, licences alongside):
+ * - **Atkinson Hyperlegible** for reading: drawn by the Braille Institute for low-vision readers, with
+ *   letters that are easy to tell apart (I l 1, O 0, b d). Body text, fields, labels, chips.
+ * - **Lexend** for headings and buttons: a warm, open sans designed to make reading easier. Variable,
+ *   so each weight is cut from one file.
+ */
+internal object SuusFonts {
+    private var body: Typeface? = null
+    private var bodyBold: Typeface? = null
+    private val headings = HashMap<Int, Typeface>()
+
+    fun body(ctx: Context): Typeface =
+        body ?: load { Typeface.createFromAsset(ctx.assets, "fonts/AtkinsonHyperlegible-Regular.ttf") }.also { body = it }
+
+    fun bodyBold(ctx: Context): Typeface =
+        bodyBold ?: load { Typeface.createFromAsset(ctx.assets, "fonts/AtkinsonHyperlegible-Bold.ttf") }.also { bodyBold = it }
+
+    /** Lexend at [weight] (400 regular … 700 bold). */
+    fun heading(ctx: Context, weight: Int = 600): Typeface = headings.getOrPut(weight) {
+        load { Typeface.Builder(ctx.assets, "fonts/Lexend-Variable.ttf").setFontVariationSettings("'wght' $weight").build() }
+    }
+
+    private fun load(make: () -> Typeface?): Typeface = runCatching(make).getOrNull() ?: Typeface.DEFAULT
+}
+
 internal fun Context.roundedBox(fill: Int, radiusDp: Int, strokeColor: Int? = null, strokeDp: Int = 2): GradientDrawable =
     GradientDrawable().apply {
         setColor(fill)
@@ -116,8 +142,8 @@ internal fun Context.bigButton(label: CharSequence, kind: ButtonKind = ButtonKin
         contentDescription = label
         setAllCaps(false)
         textSize = 20f
-        typeface = Typeface.DEFAULT_BOLD
-        letterSpacing = -0.005f
+        typeface = SuusFonts.heading(this@bigButton, 600)
+        letterSpacing = 0f
         setTextColor(ink)
         background = RippleDrawable(pressed, roundedBox(fill, 32, stroke), null)
         stateListAnimator = pressSpring()
@@ -181,7 +207,7 @@ internal fun ViewGroup.animateLayoutChanges() {
 internal fun Context.titleText(text: CharSequence, sizeSp: Float = 30f, color: Int = R.color.suus_text): TextView = TextView(this).apply {
     this.text = text
     textSize = sizeSp
-    typeface = Typeface.DEFAULT_BOLD
+    typeface = SuusFonts.heading(this@titleText, 600)
     setTextColor(themeColor(color))
     ViewCompat.setAccessibilityHeading(this, true)
 }
@@ -189,6 +215,7 @@ internal fun Context.titleText(text: CharSequence, sizeSp: Float = 30f, color: I
 internal fun Context.bodyText(text: CharSequence, sizeSp: Float = 18f, secondary: Boolean = true): TextView = TextView(this).apply {
     this.text = text
     textSize = sizeSp
+    typeface = SuusFonts.body(this@bodyText)
     setLineSpacing(0f, 1.18f)
     setTextColor(themeColor(if (secondary) R.color.suus_text_secondary else R.color.suus_text))
 }
@@ -198,7 +225,7 @@ internal fun Context.sectionLabel(text: CharSequence): TextView = TextView(this)
     this.text = text.toString().uppercase()
     textSize = 15f
     letterSpacing = 0.08f
-    typeface = Typeface.DEFAULT_BOLD
+    typeface = SuusFonts.bodyBold(this@sectionLabel)
     setTextColor(themeColor(R.color.suus_text_secondary))
     setPadding(dp(4), 0, 0, 0)
     ViewCompat.setAccessibilityHeading(this, true)
@@ -209,7 +236,7 @@ enum class ChipKind { DONE, NEXT, WAITING, INFO }
 /** A rounded status label ("Done", "Do this next"). Colour is never the only signal: the words say it. */
 internal fun Context.chip(): TextView = TextView(this).apply {
     textSize = 16f
-    typeface = Typeface.DEFAULT_BOLD
+    typeface = SuusFonts.bodyBold(this@chip)
     setPadding(dp(14), dp(6), dp(14), dp(6))
 }
 
@@ -286,7 +313,7 @@ internal fun Context.heroHeader(
                 this.text = eyebrow.toString().uppercase()
                 textSize = 14f
                 letterSpacing = 0.1f
-                typeface = Typeface.DEFAULT_BOLD
+                typeface = SuusFonts.bodyBold(this@heroHeader)
                 setTextColor(themeColor(R.color.suus_text_secondary))
             })
         }
@@ -294,7 +321,7 @@ internal fun Context.heroHeader(
             TextView(context).apply {
                 this.text = headline
                 textSize = 30f
-                typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
+                typeface = SuusFonts.heading(this@heroHeader, 700)
                 letterSpacing = -0.02f
                 setLineSpacing(0f, 1.06f)
                 ViewCompat.setAccessibilityHeading(this, true)
@@ -342,7 +369,7 @@ internal fun Context.speechBubble(text: CharSequence): View {
         this.text = text
         textSize = 19f
         setLineSpacing(0f, 1.15f)
-        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        typeface = SuusFonts.body(this@speechBubble)
         setTextColor(themeColor(R.color.suus_on_primary_soft))
         setPadding(dp(20), dp(14), dp(20), dp(15))
         maxWidth = (resources.displayMetrics.widthPixels * 0.86f).toInt()

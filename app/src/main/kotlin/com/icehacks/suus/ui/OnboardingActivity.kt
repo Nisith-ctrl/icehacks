@@ -174,7 +174,7 @@ class OnboardingActivity : AppCompatActivity() {
         )
         for (row in permissionRows) column.addSpaced(permissionCard(row), 12)
         permMessage = bodyText(getString(R.string.onb_perm_missing), 18f, secondary = false).apply {
-            typeface = Typeface.DEFAULT_BOLD
+            typeface = SuusFonts.bodyBold(context)
             setTextColor(themeColor(R.color.suus_pending))
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
             visibility = View.GONE
@@ -190,7 +190,7 @@ class OnboardingActivity : AppCompatActivity() {
     private fun permissionCard(row: PermissionRow): View = card().apply {
         row.box = this
         row.badge = TextView(context).apply {
-            textSize = 20f; typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
+            textSize = 20f; typeface = SuusFonts.bodyBold(context); gravity = Gravity.CENTER
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         }
         addSpaced(LinearLayout(context).apply {
