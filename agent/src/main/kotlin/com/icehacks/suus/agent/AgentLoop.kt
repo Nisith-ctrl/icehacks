@@ -193,6 +193,8 @@ class AgentLoop(
                                 "The photo is already attached. Don't attach it again: call done and say it's attached."
                             pendingAttach != null && ATTACH_BUTTON.containsMatchIn(label(node)) ->
                                 "You already picked the photo; it can take a moment to show in the draft. Look at the screen again before attaching anything."
+                            opensAnotherApp(snap, node) ->
+                                "That opens another app SuuS can't use. Stay in this file picker: tap \"Images\" to list the photos, then tap the file name."
                             else -> null
                         }
                         "enter_text" -> when {
@@ -738,6 +740,14 @@ class AgentLoop(
             if (s.packageName != GMAIL_PACKAGE || !GMAIL_INLINE_INSERT.containsMatchIn(label(n))) return n
             return s.nodes.firstOrNull { it.text == "Attach file" } ?: n
         }
+
+        /**
+         * The file picker's "Browse files in other apps" shortcuts (Photos, Drive) open apps outside the
+         * allowlist, and the run stops there. "Media picker" (the system photo picker) is allowed.
+         */
+        fun opensAnotherApp(s: ScreenSnapshot, n: UiNode): Boolean =
+            s.packageName == "com.google.android.documentsui" &&
+                listOfNotNull(n.text, n.contentDescription).any { it.trim() in setOf("Photos", "Drive", "Google Photos", "Google Drive") }
 
         /** After Send: Gmail's compose screen (its Send button and "Recipients" field) is no longer showing. */
         fun gmailComposeGone(after: ScreenSnapshot): Boolean =
