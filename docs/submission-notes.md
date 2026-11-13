@@ -237,9 +237,11 @@ Each feature: what the user sees, how it works underneath, and where it was buil
 - **Messages version (PR 30, merged through PR 35):** SuuS opens the + panel, describes both photos,
   asks which, and taps the chosen one; Messages then says "Attachments are not supported in this
   conversation" (no MMS), and SuuS leaves the draft unchanged. `seed-device.sh demo2-messages` starts it.
-- **Not done live yet:** the final "Send" (the test run ended with "Cancel"), and a re-run after the
-  read-back file-name fix (unit-tested). Undo's refusal on a changed screen is covered by unit tests
-  [PR 4, PR 25].
+- **Full run with Send (later on 2026-11-13, after PRs 37 and 38):** the same steps, then "Send" →
+  "Sent! Your email to maya@example.com is on its way." 0 touches, 6 spoken commands, 1 question,
+  1 approval, 8 actions plus 1 undo, 124 s (about 60 s of it rate-limit waiting); run log sessions
+  82–85 [metrics, guru session 2026-11-13-before-recording]. Undo's refusal on a changed screen is
+  covered by unit tests [PR 4, PR 25].
 
 ### 3.13 Setup screen
 - Seven-step checklist: turn on the accessibility service, microphone, calendar, photos,
@@ -509,7 +511,7 @@ running job and drops the queue [project brief, PR 1].
 | IC2 | Fill the live library form in Chrome by device actions | Passed 2026-11-10: name/email/phone typed and verified, session and Email radios read back CHECKED, keyboard closed [PR 15] |
 | IC3 | Demo 1, library, end to end | Passed 2026-11-11: **LIB-282497**, 5 of 5 values verified [PR 27]. (An earlier pass on 2026-11-10 gave LIB-928519 [PR 24].) |
 | IC4 | Volunteer form, preference reused | Passed 2026-11-11: **VOL-730060**, 6 of 6 values verified [PR 27]. (Earlier: VOL-631528 [PR 24].) |
-| IC5 | Demo 2, photo + undo | Passed up to the read-back on 2026-11-13 in a Gmail draft: attach, undo only the photo, swap; ended with "Cancel" [PR 35]. In Messages it stops at attach (no MMS) [PR 30] |
+| IC5 | Demo 2, photo + undo | Passed on 2026-11-13 in a Gmail draft: attach, undo only the photo, swap, read-back, "Send", sent to a test address; 0 touches, 6 spoken commands, 124 s [PR 35, PR 37, PR 38, metrics]. In Messages it stops at attach (no MMS) [PR 30] |
 | IC6 | Recorded runs, submission | Not started at the time of writing |
 
 ### 6.2 Demo runs from the run log (emulator, 2026-11-11) [metrics]
@@ -518,7 +520,7 @@ running job and drops the queue [project brief, PR 1].
 |---|---|---|---|---|---|---|---|
 | Library registration | 0 | 2 (request, "Submit") | 0 | 1 | 12 | 85 s | LIB-282497, 5/5 verified |
 | Volunteer signup | 0 | 3 (request, "Setup crew", "Submit") | 1 (role) | 1 | 17 | 101 s | VOL-730060, 6/6 verified |
-| Photo email takeover + undo (2026-11-13) | not counted | 5 | 1 (which photo) | read-back reached, then "Cancel" | | about 41 s of steps | attached, undone, swapped; nothing sent [PR 35] |
+| Photo hand-off + undo (2026-11-13) | 0 | 6 | 1 (which photo) | 1 | 8 + 1 undo | 124 s | attached, undone, swapped, sent to maya@example.com [metrics] |
 
 Caveats (all from metrics):
 - Spoken commands were injected as text (`DEBUG_UTTERANCE`), the same text the recognizer would produce.
@@ -656,8 +658,7 @@ high contrast, TalkBack labels, light and dark.
   speech on a phone was never tested.
 - **Demo 2 runs in Gmail, not Messages.** On the emulator, Messages refuses attachments (no MMS), so
   the photo hand-off uses a Gmail draft to a test address [decision 2026-11-13-demo2-gmail-draft].
-  Attach, undo and swap ran live; the final "Send" was not run in the test (it ended with "Cancel")
-  [PR 35].
+  The full flow ran live, including the send, which goes to a test address and bounces [metrics].
 - **Free-tier slowness.** Groq's free tier (8K tokens/min, 200K tokens/day) causes waits of 1–20 s
   between steps; a full registration takes 85–101 s, mostly waiting [metrics, groq-api]. The daily cap
   can stop testing for the day. A paid tier would remove most waits (not tested).
