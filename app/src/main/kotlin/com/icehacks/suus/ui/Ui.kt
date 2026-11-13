@@ -60,8 +60,9 @@ internal fun Context.themeColor(id: Int): Int = ContextCompat.getColor(this, id)
  * The app's two typefaces, bundled under assets/fonts (SIL Open Font License, licences alongside):
  * - **Atkinson Hyperlegible** for reading: drawn by the Braille Institute for low-vision readers, with
  *   letters that are easy to tell apart (I l 1, O 0, b d). Body text, fields, labels, chips.
- * - **Lexend** for headings and buttons: a warm, open sans designed to make reading easier. Variable,
- *   so each weight is cut from one file.
+ * - **Fraunces** for headings, buttons and the robot's captions: a soft, warm serif with rounded
+ *   "wonky" curves, set with its SOFT axis at 100 so it feels friendly rather than formal. Variable:
+ *   each weight and optical size is cut from one file.
  */
 internal object SuusFonts {
     private var body: Typeface? = null
@@ -74,9 +75,16 @@ internal object SuusFonts {
     fun bodyBold(ctx: Context): Typeface =
         bodyBold ?: load { Typeface.createFromAsset(ctx.assets, "fonts/AtkinsonHyperlegible-Bold.ttf") }.also { bodyBold = it }
 
-    /** Lexend at [weight] (400 regular … 700 bold). */
-    fun heading(ctx: Context, weight: Int = 600): Typeface = headings.getOrPut(weight) {
-        load { Typeface.Builder(ctx.assets, "fonts/Lexend-Variable.ttf").setFontVariationSettings("'wght' $weight").build() }
+    /**
+     * Fraunces at [weight] (400 … 900) and optical size [opsz] (9 … 144: higher = display shapes for big
+     * text, lower = sturdier shapes for small text). Soft and "wonky" on, for warmth.
+     */
+    fun heading(ctx: Context, weight: Int = 600, opsz: Int = 36): Typeface = headings.getOrPut(weight * 1000 + opsz) {
+        load {
+            Typeface.Builder(ctx.assets, "fonts/Fraunces-Variable.ttf")
+                .setFontVariationSettings("'wght' $weight, 'opsz' $opsz, 'SOFT' 100, 'WONK' 1")
+                .build()
+        }
     }
 
     private fun load(make: () -> Typeface?): Typeface = runCatching(make).getOrNull() ?: Typeface.DEFAULT
@@ -142,7 +150,7 @@ internal fun Context.bigButton(label: CharSequence, kind: ButtonKind = ButtonKin
         contentDescription = label
         setAllCaps(false)
         textSize = 20f
-        typeface = SuusFonts.heading(this@bigButton, 600)
+        typeface = SuusFonts.heading(this@bigButton, 600, opsz = 24)
         letterSpacing = 0f
         setTextColor(ink)
         background = RippleDrawable(pressed, roundedBox(fill, 32, stroke), null)
@@ -207,7 +215,7 @@ internal fun ViewGroup.animateLayoutChanges() {
 internal fun Context.titleText(text: CharSequence, sizeSp: Float = 30f, color: Int = R.color.suus_text): TextView = TextView(this).apply {
     this.text = text
     textSize = sizeSp
-    typeface = SuusFonts.heading(this@titleText, 600)
+    typeface = SuusFonts.heading(this@titleText, 600, opsz = 36)
     setTextColor(themeColor(color))
     ViewCompat.setAccessibilityHeading(this, true)
 }
@@ -321,8 +329,8 @@ internal fun Context.heroHeader(
             TextView(context).apply {
                 this.text = headline
                 textSize = 30f
-                typeface = SuusFonts.heading(this@heroHeader, 700)
-                letterSpacing = -0.02f
+                typeface = SuusFonts.heading(this@heroHeader, 650, opsz = 96)
+                letterSpacing = -0.005f
                 setLineSpacing(0f, 1.06f)
                 ViewCompat.setAccessibilityHeading(this, true)
             },
