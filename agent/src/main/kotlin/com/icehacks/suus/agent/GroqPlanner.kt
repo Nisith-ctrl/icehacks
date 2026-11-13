@@ -99,7 +99,11 @@ class GroqPlanner(
                     put("content", buildJsonArray {
                         add(buildJsonObject {
                             put("type", "text")
-                            put("text", "Describe where this photo was taken and its main subject in at most 8 words, e.g. \"dog in the backyard grass\". Reply with the words only.")
+                            // A steady "subject + place" phrase, so the spoken choices match how people
+                            // say it ("the one in the yard", "the one by the door") run after run.
+                            put("text", "Name the main subject and where it is, as \"<subject> in/by/on the <place>\", at most 6 words, " +
+                                "using everyday place words like yard, front door, kitchen, park, beach, street. " +
+                                "Examples: \"dog in the yard\", \"dog by the front door\". Reply with the words only.")
                         })
                         add(buildJsonObject {
                             put("type", "image_url")
@@ -111,6 +115,7 @@ class GroqPlanner(
                 })
             })
             put("max_completion_tokens", 60)
+            put("temperature", 0)
         }
         repeat(2) {
             when (val r = post(body)) {
