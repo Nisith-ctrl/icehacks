@@ -358,21 +358,17 @@ internal fun Context.speechBubble(text: CharSequence): View {
     }
 }
 
-/** A quiet closing promise: a small green check badge and one left-aligned line. */
-internal fun Context.promiseLine(text: CharSequence): View = LinearLayout(this).apply {
-    orientation = LinearLayout.HORIZONTAL
-    gravity = Gravity.CENTER_VERTICAL
-    setPadding(dp(6), 0, dp(6), 0)
-    addView(TextView(context).apply {
-        this.text = "✓"
-        textSize = 15f
-        typeface = Typeface.DEFAULT_BOLD
-        gravity = Gravity.CENTER
-        setTextColor(themeColor(R.color.suus_ok))
-        background = roundedBox(themeColor(R.color.suus_ok_soft), 14)
-        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-    }, LinearLayout.LayoutParams(dp(28), dp(28)))
-    addView(bodyText(text, 16f), LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginStart = dp(12) })
+/** A quiet closing promise: one short centred line, with a small green check in front. */
+internal fun Context.promiseLine(text: CharSequence): View = TextView(this).apply {
+    val check = "✓  "
+    this.text = SpannableStringBuilder().apply {
+        append(check, ForegroundColorSpan(themeColor(R.color.suus_ok)), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        append(text)
+    }
+    contentDescription = text
+    textSize = 15f
+    gravity = Gravity.CENTER
+    setTextColor(themeColor(R.color.suus_text_secondary))
 }
 
 /** One row in a [listGroup]: a title, a line under it, and what tapping it does. */
