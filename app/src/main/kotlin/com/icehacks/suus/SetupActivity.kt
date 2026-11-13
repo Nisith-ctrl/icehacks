@@ -36,7 +36,8 @@ import com.icehacks.suus.ui.addHero
 import com.icehacks.suus.ui.addSpaced
 import com.icehacks.suus.ui.listGroup
 import com.icehacks.suus.ui.promiseLine
-import com.icehacks.suus.ui.speechBubble
+import com.icehacks.suus.ui.PIXEL_INK
+import com.icehacks.suus.ui.robotSays
 import com.icehacks.suus.ui.SPRING_OUT
 import com.icehacks.suus.ui.SuusFonts
 import com.icehacks.suus.ui.addWrapped
@@ -147,11 +148,27 @@ class SetupActivity : AppCompatActivity() {
             Step(7, { settings.getBoolean(KEY_WAKE_OK, false) }, R.string.step_wake_action, R.string.step_wake_again),
             withNote = true) { startWakeCheck() }
 
-        column.addSpaced(sectionLabel(getString(R.string.try_title)), 28)
-        // Things to say, drawn as your own speech bubbles (the same mint as the overlay's "heard" bubble).
-        for ((i, line) in listOf(R.string.try_1, R.string.try_2, R.string.try_3).withIndex()) {
-            column.addSpaced(speechBubble(getString(line).trim('"')), if (i == 0) 14 else 10)
-        }
+        // The robot suggests what to say, in its own pixel speech bubble (the overlay's style).
+        column.addSpaced(robotSays(LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addSpaced(TextView(context).apply {
+                text = getString(R.string.try_title) + ":"
+                textSize = 20f
+                typeface = SuusFonts.heading(context, 600)
+                setTextColor(PIXEL_INK)
+                ViewCompat.setAccessibilityHeading(this, true)
+            })
+            for (line in listOf(R.string.try_1, R.string.try_2, R.string.try_3)) {
+                addSpaced(TextView(context).apply {
+                    text = "› " + getString(line).trim('"')
+                    textSize = 18f
+                    setLineSpacing(0f, 1.15f)
+                    typeface = SuusFonts.body(context)
+                    setTextColor(PIXEL_INK)
+                    contentDescription = getString(line)
+                }, 10)
+            }
+        }), 32)
 
         column.addSpaced(sectionLabel(getString(R.string.section_yours)), 28)
         column.addSpaced(listGroup(listOf(
