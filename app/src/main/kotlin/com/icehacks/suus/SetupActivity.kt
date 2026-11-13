@@ -35,6 +35,8 @@ import com.icehacks.suus.ui.ListRow
 import com.icehacks.suus.ui.addHero
 import com.icehacks.suus.ui.addSpaced
 import com.icehacks.suus.ui.listGroup
+import com.icehacks.suus.ui.promiseLine
+import com.icehacks.suus.ui.speechBubble
 import com.icehacks.suus.ui.SPRING_OUT
 import com.icehacks.suus.ui.addWrapped
 import com.icehacks.suus.ui.animateLayoutChanges
@@ -145,14 +147,10 @@ class SetupActivity : AppCompatActivity() {
             withNote = true) { startWakeCheck() }
 
         column.addSpaced(sectionLabel(getString(R.string.try_title)), 28)
-        column.addSpaced(card().apply {
-            for ((i, line) in listOf(R.string.try_1, R.string.try_2, R.string.try_3).withIndex()) {
-                addSpaced(bodyText(getString(line), 20f, secondary = false).apply {
-                    setTextColor(themeColor(R.color.suus_headline_accent))
-                    typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-                }, if (i == 0) 0 else 14)
-            }
-        }, 12)
+        // Things to say, drawn as your own speech bubbles (the same mint as the overlay's "heard" bubble).
+        for ((i, line) in listOf(R.string.try_1, R.string.try_2, R.string.try_3).withIndex()) {
+            column.addSpaced(speechBubble(getString(line).trim('"')), if (i == 0) 14 else 10)
+        }
 
         column.addSpaced(sectionLabel(getString(R.string.section_yours)), 28)
         column.addSpaced(listGroup(listOf(
@@ -169,8 +167,7 @@ class SetupActivity : AppCompatActivity() {
                 startActivity(Intent(this, OnboardingActivity::class.java))
             },
         )), 12)
-        column.addSpaced(bodyText(getString(R.string.setup_privacy), 16f).apply { gravity = Gravity.CENTER }, 24)
-        if (BuildConfig.DEBUG) column.addSpaced(bodyText(getString(R.string.debug_note), 14f).apply { gravity = Gravity.CENTER }, 12)
+        column.addSpaced(promiseLine(getString(R.string.setup_privacy)), 28)
 
         setContentView(root)
         column.animateLayoutChanges()

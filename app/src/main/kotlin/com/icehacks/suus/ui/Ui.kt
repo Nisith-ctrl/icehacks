@@ -332,6 +332,45 @@ internal fun LinearLayout.addHero(hero: View, first: Boolean = true) {
     addView(hero, lp)
 }
 
+/**
+ * Something the user could say, as their own speech bubble: right-aligned, mint, with one squarer
+ * corner on the speaker's side, at most 86 % of the width so it reads as a message, not a box.
+ */
+internal fun Context.speechBubble(text: CharSequence): View {
+    val r = dp(24).toFloat(); val tail = dp(6).toFloat()
+    val bubble = TextView(this).apply {
+        this.text = text
+        textSize = 19f
+        setLineSpacing(0f, 1.15f)
+        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        setTextColor(themeColor(R.color.suus_on_primary_soft))
+        setPadding(dp(20), dp(14), dp(20), dp(15))
+        maxWidth = (resources.displayMetrics.widthPixels * 0.86f).toInt()
+        background = GradientDrawable().apply {
+            setColor(themeColor(R.color.suus_primary_soft))
+            // top-left, top-right, bottom-right (the speaker's corner), bottom-left
+            cornerRadii = floatArrayOf(r, r, r, r, tail, tail, r, r)
+        }
+    }
+    return LinearLayout(this).apply {
+        gravity = Gravity.END
+        addView(bubble, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
+    }
+}
+
+/** A quiet closing promise: one short centred line, with a small green check in front. */
+internal fun Context.promiseLine(text: CharSequence): View = TextView(this).apply {
+    val check = "✓  "
+    this.text = SpannableStringBuilder().apply {
+        append(check, ForegroundColorSpan(themeColor(R.color.suus_ok)), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        append(text)
+    }
+    contentDescription = text
+    textSize = 15f
+    gravity = Gravity.CENTER
+    setTextColor(themeColor(R.color.suus_text_secondary))
+}
+
 /** One row in a [listGroup]: a title, a line under it, and what tapping it does. */
 internal class ListRow(val title: CharSequence, val body: CharSequence?, val onClick: () -> Unit)
 
