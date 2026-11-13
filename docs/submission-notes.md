@@ -32,9 +32,10 @@ and that approval is tied to a fingerprint of the exact screen that was read bac
 what SuuS remembers ("Email. Remember that for event signups."), and can review or delete it. On
 the Android emulator, the library registration and a second, differently laid out volunteer form
 both ran end to end with zero touches after setup and verified confirmation numbers (LIB-282497 and
-VOL-730060) [metrics, PR 27]. The photo-message demo with selective undo is built and unit-tested
-but could only run up to the attach step on the emulator, because the emulator has no MMS [PR 30,
-dead-end 2026-11-11-emulator-no-mms].
+VOL-730060) [metrics, PR 27]. The photo hand-off with selective undo runs in a Gmail draft: SuuS
+attached the yard photo, undid only that photo, then attached the one by the door and read everything
+back [PR 35]. It moved from Messages to Gmail because the emulator has no MMS [decision
+2026-11-13-demo2-gmail-draft].
 
 ---
 
@@ -203,23 +204,42 @@ Each feature: what the user sees, how it works underneath, and where it was buil
   question is open, "stop" ends the run in 1.6 s [T02 M2, PR 24]. Measured with injected text
   (`DEBUG_UTTERANCE`), so recognizer delay is not included.
 
-### 3.12 Photo-message takeover with selective undo (Demo 2), partly working
-- **Intended flow (project brief):** Messages is open with Maya and "Made it home!" typed. "Suus, take
-  over. Attach yesterday's dog photo." → "Undo the photo" (removes only that attachment; text and
-  recipient survive) → "Use the one by the door" → read-back → "Send".
+### 3.12 Photo hand-off with selective undo (Demo 2), in a Gmail draft
+- **Flow:** a Gmail draft to Maya (`maya@example.com`, a test domain), subject and body "Made it home!",
+  is open (`scripts/seed-device.sh demo2`). "Suus, take over. Attach yesterday's dog photo." → SuuS asks
+  which one → "the one in the yard" → "Suus, undo the photo" (removes only that attachment; text and
+  recipient survive) → "Suus, use the one by the door" → "Suus, send it" → read-back → "Send".
+- **Why Gmail:** the project brief planned this in Messages, but the emulator has no MMS and its
+  Messages build hides the draft text box. guru moved it to a Gmail draft on 2026-11-13 [decision
+  2026-11-13-demo2-gmail-draft].
 - **What is built:** `find_photos` lists photos by date via `MediaStore` and asks a vision model
   (`qwen/qwen3.8-27b`) for a short description of each [PR 4, PR 9]. `DraftLedger` records each of the
   agent's own edits (text set, option chosen, attachment added) with before/after state; undo is
   deterministic (no model call), refuses if the screen no longer matches what the agent left, and
   checks the other fields are unchanged [PR 4]. Undo only works before submit/send [T03 M4].
-- **What ran on the emulator (PR 30, still open, not merged):** with Messages updated to the 2026
-  build, SuuS opened the + panel, described both photos, asked "Which dog photo…? brown dog in fenced
-  backyard, or dog sitting in front of a blue door", matched "the one in the yard", tapped it, and
-  Messages said "Attachments are not supported in this conversation" (no MMS). SuuS dismissed it
-  and left the draft unchanged ("Made it home!" to Maya verified on screen).
-- **Not done live:** attach, "Undo the photo", "Use the one by the door", and Send. Undo is covered
-  only by unit tests (attach then undo only the photo; undo refusing on a changed screen; Cancel
-  leaves the draft and undo still works) [PR 4, PR 25].
+- **What ran on the emulator (2026-11-13, PR 35, injected speech):**
+
+  | Step | Said | Result | Time |
+  |---|---|---|---|
+  | 1 | "Suus take over. Attach yesterday's dog photo" | Asks "Which dog photo…? You can say dog on backyard lawn or dog sitting in front of the front door" | 8 s |
+  | 2 | "the one in the yard" | Yard photo attached through Attach file; "All done!"; no Send question | 17 s |
+  | 3 | "Suus undo the photo" | "Removed the dog photo (yard). Everything else is as it was." To, subject and body unchanged | about 2 s |
+  | 4 | "Suus use the one by the door" | Door photo attached | 13 s |
+  | 5 | "Suus send it" | Read-back, then "Say Send to go ahead, or Cancel." | 1 s |
+  | 6 | "cancel" | "Okay, cancelled. I left everything as it is." Nothing sent | |
+
+- **Gmail fixes it needed [PR 35]:** "Insert photo" puts the picture inside the body, where undo can't
+  reach it, and the model kept choosing it, so that tap is redirected to "Attach file". The attachment
+  card appears a moment after the picker closes, so the next screen records it. Gmail hides a removed
+  attachment without telling accessibility, so each snapshot now calls `clearCache()` first. A second
+  Attach in the same run is refused, and "attach" alone never leads to Send: that needs "send" in the goal.
+  Read-backs say "the dog photo by the door", not the file name.
+- **Messages version (PR 30, merged through PR 35):** SuuS opens the + panel, describes both photos,
+  asks which, and taps the chosen one; Messages then says "Attachments are not supported in this
+  conversation" (no MMS), and SuuS leaves the draft unchanged. `seed-device.sh demo2-messages` starts it.
+- **Not done live yet:** the final "Send" (the test run ended with "Cancel"), and a re-run after the
+  read-back file-name fix (unit-tested). Undo's refusal on a changed screen is covered by unit tests
+  [PR 4, PR 25].
 
 ### 3.13 Setup screen
 - Seven-step checklist: turn on the accessibility service, microphone, calendar, photos,
@@ -448,7 +468,10 @@ running job and drops the queue [project brief, PR 1].
 | Room chatter became tasks | A 90 s session ran any speech as a goal | 30 s session, request-shaped phrases only, 10 s follow-up after a bare wake | PR 19 |
 | Chatter taken as answers | Emulator mic picks up the room; a role question never worked; each bad answer wasted about 4 s and two silences dropped the task | Only answers that name a choice count; choices read aloud and shown; 15 s answer window | PR 19, PR 23 |
 | Messages hides its text box | The May 2024 Messages build hid the compose box, photo grid and "+" panel from accessibility; agent couldn't read the draft or pick a photo without hard-coded coordinates (not allowed by our plan) | Updated Messages from Play: "+" panel and Files picker became visible; the text box is still hidden | dead-end 2026-11-09-messages-compose-a11y-gaps, dead-end 2026-11-11-emulator-no-mms |
-| Emulator has no MMS | Any photo attach gives "Attachments are not supported in this conversation"; changing the APN is a system setting, so we didn't | SuuS stops cleanly and leaves the draft unchanged (PR 30, open) | dead-end 2026-11-11-emulator-no-mms, PR 30 |
+| Emulator has no MMS | Any photo attach gives "Attachments are not supported in this conversation"; changing the APN is a system setting, so we didn't | SuuS stops cleanly and leaves the draft unchanged; Demo 2 moved to a Gmail draft | dead-end 2026-11-11-emulator-no-mms, PR 30, decision 2026-11-13-demo2-gmail-draft |
+| Gmail "Insert photo" | The model kept picking "Insert photo", which puts the picture inside the email text, where undo can't remove it | That tap is redirected to "Attach file" | PR 35 |
+| Removed attachment still "there" | Gmail hides a removed attachment without telling accessibility; the cached tree still showed "Remove attachment IMG_0418.png" | `AccessibilityService.clearCache()` before each snapshot (Android 14+); undo checks again after a short wait | PR 35, dead-end 2026-11-13-gmail-insert-photo-and-stale-nodes |
+| Lecture started tasks | A lecture near the emulator mic started tasks ("I guess we're doing…") | Sentences starting with weak words (I, we, how, can…) count only with an action word or a known app or item | PR 35 |
 | Send with no label | Messages' Send label sits on a child node; a plain tap could have skipped approval | Commit detection checks the activated control, its children and view id | PR 10 |
 | Gmail occlusion | Gmail keeps the inbox in the accessibility tree, marked visible, behind an open email; the agent thought its tap did nothing and tapped again | Snapshots drop a sibling fully covered by a later-drawn sibling with content (`Occlusion.kt`) | PR 24 |
 | Calendar occlusion | That filter then hid Calendar's whole event list behind a full-screen layer holding only the "+" button (10 nodes instead of 60) | A later layer hides a sibling only if its visible content spans at least half of it | PR 25 |
@@ -470,7 +493,7 @@ running job and drops the queue [project brief, PR 1].
 | Windows Git Bash paths | `seed-device.sh` photo push failed (`cannot stat '/c/Users/...'`) | Convert local paths with `cygpath -w` | PR 12 |
 | Emulator mic | Started from Android Studio's Run button, the emulator mic is silence | Start with `emulator -avd stg_pixel_35 -allow-host-audio -no-snapshot-load` | dead-end hey-goal…, decision 2026-11-12-emulator-only |
 | Slow emulator | At 2 GB RAM it swapped and took minutes per screen | 4 GB (`hw.ramSize=4096`); apps open in about 4 s | session guru 2026-11-12-T05-final |
-| Run log over-counting touches | IC4 export showed 4 touches made about 50 minutes after the run | Only count touches within 60 s of a run (PR 28, open) | PR 28 |
+| Run log over-counting touches | IC4 export showed 4 touches made about 50 minutes after the run | Only count touches within 60 s of a run | PR 28 |
 | `uiautomator dump` side effect | It unbinds and rebinds every accessibility service, rebuilding SuuS's voice mid-test | Use screenshots while testing voice | T05 Handoff |
 | No physical phone | The plan relied on a Galaxy S21; nobody had it available | Emulator only (decision 2026-11-12) | decision 2026-11-12-emulator-only |
 
@@ -486,7 +509,7 @@ running job and drops the queue [project brief, PR 1].
 | IC2 | Fill the live library form in Chrome by device actions | Passed 2026-11-10: name/email/phone typed and verified, session and Email radios read back CHECKED, keyboard closed [PR 15] |
 | IC3 | Demo 1, library, end to end | Passed 2026-11-11: **LIB-282497**, 5 of 5 values verified [PR 27]. (An earlier pass on 2026-11-10 gave LIB-928519 [PR 24].) |
 | IC4 | Volunteer form, preference reused | Passed 2026-11-11: **VOL-730060**, 6 of 6 values verified [PR 27]. (Earlier: VOL-631528 [PR 24].) |
-| IC5 | Demo 2, photo + undo | Only up to the attach step on the emulator (no MMS) [PR 30, open] |
+| IC5 | Demo 2, photo + undo | Passed up to the read-back on 2026-11-13 in a Gmail draft: attach, undo only the photo, swap; ended with "Cancel" [PR 35]. In Messages it stops at attach (no MMS) [PR 30] |
 | IC6 | Recorded runs, submission | Not started at the time of writing |
 
 ### 6.2 Demo runs from the run log (emulator, 2026-11-11) [metrics]
@@ -495,7 +518,7 @@ running job and drops the queue [project brief, PR 1].
 |---|---|---|---|---|---|---|---|
 | Library registration | 0 | 2 (request, "Submit") | 0 | 1 | 12 | 85 s | LIB-282497, 5/5 verified |
 | Volunteer signup | 0 | 3 (request, "Setup crew", "Submit") | 1 (role) | 1 | 17 | 101 s | VOL-730060, 6/6 verified |
-| Photo takeover + undo | not run | | | | | | |
+| Photo email takeover + undo (2026-11-13) | not counted | 5 | 1 (which photo) | read-back reached, then "Cancel" | | about 41 s of steps | attached, undone, swapped; nothing sent [PR 35] |
 
 Caveats (all from metrics):
 - Spoken commands were injected as text (`DEBUG_UTTERANCE`), the same text the recognizer would produce.
@@ -503,9 +526,10 @@ Caveats (all from metrics):
   adding 1 question and 1 spoken command.
 - Time includes free-tier rate-limit waits (a few 1–17 s pauses per run).
 - Run log sessions 25 and 26 in `suus-sessions-20261111-113432.csv`. Session 26 showed 4 touches in that
-  export; they were taps made about 50 minutes after the run. The fix (PR 28) is still open.
-- **The manual "by hand" baseline has not been measured yet** (the table in metrics is empty). Do not
-  claim a "fewer touches than by hand" number until it is recorded.
+  export; they were taps made about 50 minutes after the run. PR 28 (merged) now counts only touches
+  within 60 s of a run.
+- By hand on the emulator (2026-11-12, Nisith): library 53 touches in 141 s, volunteer 44 touches in
+  84 s. The saving is in touches, not time [metrics].
 
 ### 6.3 Model calls, tokens and latency
 - About 1.8–2.3K input tokens and 50–70 output tokens per step, 0.5–1.3 s per model call (IC1) [groq-api].
@@ -630,11 +654,10 @@ high contrast, TalkBack labels, light and dark.
   was used on the emulator with a laptop microphone for the wake word and for guru's voice tests
   [T05 Handoff, PR 23, PR 31], but no full demo run with live speech is recorded in the notes, and real
   speech on a phone was never tested.
-- **Demo 2 (photo message) is incomplete.** On the emulator, Messages refuses attachments (no MMS) and
-  hides the draft text box from accessibility. Attach, "Undo the photo", "Use the one by the door" and
-  Send were never run live; selective undo is proven only in unit tests. PR 30 (the emulator run up to
-  attach) is not merged. A Gmail-draft version of Demo 2 was proposed on 2026-11-12 but not decided or
-  built [decision 2026-11-12-emulator-only].
+- **Demo 2 runs in Gmail, not Messages.** On the emulator, Messages refuses attachments (no MMS), so
+  the photo hand-off uses a Gmail draft to a test address [decision 2026-11-13-demo2-gmail-draft].
+  Attach, undo and swap ran live; the final "Send" was not run in the test (it ended with "Cancel")
+  [PR 35].
 - **Free-tier slowness.** Groq's free tier (8K tokens/min, 200K tokens/day) causes waits of 1–20 s
   between steps; a full registration takes 85–101 s, mostly waiting [metrics, groq-api]. The daily cap
   can stop testing for the day. A paid tier would remove most waits (not tested).
@@ -642,7 +665,8 @@ high contrast, TalkBack labels, light and dark.
   20261027 on the emulator [envs]. Other versions or apps may expose their screens differently.
 - **Network and privacy.** Screen text (including form contents on screen) is sent to Groq's API for
   planning, and photo images to a preview vision model for descriptions. The app needs internet.
-- **Manual baseline not measured.** No by-hand touch count exists yet [metrics].
+- **Manual baseline is one person.** The by-hand counts are one teammate without motor difficulty who
+  already knew the steps; the photo demo wasn't measured by hand [metrics].
 - **Run-log touch count is a lower bound** (only taps that fire click events) [T06 Handoff].
 - **Wake-word trade-offs.** Sentences starting with "Sue's", "Zeus" or "sous" may wake it; a false wake
   can start acting but can't submit or send [decision wake-word-suus]. No false-wake rate measured.
@@ -658,7 +682,7 @@ high contrast, TalkBack labels, light and dark.
 ## 10. What's next
 
 From `docs/devpost.md` and the notes:
-- Finish Demo 2 on a device with MMS (or the proposed Gmail-draft version) and run selective undo live.
+- Run the photo hand-off in Messages on a real phone with MMS (on the emulator it runs in Gmail).
 - Test on real phones with real speech, including the background-mic rules on Android 14+.
 - On-device speech recognition (the emulator had no on-device English model; the code already tries it
   first) [PR 3].
@@ -704,7 +728,7 @@ uncut runs (unlisted) in the write-up. State on screen: "Recorded on the Android
 | 0:20–0:30 | Emulator home screen; "Suus" → robot pops up listening. Hands-off shot if possible | "SuuS is an Android app that does the tapping for you. Alex just says the goal." |
 | 0:30–1:20 | Demo 1 (library). Request spoken; robot points at Gmail, opens the invite; Calendar opens (Thursday dentist clash) → Friday; Chrome form fills field by field; read-back with highlights; "Submit"; confirmation LIB-xxxxx. **Sped up** during model waits (real run ≈ 85 s) | "It finds the invite, checks the calendar, sees Thursday clashes with the dentist, and picks Friday. The form is filled by code, not guessed by the AI. It reads everything back, and nothing is sent until Alex says 'Submit'. Then it checks the confirmation page." |
 | 1:20–1:50 | Demo 1b (volunteer). Different form; role question with numbered choices; "Setup crew"; saved Email reused; "Submit"; VOL-xxxxx. **Sped up ~3x** (real run ≈ 101 s). Cut to What I remember screen | "A different form: different labels, a new question. Same code. It remembers Alex said 'Email for event signups', asks only what's new, and gets a fresh approval. Alex can see and delete what it remembers." |
-| 1:50–2:35 | Demo 2. **Decide before recording.** Option A (current code, PR 30): Messages draft "Made it home!" to Maya; "Take over, attach yesterday's dog photo"; it describes both photos, asks which; then the "not supported" message; label "Controlled test: the emulator has no MMS". Show selective undo only as an explanation/graphic, not as a live result. Option B: the proposed Gmail-draft version, only if built and run | "Alex can also hand off something already started. SuuS finds yesterday's photos and asks which one. On the emulator, Messages can't send photos, so it stops and leaves the draft untouched. Undo is designed to remove just the photo and keep the words." (Do not say undo worked live unless it was recorded.) |
+| 1:50–2:35 | Demo 2 (Gmail draft, `seed-device.sh demo2`). Draft "Made it home!" to Maya is open; "Suus, take over. Attach yesterday's dog photo"; it asks which; "the one in the yard"; photo attached. "Suus, undo the photo": photo gone, text untouched. "Suus, use the one by the door"; "Suus, send it"; read-back with highlights; "Send". **Lightly sped up** (steps ≈ 41 s plus speaking time). Label "To a test address" | "Alex can also hand off something already started. SuuS finds yesterday's photos and asks which one. Wrong photo? 'Undo the photo' removes just that, and leaves the words alone. Then the right one, a read-back, and nothing goes until Alex says 'Send'." |
 | 2:35–2:50 | Architecture diagram; robot modes; "stop" → "Stopped." | "Under the hood: an accessibility service reads the screen, an AI model picks one step at a time, and code does the exact parts. Submit and Send are locked to a fingerprint of the screen Alex approved. 'Stop' cancels in about a tenth of a second." |
 | 2:50–3:00 | Results card: 0 touches, 2 and 3 spoken commands, LIB/VOL confirmations; "Tested on the Android emulator; waits sped up due to free API tier" | "Two registrations, zero touches after setup. SuuS: say what you need." |
 
@@ -740,9 +764,9 @@ Notes for the edit:
 6. **Why is it slow?** Groq's free tier: 8K tokens per minute, about 2.5K tokens per step, so it waits
    between steps. That's most of the 85–101 s. We cut calls by doing exact work in code (3–4 model calls
    on a form). The video speeds up those waits and labels them.
-7. **Does the selective undo work?** It's built and unit-tested (removes only the photo, refuses if the
-   screen changed, checks the rest of the draft). It hasn't run live, because the emulator has no MMS so
-   Messages won't attach a photo.
+7. **Does the selective undo work?** Yes, live in a Gmail draft on the emulator: it removed only the
+   photo and checked the recipient, subject and text were unchanged [PR 35]. It refuses if the screen
+   changed since its own edit (unit-tested). We used Gmail because the emulator can't send photo texts.
 8. **What about privacy?** Preferences and the run log stay in a local SQLite database; typed values are
    never logged; the user decides what's remembered and can delete it by voice or on screen. Screen text
    is sent to Groq to plan the next step, and photos to a vision model for short descriptions.
@@ -771,8 +795,9 @@ forms and seed; 6 form URLs; 7 overlay auto-hide/rest spot; 8 agents show assign
 Windows paths; 13 wake word "Suus"; 14 data layer; 15 edge taps, keyboard; 16 rename to SuuS + redesign;
 17 robot sprite and theme; 18 form engine; 19 voice chatter filter; 20 wake pop-up, faster pointing;
 21 run log wiring; 22 bare sound-alikes; 23 responsiveness; 24 IC3/IC4 device fixes; 25 Calendar
-occlusion fix, draft approval tests; 26 About you; 27 IC3/IC4 re-run; 28 run-log touch window (open);
-29 docs; 30 IC5 up to attach (open); 31 learned details and dropdown choices.
+occlusion fix, draft approval tests; 26 About you; 27 IC3/IC4 re-run; 28 run-log touch window;
+29 docs; 30 IC5 in Messages up to attach; 31 learned details and dropdown choices; 33 "stop" inside the
+after-run window; 34 TTS stall fix; 35 Demo 2 as a Gmail draft (includes 30).
 
 **Repo files:** `README.md`, `AGENTS.md`, `docs/setup.md`, `docs/tested-environments.md`,
 `docs/metrics.md`, `docs/devpost.md`, `fixtures/seed/README.md`, `core/.../Contracts.kt`,
@@ -784,9 +809,11 @@ line counts by `grep`/`wc`.
 - `team-memory/project-brief.md`, `build-plan.md`, `assignments.md`, `resources.md`, `README.md`
 - Decisions: `2026-11-09-architecture-and-module-split`, `2026-11-09-build-stack-and-json`,
   `2026-11-09-llm-provider-groq`, `2026-11-09-test-form-urls`, `2026-11-10-app-name-suus`,
-  `2026-11-10-data-store-sqlite-driver`, `2026-11-10-wake-word-suus`, `2026-11-12-emulator-only`
+  `2026-11-10-data-store-sqlite-driver`, `2026-11-10-wake-word-suus`, `2026-11-12-emulator-only`,
+  `2026-11-13-demo2-gmail-draft`
 - Dead ends: `2026-11-09-hey-goal-wake-phrase-misheard`, `2026-11-09-messages-compose-a11y-gaps`,
-  `2026-11-09-sdk-in-appdata-from-claude-desktop`, `2026-11-11-emulator-no-mms`
+  `2026-11-09-sdk-in-appdata-from-claude-desktop`, `2026-11-11-emulator-no-mms`,
+  `2026-11-13-gmail-insert-photo-and-stale-nodes`
 - API notes: `groq-api`, `devices`, `claude-api` (superseded)
 - Tasks: `T01-android-device` … `T06-data-store` (Handoff sections)
 - Sessions: nisith (`2026-11-09-lead-build-plan`, `2026-11-12-status`), susmith (all 10 notes), guru

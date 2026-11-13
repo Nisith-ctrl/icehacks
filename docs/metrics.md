@@ -5,13 +5,13 @@ spoken command; setup doesn't count. Agent numbers come from SuuS's own run log
 (`DEBUG_RUNLOG --es op export`, sessions CSV), which counts every click the phone reports while
 SuuS isn't acting.
 
-## Agent runs (emulator, 2026-11-11)
+## Agent runs (emulator, 2026-11-11 and 2026-11-13)
 
 | Demo | Touches | Spoken commands | Questions asked | Approvals | Actions by SuuS | Time | Result |
 |---|---|---|---|---|---|---|---|
 | Library workshop registration | **0** | 2 ("Suus, sign me up for the library workshop that fits my calendar", "Submit") | 0 (Email preference already saved) | 1 | 12 | 85 s | Confirmed LIB-282497, 5 of 5 values verified |
 | Volunteer shift signup | **0** | 3 (request, "Setup crew", "Submit") | 1 (role) | 1 | 17 | 101 s | Confirmed VOL-730060, 6 of 6 values verified |
-| Photo message takeover + undo | | | | | | | Not run yet |
+| Photo email takeover + undo (2026-11-13) | not counted (run log not exported) | 5 (request, "the one in the yard", "Suus, undo the photo", "Suus, use the one by the door", "Suus, send it") | 1 (which photo) | read-back reached; ended with "Cancel" | | about 41 s across the steps | Yard photo attached, removed, door photo attached; recipient, subject and text unchanged. Nothing sent |
 
 Notes:
 - Spoken commands were injected as text (`DEBUG_UTTERANCE`) on the emulator. Real speech was tested separately on the emulator with the laptop microphone. We
@@ -20,8 +20,11 @@ Notes:
   fresh device it asks once ("How should they confirm?"), which adds 1 question and 1 spoken command.
 - Time includes waiting on the free-tier rate limit (a few 1 to 17 s pauses per run).
 - Run log sessions 25 and 26 in `suus-sessions-20261111-113432.csv`. (Session 26 showed 4 touches
-  in that export: they were taps made about 50 minutes after the run ended. PR 28 limits the
-  count to touches within 60 s of a run; until it's merged, clear the log before each run.)
+  in that export: they were taps made about 50 minutes after the run ended. PR 28, now merged,
+  counts only touches within 60 s of a run. Clearing the log before each recorded run still keeps
+  the export easy to read.)
+- Photo email times are per step from PR 35: ask 8 s, attach 17 s, undo about 2 s, swap 13 s,
+  read-back 1 s. Steps were injected one by one, so the time between commands isn't included.
 
 ## Manual runs (emulator, 2026-11-12, by Nisith)
 
@@ -34,7 +37,7 @@ wheel). Same details as SuuS used (name, email, phone), and the person already k
 |---|---|---|
 | Library workshop registration | **53** | 2:21 (141 s) |
 | Volunteer shift signup | **44** | 1:24 (84 s) |
-| Photo message takeover + undo | not measured (the emulator has no MMS) | |
+| Photo email takeover + undo | not measured yet | |
 
 ## Hands-free vs by hand
 
