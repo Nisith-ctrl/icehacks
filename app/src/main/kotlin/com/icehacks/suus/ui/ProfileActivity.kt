@@ -22,10 +22,7 @@ class ProfileActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val (root, column) = page()
 
-        column.addSpaced(bigButton(getString(R.string.back_arrow), ButtonKind.TONAL) { finish() }.apply {
-            contentDescription = getString(R.string.back)
-        })
-        column.addSpaced(heroHeader(getString(R.string.profile_title), getString(R.string.profile_intro), getString(R.string.hero_eyebrow_profile)), 16)
+        column.addHero(heroHeader(getString(R.string.profile_title), getString(R.string.profile_intro), getString(R.string.hero_eyebrow_profile), onBack = { finish() }))
 
         form = ProfileForm(this, createProfileStore(this))
         column.addSpaced(form.build(), 16)

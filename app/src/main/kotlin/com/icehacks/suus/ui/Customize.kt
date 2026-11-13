@@ -54,10 +54,7 @@ internal fun <T> Context.optionGroup(title: Int, body: Int?, options: List<Optio
         fun paint(current: T) {
             for ((opt, row) in rows) {
                 val on = opt.value == current
-                row.background = roundedBox(
-                    themeColor(if (on) R.color.suus_primary_soft else R.color.suus_surface), 20,
-                    themeColor(if (on) R.color.suus_primary else R.color.suus_outline), if (on) 2 else 1,
-                )
+                row.background = roundedBox(themeColor(if (on) R.color.suus_primary_soft else R.color.suus_surface_alt), 20)
                 (row.getChildAt(0) as TextView).apply {
                     text = if (on) "✓" else ""
                     background = roundedBox(themeColor(if (on) R.color.suus_primary else R.color.suus_surface), 16,
@@ -104,7 +101,7 @@ internal fun <T> Context.optionGroup(title: Int, body: Int?, options: List<Optio
                 setTag(R.id.suus_option_checked, opt.value == selected)
             }
             rows += opt to row
-            addSpaced(row, if (i == 0) 16 else 10)
+            addSpaced(row, if (i == 0) 16 else 8)
         }
         paint(selected)
     }

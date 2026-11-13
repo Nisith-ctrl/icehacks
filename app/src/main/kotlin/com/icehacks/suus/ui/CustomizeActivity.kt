@@ -19,10 +19,7 @@ class CustomizeActivity : AppCompatActivity() {
         applySavedTheme()
         super.onCreate(savedInstanceState)
         val (root, column) = page()
-        column.addSpaced(bigButton(getString(R.string.back_arrow), ButtonKind.TONAL) { finish() }.apply {
-            contentDescription = getString(R.string.back)
-        })
-        column.addSpaced(heroHeader(getString(R.string.custom_title), getString(R.string.custom_short), getString(R.string.custom_eyebrow)), 16)
+        column.addHero(heroHeader(getString(R.string.custom_title), getString(R.string.custom_short), getString(R.string.custom_eyebrow), onBack = { finish() }))
         column.addSpaced(bodyText(getString(R.string.custom_intro), 18f), 14)
         val status = bodyText(getString(R.string.custom_saved), 18f, secondary = false).apply {
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
