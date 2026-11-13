@@ -674,8 +674,8 @@ high contrast, TalkBack labels, light and dark.
   phone with Android 14+ background-mic rules is untested [T02 Handoff].
 - **Not ready for others to install:** the Groq key is built into the debug app from
   `local.properties`; a public download would need each user to enter their own key [resources].
-- **The repo is private** at the time of writing; it must be made public (after a key check of the
-  history) before submission [resources, lead build plan].
+- **The repo is public** since 2026-11-13, with its full history. Two scans of the history found no
+  keys or secret files. Commit emails and the test account's address are visible [lead build plan].
 
 ---
 
