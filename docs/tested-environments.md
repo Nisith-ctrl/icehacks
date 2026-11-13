@@ -29,7 +29,8 @@ system photo picker and the file chooser. Anywhere else it stops. Forms are fill
 |---|---|
 | Find an invite in Gmail, open its link, pick the session that fits the calendar, fill the form, read back, submit on "Submit", verify the confirmation page | Works (library: LIB-282497; volunteer: VOL-730060) |
 | Remember an answer ("use Email for event signups") and reuse it on the next form; "What do you remember?", "Forget …" | Works |
-| Take over a Messages draft, attach yesterday's photo, "Undo the photo", "Use the one by the door", read back, "Send" | In progress (see below) |
+| Take over a Gmail draft, attach yesterday's photo, "Undo the photo", "Use the one by the door", read back, "Send" | Works (Nov 13; sent to `maya@example.com`, a reserved test address) |
+| The same in a Messages draft | Up to the attach step only (the emulator has no MMS, see below) |
 | "Stop" at any time | Cancels the running action in about 3 ms and says "Stopped." about 120 ms after the word arrives |
 
 ### Form controls
@@ -50,5 +51,10 @@ fingerprint still matches; if anything on screen changed after you approved, it 
   couldn't see the draft. It was updated from the Play Store on 2026-11-11 and is being re-checked.
   The emulator has no MMS, so Messages refuses photo attachments ("Attachments are not supported in
   this conversation") and the photo demo stops cleanly before attaching, leaving the draft as it was.
+  That's why the photo demo is shown in a **Gmail draft** (team decision, Nov 13).
+- Gmail: the attach menu's "Insert photo" puts the picture inside the email text, so SuuS always
+  uses "Attach file". Gmail hides a removed attachment without telling accessibility, so SuuS clears
+  the accessibility cache before reading the screen (Android 14+). Demo 2's recipient is
+  `maya@example.com`, a reserved test domain: the email reaches nobody and bounces back.
 - Free-tier rate limits (8K tokens per minute, 200K per day) slow some turns; SuuS waits and retries.
   Don't rehearse many runs back to back before recording.

@@ -26,10 +26,10 @@ the form, the date picker, the attachment.
   confirmation number, and that all your details came through.
 - **You choose what it remembers:** "use Email for event signups" is saved once and reused on the
   next form. "What do you remember?" and "Forget …" work by voice, and on a big-button screen.
-- **Hand off what you started:** with a text half-written in Messages, "Suus, attach yesterday's
-  dog photo." Then "Undo the photo" removes only the photo and leaves your words alone.
-  <!-- team: the emulator has no MMS, so this only runs up to the attach step in Messages (see
-  docs/submission-notes.md 3.12). Rewrite or drop this bullet once the Demo 2 route is decided. -->
+- **Hand off what you started:** with an email to Maya half-written in Gmail, "Suus, take over.
+  Attach yesterday's dog photo." It finds yesterday's photos, asks which one, and attaches it. "Undo
+  the photo" removes only the photo and leaves your words alone, "Use the one by the door" swaps
+  it, and it sends only after you hear the read-back and say "Send".
 - **See what it's doing:** a small robot points at each control before tapping it, with a short caption.
 - **"Stop" works any time**: once SuuS hears it, the current action is cancelled at once and it says "Stopped." in about a tenth of a second.
 
