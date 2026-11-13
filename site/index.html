@@ -8,7 +8,7 @@
 <link rel="icon" href="robot.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -23,6 +23,7 @@
     </a>
     <ul class="links">
       <li><a href="#how">How it works</a></li>
+      <li><a href="#in-depth">In depth</a></li>
       <li><a href="#results">Results</a></li>
       <li><a href="#video">Video</a></li>
       <li><a href="#team">About us</a></li>
@@ -43,6 +44,8 @@
       <a class="btn btn-primary" href="#video">Watch the demo</a>
       <a class="btn btn-ghost" href="#download">Download</a>
     </div>
+    <p class="platform"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M17.6 9.48l1.84-3.18a.38.38 0 0 0-.65-.38l-1.86 3.22a11.4 11.4 0 0 0-9.86 0L5.21 5.92a.38.38 0 0 0-.65.38L6.4 9.48A10.8 10.8 0 0 0 1 18h22a10.8 10.8 0 0 0-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/></svg>
+      Android only for now. Not on iPhone yet.</p>
   </div>
   <figure class="hero-art">
     <blockquote class="bubble">"Suus, sign me up for the library workshop that fits my calendar."</blockquote>
@@ -145,6 +148,123 @@
   </div>
 </section>
 
+<section class="wrap section" id="in-depth" aria-labelledby="depth-h">
+  <p class="eyebrow">In depth</p>
+  <h2 id="depth-h">How it works, <em>in depth.</em></h2>
+  <p class="lede narrow">SuuS is a Kotlin Android app split into six modules. An AI model decides the
+    next step; plain code does everything that has to be exact.</p>
+
+  <div class="tabs">
+    <div class="tablist" role="tablist" aria-label="In depth">
+      <button role="tab" id="t-loop" aria-controls="p-loop" aria-selected="true">The agent loop</button>
+      <button role="tab" id="t-code" aria-controls="p-code" aria-selected="false" tabindex="-1">Code structure</button>
+      <button role="tab" id="t-safe" aria-controls="p-safe" aria-selected="false" tabindex="-1">Approval and undo</button>
+      <button role="tab" id="t-split" aria-controls="p-split" aria-selected="false" tabindex="-1">Model vs code</button>
+    </div>
+
+    <div class="panel" role="tabpanel" id="p-loop" aria-labelledby="t-loop" tabindex="0">
+      <p class="panel-intro">Every request runs the same loop: look at the screen, pick one action, do it, check it worked.
+        It repeats until the goal is done, it needs to ask you something, or it's time to submit.</p>
+      <ol class="flow">
+        <li class="node node-voice"><span class="mod">voice</span><b>"Suus, sign me up…"</b><span>The wake word starts a session. <code>CommandParser</code> turns the sentence into a goal.</span></li>
+        <li class="node"><span class="mod">device</span><b>Read the screen</b><span>The accessibility service captures the screen as a tree of buttons and text. Anything hidden behind another layer is dropped (<code>Occlusion</code>).</span></li>
+        <li class="node node-ai"><span class="mod">agent</span><b>Pick one action</b><span>The goal and the screen, as text, go to <code>openai/gpt-oss-120b</code> on Groq. It answers with exactly one tool call.</span></li>
+        <li class="node"><span class="mod">overlay + device</span><b>Point, then tap</b><span>The robot points at the target. The device layer finds it again on a fresh screen, taps it, and waits for the screen to settle.</span></li>
+        <li class="node"><span class="mod">agent</span><b>Check the result</b><span>Did the screen change the way it should? If not, it tries another way.</span></li>
+      </ol>
+      <p class="loopback" aria-hidden="true"><span>↺</span> back to "Read the screen" until one of these happens</p>
+      <ul class="exits">
+        <li><b>ask_user</b> SuuS asks you a question out loud and reads the choices.</li>
+        <li><b>submit</b> Read-back, then it waits for your spoken "Submit" or "Send".</li>
+        <li><b>done</b> It tells you what it did. "Stop" ends any step at once.</li>
+      </ul>
+      <div class="tools">
+        <p class="tools-h">The tools the model can choose from</p>
+        <ul>
+          <li><code>launch_app</code></li><li><code>tap</code></li><li><code>enter_text</code></li><li><code>scroll</code></li>
+          <li><code>fill_form</code></li><li><code>check_calendar</code></li><li><code>find_photos</code></li>
+          <li><code>ask_user</code></li><li><code>submit</code></li><li><code>done</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="panel" role="tabpanel" id="p-code" aria-labelledby="t-code" tabindex="0" hidden>
+      <p class="panel-intro">The modules only talk to each other through interfaces in <code>core</code>, so four of us
+        could build them at the same time, each with a fake version of the others for testing.</p>
+      <div class="arch">
+        <div class="arch-app">
+          <span class="mod">app</span>
+          <b>The Android app</b>
+          <span><code>SuusAccessibilityService</code> wires everything together. Plus the setup screen, "About you" and "What I remember".</span>
+        </div>
+        <div class="arch-arrow" aria-hidden="true">uses</div>
+        <ul class="arch-mods">
+          <li><span class="mod">voice</span><b>Hearing and speaking</b><span>Wake word, speech to text, the "Submit" approval gate, matching your answers to choices.</span><code>CommandParser · SpokenApprovalGate · ChoiceMatcher</code></li>
+          <li><span class="mod">agent</span><b>The brain</b><span>The loop, the prompt and tools, the form engine, the calendar check, undo, and the on-phone database.</span><code>AgentLoop · GroqPlanner · form/ · data/ · DraftLedger</code></li>
+          <li><span class="mod">device</span><b>Eyes and hands</b><span>Reads the screen, finds controls, taps and types, and fingerprints the screen.</span><code>AccessibilityBackend · Occlusion · Sha256Fingerprinter</code></li>
+          <li><span class="mod">overlay</span><b>The robot</b><span>A see-through layer on top of every app: the robot, the highlight rings and captions. Taps pass straight through.</span><code>CharacterOverlay · StageView</code></li>
+        </ul>
+        <div class="arch-arrow" aria-hidden="true">all built on</div>
+        <div class="arch-core">
+          <span class="mod">core</span>
+          <b>Shared contracts</b>
+          <span>The interfaces every module agrees on: what a screen snapshot looks like, what an action is, what an approval is.</span>
+          <code>Contracts.kt</code>
+        </div>
+      </div>
+      <p class="fine">About 9,600 lines of Kotlin and more than 140 unit tests, built from 49 pull requests in one week.</p>
+    </div>
+
+    <div class="panel" role="tabpanel" id="p-safe" aria-labelledby="t-safe" tabindex="0" hidden>
+      <p class="panel-intro">The AI can't press Submit or Send by itself. Those buttons are locked in the device layer,
+        and only open with your spoken approval for the exact screen you heard.</p>
+      <ol class="flow flow-row">
+        <li class="node"><span class="mod">agent</span><b>Read-back</b><span>Every filled field is highlighted and read out.</span></li>
+        <li class="node node-voice"><span class="mod">voice</span><b>You say "Submit"</b><span>Only the exact word counts. "Yes" doesn't.</span></li>
+        <li class="node"><span class="mod">device</span><b>Fingerprint check</b><span>A SHA-256 fingerprint of the screen you approved is compared with the screen now.</span></li>
+        <li class="node node-ok"><span class="mod">device</span><b>Tap Submit, once</b><span>If they match it taps, then reads the confirmation page. If anything changed, it asks again.</span></li>
+      </ol>
+      <div class="split">
+        <div class="mini">
+          <h3>Selective undo</h3>
+          <p><code>DraftLedger</code> records each change SuuS makes (text typed, option chosen, photo attached) with
+            what was there before. "Undo the photo" reverses only that change, with no AI call, and checks the
+            rest of the draft is untouched. It refuses if the screen no longer matches what SuuS left.</p>
+        </div>
+        <div class="mini">
+          <h3>Other guard rails</h3>
+          <ul>
+            <li>It only acts inside an allowlist of apps.</li>
+            <li>Forms are only filled on our test site.</li>
+            <li>It never submits the same form twice.</li>
+            <li>"Stop" cancels the current step in about 0.1 s.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" role="tabpanel" id="p-split" aria-labelledby="t-split" tabindex="0" hidden>
+      <p class="panel-intro">Guessing is fine for "what should I tap next?" It isn't fine for typing your email or
+        deciding whether Thursday is free, so those parts are code.</p>
+      <table class="data split-table">
+        <caption class="sr">Which parts the AI model does and which parts code does</caption>
+        <thead><tr><th scope="col">Job</th><th scope="col">Done by</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Decide the next step from the screen</th><td><span class="who who-ai">AI model</span></td></tr>
+          <tr><th scope="row">Describe the photos ("dog in the yard")</th><td><span class="who who-ai">AI model</span> <small>qwen/qwen3.8-27b</small></td></tr>
+          <tr><th scope="row">Fill every form field with the right value</th><td><span class="who">Code</span> <small>form engine</small></td></tr>
+          <tr><th scope="row">Check the calendar for clashes</th><td><span class="who">Code</span> <small>reads Calendar directly</small></td></tr>
+          <tr><th scope="row">Find the control again and tap it</th><td><span class="who">Code</span></td></tr>
+          <tr><th scope="row">Lock Submit behind your approval</th><td><span class="who">Code</span> <small>device layer</small></td></tr>
+          <tr><th scope="row">Check the confirmation page</th><td><span class="who">Code</span></td></tr>
+          <tr><th scope="row">Undo one change</th><td><span class="who">Code</span></td></tr>
+        </tbody>
+      </table>
+      <p class="fine">That's why filling a form takes only 3–4 model calls, and a whole run from the home screen 8–11.</p>
+    </div>
+  </div>
+</section>
+
 <section class="wrap section" id="results" aria-labelledby="results-h">
   <p class="eyebrow">Results</p>
   <h2 id="results-h">97 taps by hand. <em>None with SuuS.</em></h2>
@@ -233,6 +353,9 @@
         <h3>Get the APK</h3>
         <p>Tested on Android 15. After installing, Android may ask you to allow restricted settings
           before you can turn on the accessibility service. SuuS needs your own free Groq API key.</p>
+        <p class="ios"><strong>No iPhone version yet.</strong> SuuS works by reading and tapping other apps'
+          screens through Android's accessibility service. iPhone doesn't give apps that kind of access,
+          so an iOS version would need a different approach.</p>
         <a class="btn btn-primary" href="https://github.com/Nisith-ctrl/icehacks/releases">Download from GitHub</a>
       </div>
       <div class="card">
@@ -269,6 +392,31 @@
 </footer>
 
 <script>
+  // In-depth tabs: click or arrow keys.
+  (function () {
+    var tabs = [].slice.call(document.querySelectorAll('[role="tab"]'));
+    function select(tab) {
+      tabs.forEach(function (t) {
+        var on = t === tab;
+        t.setAttribute('aria-selected', on);
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+      });
+      tab.focus();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { select(t); });
+      t.addEventListener('keydown', function (e) {
+        var n = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+        if (e.key === 'Home') n = -i;
+        if (e.key === 'End') n = tabs.length - 1 - i;
+        if (n === undefined) return;
+        e.preventDefault();
+        select(tabs[(i + n + tabs.length) % tabs.length]);
+      });
+    });
+  })();
+
   // Set data-youtube-id on #video-slot once the video is uploaded.
   (function () {
     var slot = document.getElementById('video-slot');
