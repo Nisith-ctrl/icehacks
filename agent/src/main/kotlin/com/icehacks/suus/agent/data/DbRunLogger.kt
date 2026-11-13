@@ -9,6 +9,7 @@ class DbRunLogger(
 
     private var open: Long? = null // the session that is running
     private var last: Long? = null // the most recent session, running or ended
+    private var lastEndedAt = 0L
 
     @Synchronized
     override fun sessionStarted(kind: SessionKind, text: String, takeOver: Boolean) = safe("sessionStarted") {
@@ -31,7 +32,15 @@ class DbRunLogger(
 
     override fun stopRequested() = event(EventType.STOP, null, "stop", null, null)
 
-    override fun userTouch(what: String) = event(EventType.TOUCH, null, what, null, null)
+    /**
+     * A touch between commands counts for the session that just ended (the user fixing something by
+     * hand), but only within [TOUCH_GRACE_MS]: setting up the phone an hour later isn't part of that run.
+     */
+    @Synchronized
+    override fun userTouch(what: String) {
+        if (open == null && clock() - lastEndedAt > TOUCH_GRACE_MS) return
+        event(EventType.TOUCH, null, what, null, null)
+    }
 
     @Synchronized
     override fun sessionOutcome(outcome: String, detail: String?) = safe("sessionOutcome") {
@@ -43,6 +52,7 @@ class DbRunLogger(
     override fun sessionEnded(outcome: String, detail: String?) = safe("sessionEnded") {
         val id = open ?: return@safe
         db.endSession(id, clock(), outcome, detail)
+        lastEndedAt = clock()
         open = null
     }
 
@@ -71,5 +81,8 @@ class DbRunLogger(
         }
     }
 
-    private companion object { const val MAX = 500 }
+    companion object {
+        private const val MAX = 500
+        const val TOUCH_GRACE_MS = 60_000L
+    }
 }
