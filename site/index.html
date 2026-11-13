@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SuuS: say the goal, SuuS does the taps</title>
+<meta name="description" content="SuuS is an Android voice agent for people who find tapping hard. Say what you need; it shows every tap and asks before anything is sent.">
+<link rel="icon" href="robot.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <div class="ribbon" aria-hidden="true"></div>
+  <nav class="wrap nav" aria-label="Main">
+    <a class="brand" href="#top">
+      <img src="robot.png" alt="" width="29" height="40">
+      <span><strong>SuuS</strong><small>Voice agent for Android</small></span>
+    </a>
+    <ul class="links">
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#results">Results</a></li>
+      <li><a href="#video">Video</a></li>
+      <li><a href="#team">About us</a></li>
+    </ul>
+    <a class="btn btn-primary btn-sm" href="#download">Download</a>
+  </nav>
+</header>
+
+<main id="main">
+
+<section class="hero wrap" id="top">
+  <div class="hero-text">
+    <p class="eyebrow">IceHacks 2026 / Android voice agent</p>
+    <h1>Say the goal.<br><em>SuuS does the taps.</em></h1>
+    <p class="lede">For people who find small taps and typing painful. Say what you need. SuuS works
+      through the real apps on your phone, shows you every tap, and asks before anything is sent.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="#video">Watch the demo</a>
+      <a class="btn btn-ghost" href="#download">Download</a>
+    </div>
+  </div>
+  <figure class="hero-art">
+    <blockquote class="bubble">"Suus, sign me up for the library workshop that fits my calendar."</blockquote>
+    <img src="robot.png" alt="The SuuS robot, a small pixel-art helper" width="174" height="240">
+  </figure>
+</section>
+
+<div class="wrap">
+  <aside class="notice">
+    <strong>Honest about what we tested</strong>
+    <p>Everything shown here ran on the Android emulator. The forms, invite emails and photos are test
+      data we made, so no real registration happens.</p>
+  </aside>
+</div>
+
+<section class="wrap section" id="who" aria-labelledby="who-h">
+  <p class="eyebrow">Who it helps</p>
+  <h2 id="who-h">Built around Alex.</h2>
+  <div class="split">
+    <div class="card persona">
+      <p class="tag">Our user</p>
+      <h3>Alex Rivera</h3>
+      <p>An older adult with arthritis in both hands. Alex is active and independent: they sign up for
+        library workshops, volunteer at local events and email family to say they got home.</p>
+      <p>Small taps, typing and picking tiny options are slow and painful. <strong>Talking is easy.</strong></p>
+    </div>
+    <div class="card">
+      <p class="tag">The gap</p>
+      <h3>Voice assistants stop at the hard part</h3>
+      <p>They can open an app. Then they leave you at the form, the date picker or the attachment,
+        which is exactly where the tapping starts.</p>
+      <p>SuuS finishes the job inside the apps you already use: Gmail, Calendar and Chrome.</p>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="how" aria-labelledby="how-h">
+  <div class="wrap section">
+    <p class="eyebrow">How it works</p>
+    <h2 id="how-h">From one sentence to a confirmed signup.</h2>
+    <ol class="steps">
+      <li class="card">
+        <span class="num">1</span>
+        <h3>Say it</h3>
+        <p>"Suus", then the goal in your own words. Say "Stop" any time and it stops at once.</p>
+      </li>
+      <li class="card">
+        <span class="num">2</span>
+        <h3>It reads the screen</h3>
+        <p>SuuS reads the real screen through Android's accessibility service and plans one step at a time.</p>
+      </li>
+      <li class="card">
+        <span class="num">3</span>
+        <h3>It shows every tap</h3>
+        <p>A small robot points at each button before tapping it, with a short caption, so you can follow along.</p>
+      </li>
+      <li class="card">
+        <span class="num">4</span>
+        <h3>You say "Submit"</h3>
+        <p>It reads everything back. Nothing is sent until you say "Submit" or "Send". Then it checks the confirmation.</p>
+      </li>
+    </ol>
+
+    <h3 class="sub">What it can do today</h3>
+    <div class="grid3">
+      <article class="card demo">
+        <p class="tag">Demo 1</p>
+        <h4>Register for a workshop</h4>
+        <p>Finds the invite in Gmail, checks Calendar (the first session clashes with the dentist, so it
+          picks the other one), fills the form and reads it back.</p>
+      </article>
+      <article class="card demo">
+        <p class="tag">Demo 1b</p>
+        <h4>A form it hasn't seen</h4>
+        <p>A volunteer form with different labels and a new question. Same code. It reuses what you
+          told it to remember ("Email for event signups") and asks only what's new.</p>
+      </article>
+      <article class="card demo">
+        <p class="tag">Demo 2</p>
+        <h4>Finish what you started</h4>
+        <p>With an email to Maya half-written, "attach yesterday's dog photo". Wrong one? "Undo the
+          photo" removes only the photo and leaves your words alone.</p>
+      </article>
+    </div>
+
+    <details class="card under">
+      <summary>Under the hood</summary>
+      <ul>
+        <li><strong>An AI model plans, code does the exact parts.</strong> A model on Groq's free tier
+          picks one action per turn from the screen as text. Filling fields, checking the calendar for
+          clashes, verifying the confirmation page and undo are all done by code.</li>
+        <li><strong>Approval is tied to the screen.</strong> Your spoken "Submit" is locked to a
+          fingerprint of the exact screen that was read back. If anything changed, it asks again.</li>
+        <li><strong>It only acts where it should.</strong> An allowlist of apps, forms only on our test
+          site, and it never submits twice.</li>
+        <li><strong>You choose what it remembers.</strong> "What do you remember?" and "Forget …" work
+          by voice and on a big-button screen. Everything stays on the phone.</li>
+      </ul>
+    </details>
+  </div>
+</section>
+
+<section class="wrap section" id="results" aria-labelledby="results-h">
+  <p class="eyebrow">Results</p>
+  <h2 id="results-h">97 taps by hand. <em>None with SuuS.</em></h2>
+  <p class="lede narrow">We did the same two tasks by hand on the emulator and counted every touch,
+    including each key on the keyboard. Then SuuS did them by voice.</p>
+
+  <div class="card chart" role="group" aria-labelledby="chart-cap">
+    <p class="chart-cap" id="chart-cap">Touches needed after setup</p>
+    <div class="legend" aria-hidden="true">
+      <span><i class="sw sw-hand"></i>By hand</span>
+      <span><i class="sw sw-suus"></i>With SuuS</span>
+    </div>
+    <div class="bars" aria-hidden="true">
+      <div class="group">
+        <p class="glabel">Library workshop registration</p>
+        <div class="row"><div class="bar hand" style="--v:53"><span>53</span></div></div>
+        <div class="row"><div class="bar suus" style="--v:0"></div><span class="zero">0 touches, 2 spoken commands</span></div>
+      </div>
+      <div class="group">
+        <p class="glabel">Volunteer shift signup</p>
+        <div class="row"><div class="bar hand" style="--v:44"><span>44</span></div></div>
+        <div class="row"><div class="bar suus" style="--v:0"></div><span class="zero">0 touches, 3 spoken commands</span></div>
+      </div>
+    </div>
+
+    <table class="data">
+      <caption class="sr">Touches and time, by hand and with SuuS</caption>
+      <thead>
+        <tr><th scope="col">Task</th><th scope="col">By hand</th><th scope="col">With SuuS</th></tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">Library workshop registration</th><td>53 touches, 141 s</td><td><strong>0 touches</strong>, 2 spoken commands, 85 s</td></tr>
+        <tr><th scope="row">Volunteer shift signup</th><td>44 touches, 84 s</td><td><strong>0 touches</strong>, 3 spoken commands, 101 s</td></tr>
+        <tr><th scope="row">Photo email with undo</th><td>not measured</td><td><strong>0 touches</strong>, 6 spoken commands, sent</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid3 facts">
+    <div class="fact"><b>0</b><span>touches after setup in every demo</span></div>
+    <div class="fact"><b>0.1 s</b><span>from "Stop" to "Stopped."</span></div>
+    <div class="fact"><b>5 of 5</b><span>form values checked on the confirmation page</span></div>
+  </div>
+  <p class="fine">The saving is in touches, not speed: SuuS took about as long, mostly waiting on the
+    free AI tier's rate limit, and the person doing it by hand has no trouble tapping and knew the
+    steps. Spoken commands in the measured runs were injected as text on the emulator.</p>
+</section>
+
+<section class="band" id="video" aria-labelledby="video-h">
+  <div class="wrap section">
+    <p class="eyebrow">Video</p>
+    <h2 id="video-h">See it run.</h2>
+    <div class="video" id="video-slot" data-youtube-id="">
+      <div class="video-empty">
+        <img src="robot.png" alt="" width="58" height="80">
+        <p><strong>The demo video is on its way.</strong><br>Recorded on the Android emulator. Waits on the
+          free AI tier are sped up and labelled.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap section" id="setup" aria-labelledby="setup-h">
+  <p class="eyebrow">Setup</p>
+  <h2 id="setup-h">A few minutes, once.</h2>
+  <p class="lede narrow">The app walks you through it with one large button per step. After that,
+    everything is by voice.</p>
+  <ol class="setup">
+    <li><b>Turn on SuuS</b> in Accessibility settings. This lets it read the screen and tap.</li>
+    <li><b>Allow the microphone</b>, so it hears "Suus" and your answers.</li>
+    <li><b>Allow the calendar</b> (read only), so it picks times that don't clash.</li>
+    <li><b>Allow photos</b>, so it can find "yesterday's dog photo".</li>
+    <li><b>Allow notifications.</b></li>
+    <li><b>Tell SuuS about you</b>: the name, email and phone it may fill in. Anything missing, it asks for.</li>
+    <li><b>Say "Suus"</b> and the robot pops up listening. You're ready.</li>
+  </ol>
+</section>
+
+<section class="band" id="download" aria-labelledby="download-h">
+  <div class="wrap section">
+    <p class="eyebrow">Download</p>
+    <h2 id="download-h">Try SuuS.</h2>
+    <div class="split">
+      <div class="card">
+        <p class="tag">Android app</p>
+        <h3>Get the APK</h3>
+        <p>Tested on Android 15. After installing, Android may ask you to allow restricted settings
+          before you can turn on the accessibility service. SuuS needs your own free Groq API key.</p>
+        <a class="btn btn-primary" href="https://github.com/Nisith-ctrl/icehacks/releases">Download from GitHub</a>
+      </div>
+      <div class="card">
+        <p class="tag">Source code</p>
+        <h3>Build it yourself</h3>
+        <p>Kotlin, open source. Put your Groq key in <code>local.properties</code>, then build and install
+          with Gradle. The setup guide has every step.</p>
+        <a class="btn btn-ghost" href="https://github.com/Nisith-ctrl/icehacks">View on GitHub</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap section" id="team" aria-labelledby="team-h">
+  <p class="eyebrow">About us</p>
+  <h2 id="team-h">Four people, one week.</h2>
+  <p class="lede narrow">We split SuuS into modules with fixed interfaces, so each of us could build a
+    part at the same time, and kept a shared notebook of decisions and dead ends.</p>
+  <ul class="team">
+    <li class="card"><span class="avatar" aria-hidden="true">N</span><h3>Nisith</h3><p class="role">Team lead</p><p>Test forms and data, metrics, docs and the demo.</p></li>
+    <li class="card"><span class="avatar" aria-hidden="true">S</span><h3>Susmith</h3><p class="role">Agent and device control</p><p>Screen reading, tapping, voice and the agent loop.</p></li>
+    <li class="card"><span class="avatar" aria-hidden="true">G</span><h3>Guru</h3><p class="role">Design and frontend</p><p>The robot, the app's screens, and the Gmail photo demo.</p></li>
+    <li class="card"><span class="avatar" aria-hidden="true">A</span><h3>Advay</h3><p class="role">Data</p><p>The on-device database, saved preferences and the run log.</p></li>
+  </ul>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p><strong>SuuS</strong> · Built for IceHacks 2026</p>
+    <p><a href="https://github.com/Nisith-ctrl/icehacks">GitHub</a></p>
+  </div>
+</footer>
+
+<script>
+  // Set data-youtube-id on #video-slot once the video is uploaded.
+  (function () {
+    var slot = document.getElementById('video-slot');
+    var id = slot.getAttribute('data-youtube-id');
+    if (!id) return;
+    slot.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) +
+      '" title="SuuS demo video" allow="encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe>';
+  })();
+</script>
+</body>
+</html>
