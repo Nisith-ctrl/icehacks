@@ -78,8 +78,20 @@ object CommandParser {
         "delete", "change", "replace", "send", "reply", "message", "text", "call", "email", "submit", "book",
         "schedule", "try", "scroll", "close", "start", "continue", "finish", "keep", "put", "set", "make", "let",
         "take", "undo", "forget", "remember", "cancel", "stop", "help", "tell", "say", "repeat", "skip",
+    )
+
+    /**
+     * First words that start requests and everyday chatter alike ("I guess we're doing…", "how to get…",
+     * both heard from a lecture near the mic on Nov 13). These count only when the sentence also has an
+     * action word or names something SuuS works with ("can you open Gmail", "what are the options").
+     */
+    private val WEAK_STARTS = setOf(
         "what", "which", "when", "where", "who", "how", "why", "can", "could", "would", "will", "please",
         "i", "i'd", "i'm", "id", "im", "we", "my", "yes", "no", "ok", "okay",
+    )
+    private val SUUS_THINGS = setOf(
+        "options", "choices", "photo", "picture", "draft", "form", "invite", "invitation", "event", "workshop",
+        "shift", "session", "role", "gmail", "calendar", "chrome", "messages", "maya",
     )
 
     /**
@@ -92,7 +104,9 @@ object CommandParser {
         if (n.isEmpty()) return false
         if (classify(text) !is UserCommand.Goal) return true // stop, undo, memory
         val words = n.split(" ")
-        return words.first() in REQUEST_STARTS
+        if (words.first() in REQUEST_STARTS) return true
+        if (words.first() !in WEAK_STARTS) return false
+        return words.drop(1).any { it in REQUEST_STARTS || it in SUUS_THINGS }
     }
 
     /**

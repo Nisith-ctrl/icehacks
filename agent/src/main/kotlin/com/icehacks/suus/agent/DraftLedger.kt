@@ -51,6 +51,10 @@ class DraftLedger {
         return e
     }
 
+    /** An attachment found on a later screen than the tap that picked it (Gmail shows it after a moment). */
+    fun recordAttachment(label: String, packageName: String, marker: String): Edit =
+        Edit(nextId++, Kind.ATTACHMENT, label, packageName, null, null, marker, null).also { edits += it }
+
     /** Pick the edit an undo request refers to: by kind words, then by label words, else the latest. */
     fun pick(request: String): Edit? {
         if (edits.isEmpty()) return null

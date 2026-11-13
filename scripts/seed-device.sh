@@ -4,10 +4,12 @@
 #   scripts/seed-device.sh            photos + Maya contact
 #   scripts/seed-device.sh photos     push the two dog photos, dated yesterday, and rescan media
 #   scripts/seed-device.sh contact    add the Maya contact (skips if she already exists)
-#   scripts/seed-device.sh demo2      open Messages to Maya with "Made it home!" typed (Demo 2 start)
+#   scripts/seed-device.sh demo2      open a Gmail draft to Maya, "Made it home!" (Demo 2 start)
+#   scripts/seed-device.sh demo2-messages   the same in Messages (emulator: only up to attach, no MMS)
 #
 # Env: ADB (default: adb on PATH), ANDROID_SERIAL (pick a device), MAYA_NUMBER (default
-# +15555215556 = a second emulator on port 5556; set a teammate's phone for S21 runs).
+# +15555215556 = a second emulator on port 5556), MAYA_EMAIL (default maya@example.com: a reserved
+# test domain, so a sent Demo 2 email reaches nobody and bounces back to the test account).
 # On Windows run it from Git Bash. Emails and calendar events can't be seeded over adb:
 # see fixtures/seed/README.md.
 
@@ -16,6 +18,7 @@ export MSYS_NO_PATHCONV=1   # Git Bash on Windows would otherwise rewrite /sdcar
 
 ADB="${ADB:-adb}"
 MAYA_NUMBER="${MAYA_NUMBER:-+15555215556}"
+MAYA_EMAIL="${MAYA_EMAIL:-maya@example.com}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PHOTOS="$ROOT/fixtures/seed/photos"
 REMOTE=/sdcard/Pictures
@@ -68,9 +71,27 @@ seed_contact() {
   echo "Contact: adb couldn't write contacts directly. A prefilled 'Maya' form is open on the device: tap Save."
 }
 
-demo2_start() {
+demo2_messages_start() {
   sh_dev "am start -a android.intent.action.SENDTO -d sms:$MAYA_NUMBER --es sms_body 'Made it home!' -p com.google.android.apps.messaging" >/dev/null
-  echo "Demo 2: Messages is open to Maya with 'Made it home!' typed. Check the recipient shows as Maya."
+  echo "Demo 2 (Messages): open to Maya with 'Made it home!' typed. Check the recipient shows as Maya."
+}
+
+# Demo 2 on the emulator: a Gmail draft (Messages can't attach photos there, see the vault's
+# dead-ends/2026-11-11-emulator-no-mms). Gmail ignores subject/body extras on SENDTO, so they go in
+# the mailto link. Right after a cold start Gmail sometimes opens the inbox instead: then try again.
+demo2_start() {
+  local link="mailto:$MAYA_EMAIL?subject=Made%20it%20home!&body=Made%20it%20home!"
+  local i
+  for i in 1 2; do
+    sh_dev "am start -a android.intent.action.SENDTO -d '$link' -p com.google.android.gm" >/dev/null
+    sleep 4
+    if sh_dev "dumpsys window" | grep -q "mCurrentFocus.*Compose"; then
+      echo "Demo 2: Gmail draft to $MAYA_EMAIL with 'Made it home!' is open. Hide the keyboard before you start."
+      return
+    fi
+  done
+  echo "Demo 2: Gmail didn't open the draft. Open Gmail once, then run this again." >&2
+  exit 1
 }
 
 require_device
@@ -78,6 +99,7 @@ case "${1:-all}" in
   photos) seed_photos ;;
   contact) seed_contact ;;
   demo2) demo2_start ;;
+  demo2-messages) demo2_messages_start ;;
   all) seed_photos; seed_contact ;;
-  *) echo "Usage: $0 [all|photos|contact|demo2]" >&2; exit 2 ;;
+  *) echo "Usage: $0 [all|photos|contact|demo2|demo2-messages]" >&2; exit 2 ;;
 esac

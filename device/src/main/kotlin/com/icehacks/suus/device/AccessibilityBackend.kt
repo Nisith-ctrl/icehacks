@@ -5,6 +5,7 @@ import android.accessibilityservice.GestureDescription
 import android.content.Intent
 import android.graphics.Path
 import android.graphics.Rect
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
@@ -46,6 +47,11 @@ class AccessibilityBackend(
     }
 
     override suspend fun capture(): Captured<AccessibilityNodeInfo> {
+        // Some apps hide a view without telling accessibility (Gmail's removed attachment tile), and the
+        // cached tree keeps showing it. Start each capture from fresh nodes where Android allows it.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            runCatching { service.clearCache() }
+        }
         val window = activeAppWindow()
         val root = window?.root ?: service.rootInActiveWindow
             ?: return Captured(ScreenSnapshot("", null, System.currentTimeMillis(), emptyList()), emptyList())

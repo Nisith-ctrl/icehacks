@@ -59,7 +59,8 @@ once after importing so it syncs, and delete the old events when you re-seed.
 
 ```bash
 scripts/seed-device.sh            # photos + Maya contact
-scripts/seed-device.sh demo2      # right before Demo 2: Messages open to Maya with "Made it home!"
+scripts/seed-device.sh demo2      # right before Demo 2: a Gmail draft to maya@example.com, "Made it home!"
+scripts/seed-device.sh demo2-messages   # the same in Messages (emulator: only up to attach, no MMS)
 ```
 
 - `photos/IMG_0418.png`: dog in a yard (fence, tree, ball), dated **yesterday 5:30 PM**.
@@ -67,13 +68,14 @@ scripts/seed-device.sh demo2      # right before Demo 2: Messages open to Maya w
   This is "the one by the door". File names are neutral so the agent has to look at the image.
 - Regenerate with `python scripts/make_seed_photos.py`, or replace them with real photos under
   the same names.
-- **Maya**: contact with `MAYA_NUMBER` (default `+15555215556`, which is a second emulator running
-  on port 5556). For S21 runs set `MAYA_NUMBER` to a teammate's phone. Only send to test numbers.
+- **Maya**: Demo 2 emails `MAYA_EMAIL` (default `maya@example.com`, a reserved test domain: the
+  email reaches nobody and bounces back to the test inbox). The Messages variant uses a contact with `MAYA_NUMBER` (default `+15555215556`, which is a second emulator running
+  on port 5556). Only send to test addresses and numbers.
 
 ## Before each take
 
 1. Seed day correct? If not: new emails, new calendar import.
 2. `scripts/seed-device.sh` (re-dates the photos to yesterday).
 3. Demo 1/2 forms: nothing to reset. Each submission is independent.
-4. Demo 2: `scripts/seed-device.sh demo2`, then check the draft and recipient on screen.
+4. Demo 2: `scripts/seed-device.sh demo2`, then check the draft and recipient on screen and hide the keyboard.
 5. Clear the agent's saved preferences before Demo 1 so the "remember" step happens fresh.
