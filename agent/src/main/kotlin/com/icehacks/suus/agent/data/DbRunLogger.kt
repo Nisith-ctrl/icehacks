@@ -9,6 +9,7 @@ class DbRunLogger(
 
     private var open: Long? = null // the session that is running
     private var last: Long? = null // the most recent session, running or ended
+    private var lastEndedAt = 0L
 
     @Synchronized
     override fun sessionStarted(kind: SessionKind, text: String, takeOver: Boolean) = safe("sessionStarted") {
@@ -42,7 +43,9 @@ class DbRunLogger(
     @Synchronized
     override fun sessionEnded(outcome: String, detail: String?) = safe("sessionEnded") {
         val id = open ?: return@safe
-        db.endSession(id, clock(), outcome, detail)
+        val now = clock()
+        db.endSession(id, now, outcome, detail)
+        lastEndedAt = now
         open = null
     }
 
@@ -57,10 +60,18 @@ class DbRunLogger(
     fun sessions(): List<RunSession> = db.sessions()
     fun events(): List<RunEvent> = db.events()
 
+    /**
+     * Between commands an event counts for the session that just ended ("stop" arriving right after
+     * it cancelled the run, the user fixing something by hand), but only within [AFTER_RUN_GRACE_MS]:
+     * setting up the phone or saying "stop" an hour later isn't part of that run.
+     */
     @Synchronized
     private fun event(type: String, name: String?, label: String?, detail: String?, ok: Boolean?) = safe(type) {
-        val id = open ?: last ?: return@safe // nothing to attach to before the first command
-        db.insertEvent(id, clock(), type, name?.take(MAX), label?.take(MAX), detail?.take(MAX), ok)
+        val now = clock()
+        val id = open
+            ?: last?.takeIf { now - lastEndedAt <= AFTER_RUN_GRACE_MS }
+            ?: return@safe // nothing to attach to: before the first command, or long after the last one
+        db.insertEvent(id, now, type, name?.take(MAX), label?.take(MAX), detail?.take(MAX), ok)
     }
 
     private inline fun safe(what: String, block: () -> Unit) {
@@ -71,5 +82,10 @@ class DbRunLogger(
         }
     }
 
-    private companion object { const val MAX = 500 }
+    companion object {
+        private const val MAX = 500
+
+        /** How long after a run ends a touch or "stop" still counts for it. */
+        const val AFTER_RUN_GRACE_MS = 60_000L
+    }
 }

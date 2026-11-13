@@ -37,8 +37,14 @@ store.save(p); store.remove(scope, key); store.clear()
 ## Run log
 
 One **session** per spoken command (`goal`, `undo`, `memory`). Every action, question, approval,
-line the agent says, "stop" and user touch is an **event** in the running session (or the last one,
-if none is running). Typed values are never logged, only the field label and the length.
+line the agent says, "stop" and user touch is an **event** in the running session. Typed values are
+never logged, only the field label and the length.
+
+Between commands, an event goes on the session that just ended, but only for 60 s after its end
+(`DbRunLogger.AFTER_RUN_GRACE_MS`): a "stop" right after it cancelled the run, or the user fixing
+something by hand, belongs to that run; setting up the phone or saying "stop" an hour later
+doesn't, and is dropped. Nothing is logged before the first command or after an app restart until
+the next command.
 
 | Event `type` | `name` | `label` | `detail` | `ok` |
 |---|---|---|---|---|
@@ -53,9 +59,10 @@ Session `outcome`: `done` / `stopped` / `cancelled` (from the agent loop, if it 
 otherwise `finished` with the agent's last spoken line as the detail, `stopped_by_user` (Stop
 cancelled it), `error`, or `unknown` (a new command started first).
 
-**Wiring** (Susmith, `AgentFactory.kt` + the service; the exact code is in the T06 task file):
-wrap the agent's `screen`, `voice` and `approval` with `createRunLog(context)` and wrap the
-returned `AgentRunner` with `runLog.agent(...)`. Nothing in `AgentLoop` has to change.
+**Wiring** (done in PR 21): `createAgent` in `AgentFactory.kt` wraps the agent's `screen`, `voice`
+and `approval` with `createRunLog(context)` and the returned `AgentRunner` with `runLog.agent(...)`;
+`SuusAccessibilityService` passes its events to `runLog.onUiEvent(...)` for the touch count.
+Nothing in `AgentLoop` calls the log.
 
 ### Summary numbers (`RunSummaries`)
 
@@ -64,17 +71,17 @@ returned `AgentRunner` with `runLog.agent(...)`. Nothing in `AgentLoop` has to c
 | `actions` / `failedActions` | device actions the agent performed / that didn't succeed |
 | `spokenCommands` | the command that started each session (activation is part of that utterance) + answered questions + approvals answered with the commit word or Cancel + "stop" |
 | `questions`, `approvals`, `approvalsGranted`, `undos` | as named |
-| `userTouches` | clicks the accessibility service saw in other apps while the agent was not acting (and not in the 1.5 s after an action). **A lower bound**: it can miss touches that don't produce a click event (e.g. some keyboard taps, swipes). Check it against the recording. |
+| `userTouches` | clicks the accessibility service saw in other apps while the agent was not acting (and not in the 1.5 s after an action), during the session or in the 60 s after it. **A lower bound**: it can miss touches that don't produce a click event (e.g. some keyboard taps, swipes). Check it against the recording. |
 | `durationMs` / `spanMs` | time inside sessions / first start to last end |
 
 ## Export for metrics (Nisith)
 
-Needs the `DEBUG_RUNLOG` broadcast wired in `DebugReceiver` (debug builds; see the T06 task file).
+Uses the `DEBUG_RUNLOG` broadcast (`DebugReceiver`, debug builds only).
 
 ```bash
 # before each recorded run: start from an empty log
 adb shell am broadcast -a com.icehacks.suus.DEBUG_RUNLOG --es op clear
-# ... do the run ...
+# ... do the run, then export within a minute or two (touches up to 60 s after it still count) ...
 adb shell am broadcast -a com.icehacks.suus.DEBUG_RUNLOG --es op summary   # totals in Logcat
 adb shell am broadcast -a com.icehacks.suus.DEBUG_RUNLOG                    # op defaults to export
 adb logcat -d -s SUUS-Data
