@@ -165,6 +165,23 @@ class RunLogTest {
     }
 
     @Test
+    fun stopSaidLongAfterARunIsNotCountedForIt() = runTest {
+        val logger = DbRunLogger(db, clock)
+        val log = RunLog(logger, clock)
+        val agent = loggedAgent(log, FakeScreen(form()), TestVoice(), ScriptedGate(ApprovalOutcome.NO_ANSWER), FakePlanner(emptyList()))
+
+        agent.handle(UserCommand.Memory("what do you remember"))
+        val ended = logger.sessions().single().endedAtMs!!
+        val eventsAfterRun = logger.events().size
+        now = ended + DbRunLogger.AFTER_RUN_GRACE_MS + 1
+        agent.handle(UserCommand.Stop) // nothing is running: the agent just says "Stopped."
+
+        val events = logger.events()
+        assertEquals(eventsAfterRun, events.size) // neither the "stop" nor the "Stopped." reply
+        assertEquals(1, RunSummaries.of(logger.sessions().single(), events).spokenCommands)
+    }
+
+    @Test
     fun undoAndMemoryCommandsAreTheirOwnSessions() = runTest {
         val logger = DbRunLogger(db, clock)
         val log = RunLog(logger, clock)
@@ -254,8 +271,12 @@ class RunLogTest {
         now = 4_000
         logger.sessionEnded("finished", "last words")
         logger.userTouch("tap in launcher") // between commands: goes on the last session
-        now = 4_000 + DbRunLogger.TOUCH_GRACE_MS + 1
+        now = 4_000 + DbRunLogger.AFTER_RUN_GRACE_MS
+        logger.userTouch("tap in Chrome") // the last moment that still counts for it
+        now = 4_000 + DbRunLogger.AFTER_RUN_GRACE_MS + 1
         logger.userTouch("tap in Play Store") // long after it ended: not part of that run
+        logger.stopRequested()                // neither is a "stop" said to an idle agent
+        logger.agentSaid("Stopped.")
 
         val (first, second) = logger.sessions()
         assertEquals("unknown", first.outcome)
@@ -263,7 +284,8 @@ class RunLogTest {
         assertEquals("the user said Cancel at the approval", second.outcomeDetail)
         assertTrue(second.takeOver)
         assertEquals(4_000L, second.endedAtMs)
-        assertEquals(listOf(second.id), logger.events().map { it.sessionId })
+        assertEquals(listOf("tap in launcher", "tap in Chrome"), logger.events().map { it.label })
+        assertEquals(listOf(second.id, second.id), logger.events().map { it.sessionId })
 
         logger.clear()
         assertTrue(logger.sessions().isEmpty())

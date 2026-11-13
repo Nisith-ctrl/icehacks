@@ -32,15 +32,7 @@ class DbRunLogger(
 
     override fun stopRequested() = event(EventType.STOP, null, "stop", null, null)
 
-    /**
-     * A touch between commands counts for the session that just ended (the user fixing something by
-     * hand), but only within [TOUCH_GRACE_MS]: setting up the phone an hour later isn't part of that run.
-     */
-    @Synchronized
-    override fun userTouch(what: String) {
-        if (open == null && clock() - lastEndedAt > TOUCH_GRACE_MS) return
-        event(EventType.TOUCH, null, what, null, null)
-    }
+    override fun userTouch(what: String) = event(EventType.TOUCH, null, what, null, null)
 
     @Synchronized
     override fun sessionOutcome(outcome: String, detail: String?) = safe("sessionOutcome") {
@@ -51,8 +43,9 @@ class DbRunLogger(
     @Synchronized
     override fun sessionEnded(outcome: String, detail: String?) = safe("sessionEnded") {
         val id = open ?: return@safe
-        db.endSession(id, clock(), outcome, detail)
-        lastEndedAt = clock()
+        val now = clock()
+        db.endSession(id, now, outcome, detail)
+        lastEndedAt = now
         open = null
     }
 
@@ -67,10 +60,18 @@ class DbRunLogger(
     fun sessions(): List<RunSession> = db.sessions()
     fun events(): List<RunEvent> = db.events()
 
+    /**
+     * Between commands an event counts for the session that just ended ("stop" arriving right after
+     * it cancelled the run, the user fixing something by hand), but only within [AFTER_RUN_GRACE_MS]:
+     * setting up the phone or saying "stop" an hour later isn't part of that run.
+     */
     @Synchronized
     private fun event(type: String, name: String?, label: String?, detail: String?, ok: Boolean?) = safe(type) {
-        val id = open ?: last ?: return@safe // nothing to attach to before the first command
-        db.insertEvent(id, clock(), type, name?.take(MAX), label?.take(MAX), detail?.take(MAX), ok)
+        val now = clock()
+        val id = open
+            ?: last?.takeIf { now - lastEndedAt <= AFTER_RUN_GRACE_MS }
+            ?: return@safe // nothing to attach to: before the first command, or long after the last one
+        db.insertEvent(id, now, type, name?.take(MAX), label?.take(MAX), detail?.take(MAX), ok)
     }
 
     private inline fun safe(what: String, block: () -> Unit) {
@@ -83,6 +84,8 @@ class DbRunLogger(
 
     companion object {
         private const val MAX = 500
-        const val TOUCH_GRACE_MS = 60_000L
+
+        /** How long after a run ends a touch or "stop" still counts for it. */
+        const val AFTER_RUN_GRACE_MS = 60_000L
     }
 }
