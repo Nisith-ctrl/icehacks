@@ -4,8 +4,7 @@
 
 | Device | Android | Status |
 |---|---|---|
-| Emulator `stg_pixel_35` (Pixel 7 profile, Google Play image, x86_64) | 15 (API 35), build `AE3A.240806.036` | Library and volunteer demos pass end to end, hands-free (2026-11-11) |
-| Samsung Galaxy S21 | not recorded yet | Voice wake on real speech still to be checked by guru |
+| Emulator `stg_pixel_35` (Pixel 7 profile, Google Play image, x86_64) | 15 (API 35), build `AE3A.240806.036` | Library and volunteer demos pass end to end, hands-free (2026-11-11). Gmail photo demo with undo runs up to the final "Send" (2026-11-13) |
 
 ## App versions on the emulator
 
@@ -30,7 +29,8 @@ system photo picker and the file chooser. Anywhere else it stops. Forms are fill
 |---|---|
 | Find an invite in Gmail, open its link, pick the session that fits the calendar, fill the form, read back, submit on "Submit", verify the confirmation page | Works (library: LIB-282497; volunteer: VOL-730060) |
 | Remember an answer ("use Email for event signups") and reuse it on the next form; "What do you remember?", "Forget …" | Works |
-| Take over a Messages draft, attach yesterday's photo, "Undo the photo", "Use the one by the door", read back, "Send" | In progress (see below) |
+| Take over a Gmail draft to Maya, attach yesterday's dog photo (asks which one), "Undo the photo", "Use the one by the door", "Send it" → read-back → "Send" | Works up to the read-back (2026-11-13, PR 35); the run ended with "Cancel", so the final Send hasn't been run yet |
+| The same in Messages | Stops at the attach step on the emulator (no MMS, see below) |
 | "Stop" at any time | Cancels the running action in about 3 ms and says "Stopped." about 120 ms after the word arrives |
 
 ### Form controls
@@ -43,12 +43,15 @@ fingerprint still matches; if anything on screen changed after you approved, it 
 ## Controlled tests and limits
 
 - Demo runs on the emulator were driven with `DEBUG_UTTERANCE` (the same text the recognizer would
-  produce) because the emulator's microphone isn't reliable. Real-speech wake-up is checked on the S21.
+  produce) so runs are repeatable. Real-speech wake-up was tested on the emulator with the laptop microphone
+  (start it with `-allow-host-audio`). We test only on the emulator; no physical phone was used.
 - The two forms and the invite emails are test fixtures we built (`fixtures/forms`); no real
   registration happens.
-- Messages: the May 2024 build hid its text box and photo grid from accessibility, so the photo demo
-  couldn't see the draft. It was updated from the Play Store on 2026-11-11 and is being re-checked.
-  MMS usually doesn't deliver on the emulator, so the photo demo may stop at a verified draft there
-  (labelled draft-only), with a real send on the S21.
+- The photo demo runs in a Gmail draft to `maya@example.com`, a reserved test domain: a sent email
+  reaches nobody and bounces back to the test inbox. Start it with `scripts/seed-device.sh demo2`.
+- Messages: the May 2024 build hid its text box and photo grid from accessibility. After the Play Store
+  update on 2026-11-11 the "+" panel and the Files picker are visible, but the emulator has no MMS, so
+  Messages refuses photo attachments ("Attachments are not supported in this conversation"). SuuS stops
+  cleanly there and leaves the draft as it was (`scripts/seed-device.sh demo2-messages`).
 - Free-tier rate limits (8K tokens per minute, 200K per day) slow some turns; SuuS waits and retries.
   Don't rehearse many runs back to back before recording.

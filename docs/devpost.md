@@ -26,9 +26,10 @@ the form, the date picker, the attachment.
   confirmation number, and that all your details came through.
 - **You choose what it remembers:** "use Email for event signups" is saved once and reused on the
   next form. "What do you remember?" and "Forget …" work by voice, and on a big-button screen.
-- **Hand off what you started:** with a text half-written in Messages, "Suus, attach yesterday's
-  dog photo." Then "Undo the photo" removes only the photo and leaves your words alone.
-  <!-- team: only keep this once the S21 run works; the emulator has no MMS, see docs/metrics.md -->
+- **Hand off what you started:** with an email to Maya half-written in Gmail, "Suus, take over.
+  Attach yesterday's dog photo." SuuS describes both dog photos and asks which one. "Undo the photo"
+  removes only the photo and confirms your words are untouched; "Use the one by the door" attaches the
+  other one; "Send it" reads everything back and waits for you to say "Send".
 - **See what it's doing:** a small robot points at each control before tapping it, with a short caption.
 - **"Stop" works any time**: once SuuS hears it, the current action is cancelled at once and it says "Stopped." in about a tenth of a second.
 
@@ -49,15 +50,21 @@ the form, the date picker, the attachment.
 - Apps hide things from accessibility: Gmail keeps the inbox "visible" behind an open email,
   Calendar lays an invisible full-screen layer over its event list, and older Messages builds
   hid the text box entirely.
+- Gmail attachments: "Insert photo" puts the picture inside the email text, where undo can't remove
+  it, so SuuS always uses "Attach file". The attachment card appears a moment late, and a removed one
+  stayed in the accessibility tree until we cleared the cache before every screen read.
+- The emulator can't send photo texts (no MMS), so the photo demo moved from Messages to a Gmail draft.
 - Timing: cold app starts and slow first launches look like "nothing happened" unless you wait carefully.
-- Free-tier rate limits: small, stateless prompts, code doing the exact parts (3–4 model calls per form
-  instead of 15+), and automatic waits. The waits are why parts of our video are sped up and labelled;
+- Free-tier rate limits: small, stateless prompts, code doing the exact parts (3–4 model calls to fill a
+  form, 8–11 for a whole run from the home screen), and automatic waits. The waits are why parts of our video are sped up and labelled;
   a paid API tier removes most of them.
 
 ## Accomplishments
 
 - Library registration and volunteer signup run end to end with **zero touches** after setup:
   2 and 3 spoken commands, with verified confirmations (see `docs/metrics.md`).
+- Selective undo works live in Gmail: SuuS attached the yard photo, removed only that photo, checked the
+  recipient, subject and text were unchanged, then attached the one by the door.
 
 ## What we learned
 
