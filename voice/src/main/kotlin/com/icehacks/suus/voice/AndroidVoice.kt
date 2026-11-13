@@ -163,6 +163,9 @@ class AndroidVoice(
             @Deprecated("Deprecated in Java")
             override fun onError(utteranceId: String?) { utterances[utteranceId]?.complete(Unit) }
             override fun onError(utteranceId: String?, errorCode: Int) { utterances[utteranceId]?.complete(Unit) }
+            // A line cut off by the next one (QUEUE_FLUSH) ends here, not in onDone. Without this its
+            // say() waits the full 30 s timeout and the command stalls (vault: api-notes/android-tts).
+            override fun onStop(utteranceId: String?, interrupted: Boolean) { utterances[utteranceId]?.complete(Unit) }
         })
     }
 
