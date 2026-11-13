@@ -60,6 +60,17 @@ class GmailDraftFixtureTest {
     }
 
     @Test
+    fun aSentDraftIsRecognisedByItsComposeScreenClosing() {
+        val draft = fixture("gmail-draft-attached")
+        assertFalse(AgentLoop.gmailComposeGone(draft))
+        assertEquals("maya@example.com", AgentLoop.gmailRecipient(draft))
+        val home = fixture("home-screen")
+        assertTrue(AgentLoop.gmailComposeGone(home))
+        val inbox = fixture("gmail-inbox")
+        assertTrue(AgentLoop.gmailComposeGone(inbox))
+    }
+
+    @Test
     fun aLateAttachmentIsRecordedWithItsLabel() {
         val ledger = DraftLedger()
         val e = ledger.recordAttachment("dog photo (door)", "com.google.android.gm", "Remove attachment IMG_0422.png")

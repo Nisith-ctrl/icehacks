@@ -401,6 +401,18 @@ class AgentLoop(
                             if (r is ActionResult.Done) {
                                 submitted = true
                                 ledger.clear() // undo stays within the draft stage
+                                // A Gmail draft closes once it's sent (to the inbox, or the home screen when
+                                // another app opened it). There's no confirmation page: the compose screen
+                                // being gone is the check, so finish here instead of asking the model.
+                                if (commitWord == "Send" && snap.packageName == GMAIL_PACKAGE && gmailComposeGone(r.after)) {
+                                    val to = gmailRecipient(snap)
+                                    val summary = "Sent! Your email" + (to?.let { " to $it" } ?: "") + " is on its way."
+                                    log("gmail send verified: compose closed, now ${r.after.packageName}")
+                                    overlay.setMode(CharacterMode.IDLE)
+                                    overlay.caption(summary)
+                                    voice.say(summary)
+                                    return Outcome.Done(summary)
+                                }
                                 remember("submitted with \"$commitWord\" after spoken approval")
                                 feedback = "Submitted. " + verifyConfirmation(r.after) +
                                     " Call done with what it shows (or say you're not sure). Do not submit again."
@@ -726,6 +738,17 @@ class AgentLoop(
             if (s.packageName != GMAIL_PACKAGE || !GMAIL_INLINE_INSERT.containsMatchIn(label(n))) return n
             return s.nodes.firstOrNull { it.text == "Attach file" } ?: n
         }
+
+        /** After Send: Gmail's compose screen (its Send button and "Recipients" field) is no longer showing. */
+        fun gmailComposeGone(after: ScreenSnapshot): Boolean =
+            after.packageName != GMAIL_PACKAGE || after.nodes.none {
+                it.viewId == "com.google.android.gm:id/send" || it.contentDescription?.startsWith("Recipients:") == true
+            }
+
+        /** "Recipients: maya@example.com," -> "maya@example.com" (the first one), or null. */
+        fun gmailRecipient(s: ScreenSnapshot): String? =
+            s.nodes.firstNotNullOfOrNull { n -> n.contentDescription?.takeIf { it.startsWith("Recipients:") } }
+                ?.removePrefix("Recipients:")?.split(",")?.map { it.trim() }?.firstOrNull { it.isNotEmpty() }
 
         /** A read-back says the photo in words, never its file name: "IMG_0422.png" -> "the dog photo by the door". */
         fun spokenFileNames(readback: String, photoLabel: String?): String =

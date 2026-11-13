@@ -58,6 +58,13 @@ class ChoiceMatcherTest {
         assertEquals("Email", ChoiceMatcher.match("the first one", methods))
         assertEquals("The one by the door", ChoiceMatcher.match("use the one by the door", photos))
         assertEquals("The one in the yard", ChoiceMatcher.match("yard", photos))
+        // Real vision descriptions vary run to run (emulator, Nov 13).
+        val described = listOf("brown dog in the grass", "dog sitting by the blue front door")
+        assertEquals("brown dog in the grass", ChoiceMatcher.match("the one in the yard", described))
+        assertEquals("dog sitting by the blue front door", ChoiceMatcher.match("the one by the door", described))
+        val fenced = listOf("dog standing in grass near fence", "dog on the doorstep")
+        assertEquals("dog standing in grass near fence", ChoiceMatcher.match("the one in the yard", fenced))
+        assertEquals("dog on the doorstep", ChoiceMatcher.match("use the one by the door", fenced))
         assertEquals("Text message", ChoiceMatcher.match("the last one", methods))
         assertNull(ChoiceMatcher.match("pizza", methods))
     }

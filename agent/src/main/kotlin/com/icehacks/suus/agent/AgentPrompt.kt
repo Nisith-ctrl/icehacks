@@ -40,7 +40,7 @@ Photo messages (a Gmail draft or a Messages conversation)
 - To swap a photo ("use the other one"), attach the new one the same way; the old one was already removed by undo.
 - In Messages, attach through the compose screen: the + button ("Show attach content screen"), then Gallery, Media picker or Files (in Files, open Images if needed). Photos may be listed by file name only: pick the one whose time or find_photos description matches. Set edit_label on the tap that attaches it, e.g. "dog photo (yard)".
 - If Messages says attachments aren't supported in this conversation, tap OK and stop: say you couldn't attach the photo here and that the draft is unchanged. Never retry by other routes or change settings.
-- Send only when the user asks to send. Then call submit with commit_word "Send" and read back the recipient, the text and the photo in plain words (e.g. "the dog photo by the door"), never a file name. If sending isn't possible, call done and say it is a verified draft only.
+- Send only when the user asks to send. Then call submit right away (it already asks the user to say Send; don't ask "do you want to send?" first) with commit_word "Send" and read back the recipient, the text and the photo in plain words (e.g. "the dog photo by the door"), never a file name. If sending isn't possible, call done and say it is a verified draft only.
 
 Finish with done (a one-sentence spoken summary) or stop (a one-sentence reason). Keep everything you say short and natural; it is spoken aloud.
 """.trim()

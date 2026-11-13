@@ -56,13 +56,21 @@ object ChoiceMatcher {
         fun hit(t: String) = t in answerTokens || (t.length >= 4 && compact.contains(t)) ||
             (t.length >= 5 && answerTokens.any { w -> w.length >= 5 && w.take(5) == t.take(5) }) ||
             // "the one in the yard" -> "backyard": a spoken word inside a longer choice word.
-            answerTokens.any { w -> w.length >= 4 && w != t && t.contains(w) }
+            answerTokens.any { w -> w.length >= 4 && w != t && t.contains(w) } ||
+            // "the one in the yard" -> "brown dog in the grass": photo descriptions vary run to run.
+            answerTokens.any { w -> SAME_PLACE.any { w in it && t in it } }
         val scores = choices.associateWith { c -> tokens(c).count { hit(it) } }
         val best = scores.values.max()
         if (best == 0) return null
         val top = scores.filterValues { it == best }.keys
         return top.singleOrNull()
     }
+
+    /** Everyday words for the same place, as people say them vs. as a photo description puts them. */
+    private val SAME_PLACE = listOf(
+        setOf("yard", "backyard", "garden", "lawn", "grass", "grassy", "fence", "fenced"),
+        setOf("door", "doorstep", "doorway", "porch", "entrance", "entryway", "stoop"),
+    )
 
     private fun tokens(choice: String) =
         CommandParser.normalize(choice).split(" ").filter { it.isNotBlank() && it !in FILLER }.toSet()
