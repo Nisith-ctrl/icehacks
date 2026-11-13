@@ -18,8 +18,9 @@ object EventType {
 
 /**
  * The agent's run log (T06 M2). One session per spoken command (goal, undo or memory); every other
- * call attaches to the session that is running, or to the last one if none is (e.g. "stop", or a
- * touch between commands). Calls never throw: logging must not break the agent.
+ * call attaches to the session that is running, or to the one that just ended if none is (e.g.
+ * "stop", or a touch between commands), up to 60 s after its end; later ones are dropped. Calls
+ * never throw: logging must not break the agent.
  *
  * You normally don't call this directly: [RunLog] wraps the agent's ScreenController, VoiceIO,
  * ApprovalGate and AgentRunner and makes these calls for you.
@@ -92,10 +93,11 @@ data class RunEvent(
  * summed and [spanMs] runs from the first start to the last end.
  *
  * - [spokenCommands]: the command that started each session, plus every answered question, every
- *   approval answered with the commit word or "Cancel", and every "stop". Activation ("Hey Goal")
+ *   approval answered with the commit word or "Cancel", and every "stop". Activation ("Suus")
  *   is part of the command's utterance, so it counts once with it.
- * - [userTouches]: clicks reported by the accessibility service while the agent wasn't acting.
- *   A lower bound (see data/README.md); check it against the recording.
+ * - [userTouches]: clicks reported by the accessibility service while the agent wasn't acting,
+ *   during the session or in the 60 s after it. A lower bound (see data/README.md); check it
+ *   against the recording.
  */
 @Serializable
 data class RunSummary(

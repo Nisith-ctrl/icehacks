@@ -14,6 +14,7 @@ import com.icehacks.suus.agent.data.RunLogger
 import com.icehacks.suus.agent.data.sessionOutcome
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -104,8 +105,15 @@ class SuusAgent(
             return
         }
         ledger.remove(edit)
-        val after = result.after
-        val stillThere = ledger.stillApplied(edit, after)
+        // Gmail redraws the draft a moment after the remove tap: look again before saying it's still there.
+        var after = result.after
+        var stillThere = ledger.stillApplied(edit, after)
+        repeat(4) {
+            if (!stillThere) return@repeat
+            delay(400)
+            after = screen.snapshot()
+            stillThere = ledger.stillApplied(edit, after)
+        }
         val afterTexts = DraftLedger.fieldTexts(after)
         val lost = keep.filter { it !in afterTexts }
         when {
