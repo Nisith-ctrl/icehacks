@@ -86,7 +86,21 @@ adb shell am broadcast -a com.icehacks.suus.DEBUG_RUNLOG --es op summary   # tot
 adb shell am broadcast -a com.icehacks.suus.DEBUG_RUNLOG                    # op defaults to export
 adb logcat -d -s SUUS-Data
 adb pull /sdcard/Download/suus/runs/ .
+adb shell rm -r /sdcard/Download/suus/runs                                  # always, see below
 ```
+
+(Git Bash on Windows: put `MSYS_NO_PATHCONV=1` in front of adb commands that take a `/sdcard/...`
+path, or the path is rewritten and the command fails.)
+
+**Delete the exports from the phone as soon as you have pulled them.** They are new files in
+Downloads, so the phone's file picker lists them at the top of **Recent files**, above the photos.
+Demo 2 attaches its photo through that picker: on Nov 13 a Demo 2 run failed with Recent full of
+run exports and debug snapshots (PR 38). Checked on an API 36 emulator: with exports on the phone
+the first screen of Recent was all `suus-*.csv`; after the `rm` it was empty.
+
+- `summary` only writes to Logcat, so it never adds a file. Use it when the counts are all you need.
+- Before recording, start clean: `adb shell rm -r /sdcard/Download/suus` (this also removes
+  `DEBUG_SNAPSHOT` files).
 
 Each export writes three files to `/sdcard/Download/suus/runs/` (via MediaStore, no permission):
 
