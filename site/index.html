@@ -5,11 +5,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SuuS: say the goal, SuuS does the taps</title>
 <meta name="description" content="SuuS is an Android voice agent for people who find tapping hard. Say what you need; it shows every tap and asks before anything is sent.">
+<meta name="theme-color" content="#0A2913">
+<!-- Link previews (Devpost, Discord, texts). Use absolute URLs here once the site has its address. -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="SuuS: say the goal, SuuS does the taps">
+<meta property="og:description" content="An Android voice agent for people who find tapping hard. 97 taps by hand, none with SuuS.">
+<meta property="og:image" content="robot.png">
+<meta name="twitter:card" content="summary">
 <link rel="icon" href="robot.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script>
+  // Motion opt-in, set before first paint so nothing flashes. Skipped with "reduce motion".
+  // If motion.js can't load in 2.5 s (offline, blocked CDN), the class comes off and the page
+  // shows everything exactly as it would without motion.
+  (function () {
+    var d = document.documentElement;
+    if (!window.matchMedia || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    d.classList.add('motion');
+    setTimeout(function () { if (!d.classList.contains('motion-ready')) d.classList.remove('motion'); }, 2500);
+  })();
+</script>
+<script type="module" src="motion.js"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -298,7 +317,7 @@
       <tbody>
         <tr><th scope="row">Library workshop registration</th><td>53 touches, 141 s</td><td><strong>0 touches</strong>, 2 spoken commands, 85 s</td></tr>
         <tr><th scope="row">Volunteer shift signup</th><td>44 touches, 84 s</td><td><strong>0 touches</strong>, 3 spoken commands, 101 s</td></tr>
-        <tr><th scope="row">Photo email with undo</th><td>not measured</td><td><strong>0 touches</strong>, 6 spoken commands, sent</td></tr>
+        <tr><th scope="row">Photo email with undo</th><td>not measured</td><td><strong>0 touches</strong>, 6 spoken commands, 124 s, sent</td></tr>
       </tbody>
     </table>
   </div>
@@ -350,13 +369,14 @@
     <div class="split">
       <div class="card">
         <p class="tag">Android app</p>
-        <h3>Get the APK</h3>
-        <p>Tested on Android 15. After installing, Android may ask you to allow restricted settings
-          before you can turn on the accessibility service. SuuS needs your own free Groq API key.</p>
+        <h3>Install it</h3>
+        <p>Tested on Android 15. There's no ready-made APK yet: SuuS needs a free Groq API key built into
+          the app, so you build it once with your own key. After installing, Android may ask you to allow
+          restricted settings before you can turn on the accessibility service.</p>
         <p class="ios"><strong>No iPhone version yet.</strong> SuuS works by reading and tapping other apps'
           screens through Android's accessibility service. iPhone doesn't give apps that kind of access,
           so an iOS version would need a different approach.</p>
-        <a class="btn btn-primary" href="https://github.com/Nisith-ctrl/icehacks/releases">Download from GitHub</a>
+        <a class="btn btn-primary" href="https://github.com/Nisith-ctrl/icehacks/blob/main/docs/setup.md">Install steps</a>
       </div>
       <div class="card">
         <p class="tag">Source code</p>
