@@ -10,6 +10,12 @@ plugins {
 //   GROQ_API_KEY=gsk_...                      (required to plan; free key at console.groq.com)
 //   GROQ_MODEL=openai/gpt-oss-120b            (optional override)
 //   GROQ_VISION_MODEL=qwen/qwen3.8-27b        (optional override, used to describe photos)
+// Release builds (the APK people download) never contain GROQ_API_KEY. They talk to the SuuS relay
+// (relay/, a Vercel function that holds the key) instead:
+//   SUUS_RELAY_URL=https://<relay>.vercel.app/api
+//   SUUS_RELAY_TOKEN=<the relay's SUUS_APP_TOKEN>
+// Without these, a release build has no key at all and SuuS says so out loud.
+// To test the relay with a debug build (adb hooks work), also set SUUS_DEBUG_VIA_RELAY=true.
 val localProps = Properties().apply {
     val f = rootProject.file("local.properties")
     if (f.exists()) f.inputStream().use { load(it) }
@@ -22,9 +28,18 @@ android {
     defaultConfig {
         minSdk = 30
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" // T06 androidTest
-        buildConfigField("String", "GROQ_API_KEY", "\"${prop("GROQ_API_KEY")}\"")
+        val viaRelay = prop("SUUS_DEBUG_VIA_RELAY") == "true" && prop("SUUS_RELAY_URL").isNotBlank()
+        buildConfigField("String", "GROQ_API_KEY", "\"${if (viaRelay) prop("SUUS_RELAY_TOKEN") else prop("GROQ_API_KEY")}\"")
+        buildConfigField("String", "GROQ_BASE_URL", "\"${if (viaRelay) prop("SUUS_RELAY_URL") else "https://api.groq.com/openai/v1"}\"")
         buildConfigField("String", "GROQ_MODEL", "\"${prop("GROQ_MODEL", "openai/gpt-oss-120b")}\"")
         buildConfigField("String", "GROQ_VISION_MODEL", "\"${prop("GROQ_VISION_MODEL", "qwen/qwen3.8-27b")}\"")
+    }
+    buildTypes {
+        release {
+            buildConfigField("String", "GROQ_API_KEY", "\"${prop("SUUS_RELAY_TOKEN")}\"")
+            val relay = prop("SUUS_RELAY_URL")
+            if (relay.isNotBlank()) buildConfigField("String", "GROQ_BASE_URL", "\"$relay\"")
+        }
     }
     buildFeatures { buildConfig = true }
     testOptions { unitTests.isReturnDefaultValues = true }
