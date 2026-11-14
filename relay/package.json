@@ -1,0 +1,7 @@
+{
+  "name": "suus-relay",
+  "private": true,
+  "description": "Relays SuuS's AI requests to Groq so the key never ships in the APK.",
+  "type": "module",
+  "engines": { "node": ">=18" }
+}

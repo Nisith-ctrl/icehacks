@@ -11,8 +11,9 @@ import com.icehacks.suus.core.VoiceIO
 import com.icehacks.suus.agent.data.createRunLog
 
 /**
- * Called by the app's AccessibilityService. Needs GROQ_API_KEY in local.properties (free key from
- * console.groq.com); without it the agent still runs and says that no key is set up.
+ * Called by the app's AccessibilityService. Debug builds call Groq with GROQ_API_KEY from
+ * local.properties; release builds call the SuuS relay (relay/), which holds the key, so the APK
+ * never contains it. Without either, the agent still runs and says it can't plan.
  */
 fun createAgent(
     screen: ScreenController,
@@ -53,7 +54,7 @@ fun sharedPreferenceStore(context: Context): ObservablePreferenceStore = createP
 
 private object NoKeyPlanner : Planner {
     override suspend fun next(turn: PlannerTurn) =
-        PlannerStep("stop", tool("reason" to "No Groq API key is set up, so I can't plan. Add GROQ_API_KEY to local.properties and rebuild."))
+        PlannerStep("stop", tool("reason" to "My AI service isn't set up in this version, so I can't plan yet."))
 }
 
 class FakeAgentRunner : AgentRunner {

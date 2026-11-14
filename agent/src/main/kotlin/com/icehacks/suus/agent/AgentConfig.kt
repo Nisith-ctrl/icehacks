@@ -12,7 +12,7 @@ data class Profile(
 
 data class AgentConfig(
     /** Groq's OpenAI-compatible API (free tier). See decision 2026-11-09-llm-provider-groq. */
-    val baseUrl: String = "https://api.groq.com/openai/v1",
+    val baseUrl: String = BuildConfig.GROQ_BASE_URL, // Groq itself, or the SuuS relay in release builds
     val apiKey: String = BuildConfig.GROQ_API_KEY,
     val model: String = BuildConfig.GROQ_MODEL,
     val visionModel: String = BuildConfig.GROQ_VISION_MODEL,
