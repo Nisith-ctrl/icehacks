@@ -367,3 +367,57 @@ h4 { font-size: 1.15rem; margin: 0 0 8px; }
   .btn, .tablist button { transition: none; }
   .btn:hover { transform: none; }
 }
+
+/* ---------- Motion (site/motion.js) ----------
+   Everything here only applies while html.motion is set (JS on, motion allowed). Elements start
+   hidden and motion.js brings them in; without motion the page is unchanged. */
+
+/* Header ribbon doubles as a reading-progress bar. --sp = 1 without motion, so it's full. */
+.ribbon { position: relative; }
+.motion .ribbon { background: rgba(253, 246, 237, .14); }
+.motion .ribbon::after {
+  content: ""; position: absolute; inset: 0; transform-origin: left; transform: scaleX(var(--sp, 0));
+  background: linear-gradient(90deg, var(--amber), var(--coral), var(--mint), #95CBA7);
+}
+
+/* Start states (motion.js animates them in). */
+.motion .hero-text > *,
+.motion .hero-art,
+.motion .section > .eyebrow, .motion .section > h2, .motion .section > .lede, .motion .section > .sub,
+.motion .split > *, .motion .steps > li, .motion .grid3 > *, .motion .team > li, .motion .setup > li,
+.motion .exits > li, .motion .tools ul > li, .motion .arch-mods > li, .motion .flow > .node,
+.motion .notice, .motion .chart, .motion .tabs, .motion .video, .motion .under { opacity: 0; }
+.motion .hero h1 .w { display: inline-block; opacity: 0; will-change: transform, opacity; }
+
+/* Bars: springs replace the CSS keyframe. */
+.motion .bar { animation: none; transform: scaleX(0); }
+.motion .bar.suus { transform: scaleY(0); }
+
+/* Buttons: motion handles the lift and press, so CSS only fades colours. */
+.motion .btn, .motion .tablist button { transition: background-color .18s ease, color .18s ease, box-shadow .18s ease; }
+.motion .btn:hover { transform: none; }
+
+/* The robot: a real button you can tap, press Enter on, or grab and fling. */
+.robot-btn {
+  border: 0; padding: 6px; background: none; cursor: grab; border-radius: 24px;
+  -webkit-tap-highlight-color: transparent;
+}
+.robot-btn:focus-visible { outline: 3px solid var(--amber); outline-offset: 4px; }
+.robot-float { display: block; }
+.robot-btn img { display: block; user-select: none; -webkit-user-drag: none; }
+.bubble .typed { white-space: pre-wrap; }
+.motion .bubble { min-height: 4.6em; min-width: min(300px, 80vw); transform-origin: 50% 100%; }
+
+/* Hero glow turns slowly as the hero scrolls away (--hp from scroll progress). */
+.hero { overflow-x: clip; } /* the turning glow must never widen the page */
+.motion .hero-art::before { transform: rotate(calc(var(--hp, 0) * 35deg)) scale(calc(1 + var(--hp, 0) * .25)); }
+
+/* Tabs: one pill glides behind the selected tab (shared element), instead of each tab painting its own. */
+.tablist { position: relative; }
+.tab-pill {
+  position: absolute; left: 0; top: 0; z-index: 0; border-radius: 999px;
+  background: var(--primary); box-shadow: var(--shadow); pointer-events: none;
+}
+.motion .tablist button { position: relative; z-index: 1; }
+.motion .tablist button[aria-selected="true"] { background: transparent; box-shadow: none; }
+
