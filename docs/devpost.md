@@ -18,8 +18,8 @@ the form, the date picker, the attachment.
 ## What it does
 
 - **Say the goal:** "Suus, sign me up for the library workshop that fits my calendar." SuuS finds
-  the invite in Gmail, opens the link, checks Calendar (the Thursday session clashes with the
-  dentist, so it picks Friday), fills the form, and reads everything back.
+  the invite in Gmail, opens the link, checks Calendar (the first session clashes with the
+  dentist, so it picks the other one), fills the form, and reads everything back.
 - **You approve, by voice:** nothing is submitted or sent until you say "Submit" or "Send". If the
   screen changed after you approved, it asks again.
 - **It checks the result:** after submitting it reads the confirmation page and tells you the
@@ -44,6 +44,9 @@ the form, the date picker, the attachment.
   filling fields, matching calendar clashes, gating Submit/Send behind a fingerprinted spoken
   approval, verifying confirmation pages, and undoing exactly one edit.
 - Safety: an app allowlist, forms only on our test site, and every commit action needs spoken approval.
+- Shipping: a signed release APK (SuuS 1.0) on GitHub Releases. It carries no API key: release builds
+  call a small relay on Vercel (`relay/`) that holds the Groq key as a secret, allows only SuuS's two
+  models, and rate-limits each address. A one-page website explains the app and links the download.
 
 ## Challenges
 
@@ -61,25 +64,67 @@ the form, the date picker, the attachment.
 
 ## Accomplishments
 
-- Library registration and volunteer signup run end to end with **zero touches** after setup:
-  2 and 3 spoken commands, with verified confirmations (see `docs/metrics.md`).
+- All three demos run end to end on the emulator with **zero touches** after setup (see `docs/metrics.md`):
+  - library registration: 2 spoken commands, confirmed LIB-282497
+  - volunteer signup, on a form it had never seen: 3 spoken commands, confirmed VOL-730060
+  - photo email with undo: 6 spoken commands, sent
+- The same two signups by hand took **53 and 44 touches**, most of them tiny keyboard keys.
 - Selective undo works live in Gmail: SuuS attached the yard photo, removed only that photo, checked the
   recipient, subject and text were unchanged, then attached the one by the door.
+- Shipped: a public website and a downloadable, signed APK that needs no API key from the user.
 
 ## What we learned
 
-<!-- team: add yours -->
+<!-- team: edit or replace these drafts, and add your own line -->
+- Accessibility trees don't always match what's on screen: apps keep hidden layers "visible" and
+  cache removed items. Reading the screen reliably took more work than planning the next step.
+- Let the AI decide what to do next, and let code do anything that must be exact. That made it
+  both more reliable and cheaper: 3–4 model calls to fill a form.
+- Voice for older users needs forgiving matching ("Suus" is often heard as "sis" or "cease") and
+  strict confirmation: only the exact words "Submit" and "Send" can commit.
+- A shared notebook of decisions and dead ends let four people and their coding agents build in
+  parallel without stepping on each other.
 
 ## What's next
 
-More apps and forms; on-device speech; letting users teach new workflows by showing them once.
+- More apps and forms, beyond our test site; letting users teach a new workflow by showing it once.
+- On-device speech recognition, and testing on real phones with real speech.
+- Testing with people who have limited hand dexterity.
+- An iPhone version. iOS doesn't let apps read and tap other apps the way Android's accessibility
+  service does, so it would need a different approach.
+- A paid or faster model tier to remove the rate-limit waits.
 
 ## Built with
 
-Kotlin, Android Accessibility API, Android SpeechRecognizer, Groq, SQLite, Vercel (test forms)
+Kotlin, Android Accessibility API, Android SpeechRecognizer, Android TextToSpeech, Groq
+(`openai/gpt-oss-120b`, `qwen/qwen3.8-27b`), SQLite, Gradle, Vercel (website, test forms, API relay),
+Node.js (relay), HTML/CSS/JavaScript, Motion (website animation)
+
+## Try it
+
+1. Download **SuuS 1.0** (Android 11+, about 10 MB):
+   https://github.com/Nisith-ctrl/icehacks/releases/latest/download/SuuS-1.0.apk
+2. Open it and allow installs from your browser if asked.
+3. When you turn SuuS on in Accessibility settings, Android may first ask you to allow restricted
+   settings (SuuS's App info → ⋮ → Allow restricted settings).
+4. Follow the setup screen, then say "Suus".
+
+Limits worth knowing: Android only (no iPhone yet), tested on the Android 15 emulator, forms are
+only filled on our test site, and everyone using the APK shares one free-tier AI limit, so it may
+say it has hit the usage limit.
+
+## Tracks
+
+- Overall
+- Best AI Hack
+- Best Design & UX (accessibility is the core of the project)
+- Best Deployed / Shipped App: a public website and a signed, downloadable APK, with setup docs
+  <!-- team: confirm we're entering this one -->
 
 ## Links
 
-- Video: <!-- add -->
+- Video: <!-- add the YouTube link -->
+- Website: https://suus-nisith.vercel.app
+- Download: https://github.com/Nisith-ctrl/icehacks/releases/tag/v1.0
 - Code: https://github.com/Nisith-ctrl/icehacks
-- Setup: `docs/setup.md`. Tested environments: `docs/tested-environments.md`.
+- Setup: `docs/setup.md`. Tested environments: `docs/tested-environments.md`. Measurements: `docs/metrics.md`.
