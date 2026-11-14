@@ -421,3 +421,9 @@ h4 { font-size: 1.15rem; margin: 0 0 8px; }
 .motion .tablist button { position: relative; z-index: 1; }
 .motion .tablist button[aria-selected="true"] { background: transparent; box-shadow: none; }
 
+
+/* Install steps on the download card */
+.install { margin: 4px 0 14px; padding-left: 22px; color: var(--text-2); }
+.install li { margin-bottom: 6px; }
+.split .card .fine { margin-top: 10px; }
+.split .card .fine a { color: var(--primary); display: inline-flex; align-items: center; min-height: 44px; }
