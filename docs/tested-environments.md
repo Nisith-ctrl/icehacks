@@ -4,7 +4,7 @@
 
 | Device | Android | Status |
 |---|---|---|
-| Emulator `stg_pixel_35` (Pixel 7 profile, Google Play image, x86_64) | 15 (API 35), build `AE3A.240806.036` | Library and volunteer demos pass end to end, hands-free (2026-11-11). Gmail photo demo with undo runs up to the final "Send" (2026-11-13) |
+| Emulator `stg_pixel_35` (Pixel 7 profile, Google Play image, x86_64) | 15 (API 35), build `AE3A.240806.036` | Library and volunteer demos pass end to end, hands-free (2026-11-11). Gmail photo demo with undo passes end to end, sent to a test address (2026-11-13) |
 
 ## App versions on the emulator
 
@@ -29,7 +29,7 @@ system photo picker and the file chooser. Anywhere else it stops. Forms are fill
 |---|---|
 | Find an invite in Gmail, open its link, pick the session that fits the calendar, fill the form, read back, submit on "Submit", verify the confirmation page | Works (library: LIB-282497; volunteer: VOL-730060) |
 | Remember an answer ("use Email for event signups") and reuse it on the next form; "What do you remember?", "Forget …" | Works |
-| Take over a Gmail draft to Maya, attach yesterday's dog photo (asks which one), "Undo the photo", "Use the one by the door", "Send it" → read-back → "Send" | Works up to the read-back (2026-11-13, PR 35); the run ended with "Cancel", so the final Send hasn't been run yet |
+| Take over a Gmail draft to Maya, attach yesterday's dog photo (asks which one), "Undo the photo", "Use the one by the door", "Send it" → read-back → "Send" | Works, 0 touches, 6 spoken commands, 124 s; sent to `maya@example.com` (2026-11-13, PRs 35, 37, 38) |
 | The same in Messages | Stops at the attach step on the emulator (no MMS, see below) |
 | "Stop" at any time | Cancels the running action in about 3 ms and says "Stopped." about 120 ms after the word arrives |
 
