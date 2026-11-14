@@ -369,20 +369,25 @@
     <div class="split">
       <div class="card">
         <p class="tag">Android app</p>
-        <h3>Install it</h3>
-        <p>Tested on Android 15. There's no ready-made APK yet: SuuS needs a free Groq API key built into
-          the app, so you build it once with your own key. After installing, Android may ask you to allow
-          restricted settings before you can turn on the accessibility service.</p>
+        <h3>Get the app</h3>
+        <p>SuuS 1.0 for Android 11 and newer (tested on Android 15), about 10 MB. No account or API key
+          needed: install it, follow the two-minute setup, and start talking.</p>
+        <ol class="install">
+          <li>Download the APK and open it. If asked, allow installs from your browser.</li>
+          <li>When you turn SuuS on in Accessibility settings, Android may first ask you to
+            <strong>allow restricted settings</strong>: SuuS's App info, then ⋮, then Allow restricted settings.</li>
+        </ol>
         <p class="ios"><strong>No iPhone version yet.</strong> SuuS works by reading and tapping other apps'
           screens through Android's accessibility service. iPhone doesn't give apps that kind of access,
           so an iOS version would need a different approach.</p>
-        <a class="btn btn-primary" href="https://github.com/Nisith-ctrl/icehacks/blob/main/docs/setup.md">Install steps</a>
+        <a class="btn btn-primary" href="https://github.com/Nisith-ctrl/icehacks/releases/latest/download/SuuS-1.0.apk" download>Download SuuS 1.0 (APK)</a>
+        <p class="fine"><a href="https://github.com/Nisith-ctrl/icehacks/releases/tag/v1.0">Release notes and checksum</a></p>
       </div>
       <div class="card">
         <p class="tag">Source code</p>
         <h3>Build it yourself</h3>
-        <p>Kotlin, open source. Put your Groq key in <code>local.properties</code>, then build and install
-          with Gradle. The setup guide has every step.</p>
+        <p>Kotlin, open source. Put your own Groq key in <code>local.properties</code>, then build and install
+          with Gradle. The setup guide has every step. (The APK above uses our relay, so it carries no key.)</p>
         <a class="btn btn-ghost" href="https://github.com/Nisith-ctrl/icehacks">View on GitHub</a>
       </div>
     </div>
