@@ -719,6 +719,9 @@ From `docs/devpost.md` and the notes:
 
 ## 12. Video script beats (≤ 3:00)
 
+> Superseded on recording day (Nov 15) by `docs/video-script.md`, which has the actual demo dates,
+> the recording-day numbers, and the full voiceover. The beats below are kept as the original plan.
+
 Based on the lead's plan: problem 20 s, Demo 1 60 s, volunteer 30 s, Demo 2 45 s, how it's built 25 s
 [session nisith 2026-11-09-lead-build-plan]. Record each run at real speed; speed up only the waiting
 and label it on screen, e.g. "Sped up 4x: waiting on the free AI tier's rate limit". Link the full

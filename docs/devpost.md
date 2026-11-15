@@ -56,6 +56,11 @@ the form, the date picker, the attachment.
 - Gmail attachments: "Insert photo" puts the picture inside the email text, where undo can't remove
   it, so SuuS always uses "Attach file". The attachment card appears a moment late, and a removed one
   stayed in the accessibility tree until we cleared the cache before every screen read.
+- Surprises on screen: on our first recording take, Gmail popped up a tip about emoji reactions
+  that we had never seen. SuuS's tap missed, it read the screen again, saw the email was already
+  open, and tapped the signup link. Because it decides each step from what is on screen, not from
+  recorded tap positions, the tip didn't derail it. (That tip didn't block anything; a dialog that
+  has to be dismissed is a case we haven't tested.)
 - The emulator can't send photo texts (no MMS), so the photo demo moved from Messages to a Gmail draft.
 - Timing: cold app starts and slow first launches look like "nothing happened" unless you wait carefully.
 - Free-tier rate limits: small, stateless prompts, code doing the exact parts (3–4 model calls to fill a
@@ -68,6 +73,10 @@ the form, the date picker, the attachment.
   - library registration: 2 spoken commands, confirmed LIB-282497
   - volunteer signup, on a form it had never seen: 3 spoken commands, confirmed VOL-730060
   - photo email with undo: 6 spoken commands, sent
+- On recording day (Nov 15) both signups ran again with **zero touches**: the library workshop in
+  175 s (it skipped Tuesday's session, which clashes with the dentist) and the volunteer shift in
+  80 s (it skipped Friday's shift, which clashes with lunch, and reused the saved "Email"
+  preference without asking).
 - The same two signups by hand took **53 and 44 touches**, most of them tiny keyboard keys.
 - Selective undo works live in Gmail: SuuS attached the yard photo, removed only that photo, checked the
   recipient, subject and text were unchanged, then attached the one by the door.
@@ -149,6 +158,11 @@ say it has hit the usage limit.
 ## Links
 
 - Video: <!-- add the YouTube link -->
+  Recorded on the Android emulator. The screen recorder held the PC's microphone, so in the
+  recording each command was sent to SuuS as text the moment it was spoken (SuuS's built-in test
+  hook), and the commands are voiced over. Everything after that (reading the screen, every tap,
+  the questions, the approvals, the spoken replies) is SuuS running for real. Waits are sped up and
+  labelled. With a free microphone, SuuS takes the same commands by voice.
 - Website: https://suus-nisith.vercel.app
 - Download: https://github.com/Nisith-ctrl/icehacks/releases/tag/v1.0
 - Code: https://github.com/Nisith-ctrl/icehacks
