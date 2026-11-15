@@ -6,7 +6,7 @@ touches code and agents' code commits never touch the vault.
 
 ## Teammate setup (about 10 minutes)
 
-**Easiest:** paste [SETUP.md](../SETUP.md) into Claude Code and let it do the steps below for you.
+**Easiest:** paste [teammate-setup.md](teammate-setup.md) into Claude Code and let it do the steps below for you.
 
 You need: Git, the GitHub CLI (`gh auth login`), Obsidian, and your AI coding tool
 (Claude Code, Cursor, Codex…). Accept the GitHub invites for **both** repos first.

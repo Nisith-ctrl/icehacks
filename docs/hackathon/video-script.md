@@ -1,7 +1,7 @@
 # Video script and voiceover (≤ 3:00)
 
 The demo video for Devpost: what's on screen, what to say, and what we measured on recording
-day (Sun Nov 15, 2026). The older beats in `docs/submission-notes.md` section 12 are superseded
+day (Sun Nov 15, 2026). The older beats in `docs/hackathon/submission-notes.md` section 12 are superseded
 by this file: the demo dates and the way commands were given changed on recording day.
 
 ## How it was recorded

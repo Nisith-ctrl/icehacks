@@ -1,18 +1,33 @@
-# SuuS: say the goal, SuuS does the taps
+<p align="center">
+  <img src="site/robot.png" alt="The SuuS robot" width="96">
+</p>
 
-**SuuS** is an Android voice agent for people who find small taps and typing painful, such as older
-adults with arthritis. Say "Suus" and what you need in your own words. SuuS works through the real
-apps on your phone (Gmail, Calendar, Chrome), shows every tap with a little robot, and asks before
-anything is submitted or sent.
+<h1 align="center">SuuS</h1>
 
-Built in one week for **IceHacks 2026** by a team of four.
+<p align="center">
+  <b>Say the goal. SuuS does the taps.</b><br>
+  An Android voice agent for people who find small taps and typing painful.
+</p>
 
-- **Demo video:** _link coming with the Devpost submission_
-- **Website:** https://suus-nisith.vercel.app
-- **Download the app:** [SuuS 1.0 APK](https://github.com/Nisith-ctrl/icehacks/releases/tag/v1.0)
-  (Android 11+, no account or API key needed)
+<p align="center">
+  <a href="https://github.com/Nisith-ctrl/icehacks/releases/tag/v1.0"><img alt="Release: SuuS 1.0" src="https://img.shields.io/github/v/release/Nisith-ctrl/icehacks?label=release&color=2b6cb0"></a>
+  <img alt="Android 11+" src="https://img.shields.io/badge/Android-11%2B-3ddc84?logo=android&logoColor=white">
+  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.4-7f52ff?logo=kotlin&logoColor=white">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue"></a>
+</p>
 
-<p>
+<p align="center">
+  <a href="https://suus-nisith.vercel.app"><b>Website</b></a> ·
+  <a href="https://github.com/Nisith-ctrl/icehacks/releases/tag/v1.0"><b>Download the APK</b></a> ·
+  <b>Demo video</b> <i>(link coming with the Devpost submission)</i> ·
+  <a href="docs/"><b>Docs</b></a>
+</p>
+
+Say "Suus" and what you need, in your own words. SuuS works through the real apps on your phone
+(Gmail, Calendar, Chrome), shows every tap with a little robot, and asks before anything is
+submitted or sent. Built in one week for **IceHacks 2026** by a team of four.
+
+<p align="center">
   <img src="docs/img/suus-home.png" alt="SuuS home screen: 'Hi Alex. Just say SuuS.' with the robot, a Ready when you are status and example commands" width="270">
   &nbsp;
   <img src="docs/img/suus-pointing-gmail.png" alt="The SuuS robot pointing at the paperclip in a Gmail draft, with the caption 'Tapping the paperclip to attach the photo'" width="270">
@@ -27,8 +42,8 @@ adult with arthritis in both hands), each of those tiny taps is the barrier. Tal
 ## What it does
 
 - **Register from an invite, hands-free.** "Suus, find the library workshop invite and register me."
-  SuuS finds the email in Gmail and opens the registration link. It checks Calendar (the Thursday
-  session clashes with the dentist, so it picks Friday), fills the form and reads it back. Nothing is
+  SuuS finds the email in Gmail and opens the registration link. It checks your calendar (one
+  session clashes with the dentist, so it picks the other), fills the form and reads it back. Nothing is
   submitted until you say "Submit". It then checks the confirmation page.
 - **Works on a form it has never seen.** A volunteer signup with different labels and a new
   question uses the same code. It asks only what it doesn't know and reuses what you told it to
@@ -69,19 +84,49 @@ Details and caveats are in [docs/metrics.md](docs/metrics.md).
 - **Safety:** an app allowlist, forms only on our test site, spoken approval tied to a SHA-256 screen
   fingerprint, never submitting twice, and a 0.1 s "Stop".
 - **Modules:** `core` (shared contracts), `device`, `voice`, `agent`, `overlay`, `app`, built in
-  parallel against fixed interfaces. More in [docs/submission-notes.md](docs/submission-notes.md).
+  parallel against fixed interfaces. More in [docs/hackathon/submission-notes.md](docs/hackathon/submission-notes.md).
 - **No key in the APK:** the downloadable app sends its AI requests to a small relay
   ([relay/](relay/)) that holds the Groq key as a server secret and only allows SuuS's two models.
 
 ## Try it
 
-- **On a phone:** download the [APK](https://github.com/Nisith-ctrl/icehacks/releases/tag/v1.0) and
-  follow the in-app setup (about two minutes). Android may ask you to "allow restricted settings"
-  before you can turn on the accessibility service (App info → ⋮).
-- **Build from source:** see [docs/setup.md](docs/setup.md). You'll need Android Studio and a free
-  Groq API key in `local.properties`.
-- **What we tested and the limits** (emulator only, test data, no MMS on the emulator):
-  [docs/tested-environments.md](docs/tested-environments.md).
+**On a phone (Android 11+):** download [SuuS-1.0.apk](https://github.com/Nisith-ctrl/icehacks/releases/latest/download/SuuS-1.0.apk),
+open it, and follow the in-app setup (about two minutes). It needs no account or API key. Android
+may ask you to "allow restricted settings" before you can turn on the accessibility service
+(SuuS's App info → ⋮).
+
+**From source:** you need Android Studio (or JDK 17+ and the Android SDK) and a free
+[Groq](https://console.groq.com) API key.
+
+```bash
+git clone https://github.com/Nisith-ctrl/icehacks.git && cd icehacks
+echo "GROQ_API_KEY=your-key" >> local.properties
+./gradlew :app:installDebug     # build and install on a running emulator or phone
+./gradlew test                  # JVM unit tests
+```
+
+Full steps, the demo seed data and the emulator setup are in [docs/setup.md](docs/setup.md). What
+we tested and the limits (emulator only, test data, no MMS on the emulator) are in
+[docs/tested-environments.md](docs/tested-environments.md).
+
+## Repository layout
+
+```
+icehacks/
+├── app/        the Android app: the accessibility service that hosts everything, and SuuS's own screens
+├── core/       shared contracts every module builds against (screen model, actions, interfaces)
+├── device/     reads the screen and taps, types and scrolls, with checks before and after each action
+├── voice/      wake word, speech in and out, spoken approval ("Submit" / "Send")
+├── agent/      the planning loop, form filling, calendar and photos, undo, memory, run log
+├── overlay/    the robot that points at each control before it's tapped
+├── relay/      a tiny Vercel function that holds the AI key, so the APK doesn't
+├── site/       the website (static HTML, CSS and JS)
+├── fixtures/   test forms, seed data, recorded screens for offline tests
+├── scripts/    emulator seeding and demo-recording helpers
+└── docs/       setup, metrics, tested environments, and the hackathon write-up
+```
+
+Each folder has its own README with the details.
 
 ## Built with
 
@@ -124,7 +169,7 @@ around it. At runtime, SuuS itself uses the Groq-hosted models above.
 | **Advay** ([@advaycode](https://github.com/advaycode)) | Data: the on-device database, saved preferences and the run log |
 
 How we worked together (shared notes, task files, one branch per task):
-[docs/team-workflow.md](docs/team-workflow.md).
+[docs/team/workflow.md](docs/team/workflow.md).
 
 ## License
 

@@ -21,7 +21,7 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Android / Gradle (local.properties holds ANTHROPIC_API_KEY: never commit it)
+# Android / Gradle (local.properties holds GROQ_API_KEY and signing settings: never commit it)
 local.properties
 .gradle/
 .kotlin/
@@ -31,3 +31,6 @@ captures/
 .cxx/
 *.apk
 *.aab
+
+# Run logs pulled from the emulator while recording
+runs-recording/

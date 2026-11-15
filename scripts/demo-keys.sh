@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Keypress controller for recording the demos: say a line out loud, press its key, and SuuS gets
-# the exact same sentence (DEBUG_UTTERANCE, debug builds). Run from Git Bash. See docs/video-script.md.
+# the exact same sentence (DEBUG_UTTERANCE, debug builds). Run from Git Bash. See docs/hackathon/video-script.md.
 # Env: ADB (default: adb on PATH).
 export MSYS_NO_PATHCONV=1
 ADB="${ADB:-adb}"

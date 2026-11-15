@@ -1,4 +1,4 @@
-# overlay (T04 M2): the character
+# overlay: the on-screen robot
 
 `createOverlay(service)` returns `CharacterOverlay` (falls back to `FakeOverlay` if the window
 can't be created).

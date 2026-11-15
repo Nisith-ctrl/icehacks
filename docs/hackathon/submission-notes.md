@@ -15,7 +15,7 @@ Short source keys used below:
 
 ## 1. Summary and tagline
 
-**Tagline (from `docs/devpost.md`):** Say what you need. SuuS shows you every tap, asks before
+**Tagline (from `docs/hackathon/devpost.md`):** Say what you need. SuuS shows you every tap, asks before
 anything is sent, and undoes just the part you didn't want.
 
 Shorter options: "A voice agent that does the tapping for you." (the Devpost draft's name line)
@@ -48,7 +48,7 @@ to say they got home. Alex wants to do these things themself, see what the phone
 mistakes without starting over, and decide what the phone remembers. Alex is the person using the
 phone, not a caregiver.
 
-**Why existing voice assistants fall short (team's framing, `docs/devpost.md`):** they can open an
+**Why existing voice assistants fall short (team's framing, `docs/hackathon/devpost.md`):** they can open an
 app, but they stop at the part that hurts: the form, the date picker, the attachment. The steps in
 between (find the email, open the link, check the calendar, pick the right session, type name,
 email and phone, choose a radio option, scroll, press Register) are exactly the small, precise
@@ -683,7 +683,7 @@ high contrast, TalkBack labels, light and dark.
 
 ## 10. What's next
 
-From `docs/devpost.md` and the notes:
+From `docs/hackathon/devpost.md` and the notes:
 - Run the photo hand-off in Messages on a real phone with MMS (on the emulator it runs in Gmail).
 - Test on real phones with real speech, including the background-mic rules on Android 14+.
 - On-device speech recognition (the emulator had no on-device English model; the code already tries it
@@ -719,7 +719,7 @@ From `docs/devpost.md` and the notes:
 
 ## 12. Video script beats (≤ 3:00)
 
-> Superseded on recording day (Nov 15) by `docs/video-script.md`, which has the actual demo dates,
+> Superseded on recording day (Nov 15) by `docs/hackathon/video-script.md`, which has the actual demo dates,
 > the recording-day numbers, and the full voiceover. The beats below are kept as the original plan.
 
 Based on the lead's plan: problem 20 s, Demo 1 60 s, volunteer 30 s, Demo 2 45 s, how it's built 25 s
@@ -805,7 +805,7 @@ occlusion fix, draft approval tests; 26 About you; 27 IC3/IC4 re-run; 28 run-log
 after-run window; 34 TTS stall fix; 35 Demo 2 as a Gmail draft (includes 30).
 
 **Repo files:** `README.md`, `AGENTS.md`, `docs/setup.md`, `docs/tested-environments.md`,
-`docs/metrics.md`, `docs/devpost.md`, `fixtures/seed/README.md`, `core/.../Contracts.kt`,
+`docs/metrics.md`, `docs/hackathon/devpost.md`, `fixtures/seed/README.md`, `core/.../Contracts.kt`,
 `agent/.../AgentConfig.kt`, `agent/.../AgentTools.kt`, `voice/.../CommandParser.kt`,
 `app/.../SetupActivity.kt`, `app/.../ui/Ui.kt`, `app/.../ui/MemoryActivity.kt`; `git log`; test and
 line counts by `grep`/`wc`.
@@ -834,13 +834,13 @@ PRs 35, 37, 38). Still true and left as history: the two confirmation-number pai
 VOL-730060), T05's unticked checkboxes, the dropped library question, and the S21 leftovers in the vault
 brief and `AllowedApps`. The "0.1 s" stop time is measured from injected text, which the docs say.
 
-- `docs/devpost.md` says "3–4 model calls per form instead of 15+". The 3–4 figure is the volunteer form
+- `docs/hackathon/devpost.md` says "3–4 model calls per form instead of 15+". The 3–4 figure is the volunteer form
   started with "take over" (PR 18). A full run from the home screen takes 8–11 model calls (groq-api;
   10 in PR 24). The "15+" baseline isn't measured anywhere. Suggest "3–4 model calls to fill a form".
-- `docs/tested-environments.md`, `docs/metrics.md` and `docs/devpost.md` still say real speech and the
+- `docs/tested-environments.md`, `docs/metrics.md` and `docs/hackathon/devpost.md` still say real speech and the
   photo send will be checked "on the S21". That contradicts the 2026-11-12 emulator-only decision.
 - `docs/metrics.md` says "The run log now only counts touches within 60 s of a run", but PR 28 is not merged.
-- `docs/devpost.md` lists the photo-message takeover as a feature (with a team comment to keep it only if
+- `docs/hackathon/devpost.md` lists the photo-message takeover as a feature (with a team comment to keep it only if
   the phone run works). It hasn't worked live.
 - Two pairs of confirmation numbers exist: LIB-928519/VOL-631528 (PR 24, 2026-11-10) and
   LIB-282497/VOL-730060 (PR 27, 2026-11-11, the final re-run used in metrics). Use the second pair.
@@ -850,5 +850,5 @@ brief and `AllowedApps`. The "0.1 s" stop time is measured from injected text, w
   deliberately dropped (T04 Handoff); the shipped form has no such question.
 - The project brief's team table still lists guru's device as "Galaxy S21" and `AllowedApps` still
   includes the Samsung launcher; both are leftovers from before the emulator-only decision.
-- `docs/devpost.md` says "Stop" answers "in about a tenth of a second"; the measurement (122 ms) used
+- `docs/hackathon/devpost.md` says "Stop" answers "in about a tenth of a second"; the measurement (122 ms) used
   injected text, so recognizer delay is not included.

@@ -1,4 +1,4 @@
-# device (T01)
+# device: reading the screen and acting on it
 
 Screen reading and validated actions for the agent. No business logic: it doesn't know about
 forms, emails or photos.
