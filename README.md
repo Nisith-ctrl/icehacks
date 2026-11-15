@@ -1,44 +1,128 @@
-# IceHacks
+# SuuS: say the goal, SuuS does the taps
 
-Code lives in this repo. Shared team memory lives in a separate Obsidian vault repo
-(`icehacks-vault`), cloned into `vault/` and gitignored here, so Obsidian's auto-sync never
-touches code and agents' code commits never touch the vault.
+**SuuS** is an Android voice agent for people who find small taps and typing painful, such as older
+adults with arthritis. Say "Suus" and what you need in your own words. SuuS works through the real
+apps on your phone (Gmail, Calendar, Chrome), shows every tap with a little robot, and asks before
+anything is submitted or sent.
 
-## Teammate setup (about 10 minutes)
+Built in one week for **IceHacks 2026** by a team of four.
 
-**Easiest:** paste [SETUP.md](SETUP.md) into Claude Code and let it do the steps below for you.
+- **Demo video:** _link coming with the Devpost submission_
+- **Website:** https://suus-nisith.vercel.app
+- **Download the app:** [SuuS 1.0 APK](https://github.com/Nisith-ctrl/icehacks/releases/tag/v1.0)
+  (Android 11+, no account or API key needed)
 
-You need: Git, the GitHub CLI (`gh auth login`), Obsidian, and your AI coding tool
-(Claude Code, Cursor, Codex…). Accept the GitHub invites for **both** repos first.
+<p>
+  <img src="docs/img/suus-home.png" alt="SuuS home screen: 'Hi Alex. Just say SuuS.' with the robot, a Ready when you are status and example commands" width="270">
+  &nbsp;
+  <img src="docs/img/suus-pointing-gmail.png" alt="The SuuS robot pointing at the paperclip in a Gmail draft, with the caption 'Tapping the paperclip to attach the photo'" width="270">
+</p>
 
-1. Clone both repos:
+## The problem
 
-   ```bash
-   gh repo clone Nisith-ctrl/icehacks
-   cd icehacks
-   gh repo clone Nisith-ctrl/icehacks-vault vault
-   ```
+Voice assistants can open an app, then leave you at the hard part: the form, the date picker, the
+attachment. That's exactly where the tapping starts. For Alex, our user persona (an active older
+adult with arthritis in both hands), each of those tiny taps is the barrier. Talking is easy.
 
-2. Open Obsidian → **Open folder as vault** → pick the `icehacks/vault` folder.
-   Click **Trust author and enable plugins** if asked.
-3. If the Obsidian Git plugin isn't active yet: **Settings → Community plugins → Turn on
-   community plugins → Browse → "Git" (by Vinzent) → Install → Enable**. The vault already
-   has its settings (commit, pull and push every 2 minutes, pull on startup).
-4. Settings → Git → **Commit author**: make sure your name is set (or set it globally with
-   `git config --global user.name "Your Name"`).
-5. Make your own session folder: `vault/team-memory/sessions/<your-name>/`.
+## What it does
 
-## Running your agent
+- **Register from an invite, hands-free.** "Suus, find the library workshop invite and register me."
+  SuuS finds the email in Gmail and opens the registration link. It checks Calendar (the Thursday
+  session clashes with the dentist, so it picks Friday), fills the form and reads it back. Nothing is
+  submitted until you say "Submit". It then checks the confirmation page.
+- **Works on a form it has never seen.** A volunteer signup with different labels and a new
+  question uses the same code. It asks only what it doesn't know and reuses what you told it to
+  remember ("Email for event signups").
+- **Finish what you started, with selective undo.** In a half-written Gmail draft, "Suus, take over.
+  Attach yesterday's dog photo." It asks which photo, attaches it, and "Undo the photo" removes only
+  the photo and keeps your words. "Use the one by the door" swaps it, and it sends only after a
+  read-back and your spoken "Send".
+- **You stay in control.** "Stop" cancels at once. Submit and Send are locked to a fingerprint of
+  the exact screen you approved. You choose what it remembers, and can review or delete it by voice
+  or on a big-button screen.
 
-Start your agent from the repo root (not inside `vault/`) and give it your task ID:
+## Results (Android emulator, measured from SuuS's run log)
 
-> Read AGENTS.md, then do task T03.
+| Task | By hand | With SuuS |
+|---|---|---|
+| Library workshop registration | 53 touches, 141 s | **0 touches**, 2 spoken commands, 85 s, confirmation LIB-282497 (5 of 5 values verified) |
+| Volunteer shift signup | 44 touches, 84 s | **0 touches**, 3 spoken commands, 101 s, confirmation VOL-730060 (6 of 6 values verified) |
+| Photo email with undo (Gmail) | not measured | **0 touches**, 6 spoken commands, 124 s, sent |
 
-`AGENTS.md` (and `CLAUDE.md`, which imports it) tells the agent to pull the vault, read the
-project brief, its task, the decisions and dead ends, and to write back what it learns.
+The saving is in touches, not speed: SuuS's time is mostly waiting on the free AI tier's rate limit.
+Details and caveats are in [docs/metrics.md](docs/metrics.md).
 
-## Day-to-day
+## How it works
 
-- Keep Obsidian open while you work. It syncs the vault on its own.
-- Write new notes instead of editing other people's. Only edit your own task file.
-- Code goes on a branch per task (`t03-short-name`) and into `main` through a PR.
+```
+"Suus, sign me up…"  →  voice: wake word, speech to text, the goal
+                     →  device: read the screen as a tree of buttons and text (accessibility service)
+                     →  agent: an LLM picks ONE next action from the screen and the goal
+                     →  overlay: the robot points at the target, with a caption
+                     →  device: find it again on a fresh screen, tap or type, wait for the screen to settle
+                     →  agent: check the result, repeat until done, a question, or "Submit"/"Send"
+```
+
+- **The AI plans, code does the exact parts.** The model only chooses the next step. Filling form
+  fields, checking the calendar for clashes, verifying the confirmation page and undo are plain
+  code. That makes it more reliable and cheaper: 3–4 model calls to fill a form.
+- **Safety:** an app allowlist, forms only on our test site, spoken approval tied to a SHA-256 screen
+  fingerprint, never submitting twice, and a 0.1 s "Stop".
+- **Modules:** `core` (shared contracts), `device`, `voice`, `agent`, `overlay`, `app`, built in
+  parallel against fixed interfaces. More in [docs/submission-notes.md](docs/submission-notes.md).
+- **No key in the APK:** the downloadable app sends its AI requests to a small relay
+  ([relay/](relay/)) that holds the Groq key as a server secret and only allows SuuS's two models.
+
+## Try it
+
+- **On a phone:** download the [APK](https://github.com/Nisith-ctrl/icehacks/releases/tag/v1.0) and
+  follow the in-app setup (about two minutes). Android may ask you to "allow restricted settings"
+  before you can turn on the accessibility service (App info → ⋮).
+- **Build from source:** see [docs/setup.md](docs/setup.md). You'll need Android Studio and a free
+  Groq API key in `local.properties`.
+- **What we tested and the limits** (emulator only, test data, no MMS on the emulator):
+  [docs/tested-environments.md](docs/tested-environments.md).
+
+## Built with
+
+Kotlin, Android Accessibility API, SpeechRecognizer and TextToSpeech, Kotlin coroutines,
+kotlinx.serialization, OkHttp, AndroidX (AppCompat, SQLite), Gradle; Groq (`openai/gpt-oss-120b`
+plans each step, `qwen/qwen3.8-27b` describes photos); Vercel (website, test forms, API relay),
+Node.js; HTML, CSS and JavaScript with [Motion](https://motion.dev) for the website.
+
+### AI tools we used (disclosure)
+
+All four of us used **Claude Code** (Anthropic; Claude Opus 5.5 and Claude Fable models) as an AI
+coding assistant throughout the week, to write and test much of the Kotlin code, the website and the
+docs. Commits it helped with carry a `Co-Authored-By: Claude` trailer. The team designed the
+product, the architecture and the safety rules, wrote the task plan, made the decisions recorded in
+our notes, tested every demo on the emulator, and reviewed each pull request before merging.
+At runtime, SuuS itself uses the Groq-hosted models above.
+
+### Credits
+
+- Fonts: [Atkinson Hyperlegible](https://brailleinstitute.org/freefont) (Braille Institute) and
+  [Pixelify Sans](https://fonts.google.com/specimen/Pixelify+Sans) in the app, both under the SIL
+  Open Font License (license files in `app/src/main/assets/fonts/`). The website uses Atkinson
+  Hyperlegible, Bricolage Grotesque, Instrument Serif and JetBrains Mono from Google Fonts.
+- The SuuS robot sprite and pixel speech-bubble artwork were supplied by Guru for this project.
+- Design references from [Mobbin](https://mobbin.com) (IceHacks sponsor); the app's hero header and
+  the website's layout take ideas from stripe.com (inspiration only; no Stripe assets are used).
+- The test forms, invite emails and dog photos are fixtures we made (`fixtures/`). No real
+  registration happens.
+
+## Team
+
+| | |
+|---|---|
+| **Nisith** ([@Nisith-ctrl](https://github.com/Nisith-ctrl)) | Team lead: test forms and data, metrics, docs, website |
+| **Susmith** ([@srchiluka](https://github.com/srchiluka)) | Agent and device control: screen reading, tapping, voice, the agent loop |
+| **Guru** ([@Guru-Balaji18](https://github.com/Guru-Balaji18)) | Design and frontend: the robot, the app's screens, the Gmail photo demo, the APK and relay |
+| **Advay** ([@advaycode](https://github.com/advaycode)) | Data: the on-device database, saved preferences and the run log |
+
+How we worked together (shared notes, task files, one branch per task):
+[docs/team-workflow.md](docs/team-workflow.md).
+
+## License
+
+[MIT](LICENSE). Bundled fonts keep their own SIL Open Font License.

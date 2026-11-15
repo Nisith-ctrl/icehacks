@@ -6,7 +6,10 @@ for you. It always reads back and waits for you to say **Submit** or **Send** be
 
 ## For a user: one-time setup on the phone
 
-1. Install the app (`app-debug.apk` from a build, see below) and open **SuuS**.
+1. Install the app: download **SuuS 1.0** from
+   [GitHub Releases](https://github.com/Nisith-ctrl/icehacks/releases/tag/v1.0) (no API key needed;
+   it uses our relay), or build `app-debug.apk` yourself (see below). Open **SuuS**. If Android blocks
+   turning on the accessibility service, open SuuS's App info, tap ⋮, then **Allow restricted settings**.
 2. The setup screen walks through each step in order, with one large button per step:
    1. **Turn on SuuS**: opens Accessibility settings. Choose SuuS (it may be under Installed apps)
       and switch it on. This is what lets SuuS read the screen and tap.
