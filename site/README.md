@@ -5,6 +5,7 @@ JavaScript.
 
 | File | What |
 |---|---|
+| `gallery.html` | The screenshot gallery: nine 3:2 images with captions and a keyboard-friendly viewer. Images in `gallery/`. |
 | `index.html` | The page, in order: hero, who it helps, how it works, In depth (tabs: the agent loop, code structure, approval and undo, model vs code), results chart and table, video, setup, download, team. |
 | `style.css` | Styles. The colours come from the app's `app/src/main/res/values/colors.xml`, so the site and app match. Fonts: Bricolage Grotesque, Instrument Serif, JetBrains Mono and Atkinson Hyperlegible (Google Fonts). |
 | `motion.js` | Scroll and entrance animation with [Motion](https://motion.dev). It respects `prefers-reduced-motion`. |

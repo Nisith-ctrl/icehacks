@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gallery · SuuS</title>
+<meta name="description" content="Screenshots of SuuS, the Android voice agent: the request, the robot filling a form, spoken approval, photo undo, and the results.">
+<meta name="theme-color" content="#0A2913">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SuuS gallery">
+<meta property="og:description" content="Screenshots of SuuS, the Android voice agent that does the taps for you.">
+<meta property="og:image" content="https://suus-nisith.vercel.app/gallery/01-cover.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="robot.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <div class="ribbon" aria-hidden="true"></div>
+  <nav class="wrap nav" aria-label="Main">
+    <a class="brand" href="./">
+      <img src="robot.png" alt="" width="29" height="40">
+      <span><strong>SuuS</strong><small>Voice agent for Android</small></span>
+    </a>
+    <ul class="links">
+      <li><a href="./#how">How it works</a></li>
+      <li><a href="./#in-depth">In depth</a></li>
+      <li><a href="./#results">Results</a></li>
+      <li><a href="gallery.html" aria-current="page">Gallery</a></li>
+      <li><a href="./#video">Video</a></li>
+      <li><a href="./#team">About us</a></li>
+    </ul>
+    <a class="btn btn-primary btn-sm" href="./#download">Download</a>
+  </nav>
+</header>
+
+<main id="main">
+<section class="wrap section">
+  <a class="back" href="./">&larr; Back to SuuS</a>
+  <p class="eyebrow">Gallery</p>
+  <h1 class="gal-title">SuuS, <em>screen by screen.</em></h1>
+  <p class="lede narrow">Real screens from the Android emulator: a library signup from start to finish,
+    the photo hand-off with undo, the controls you get, and the results. Select any image to see it larger.</p>
+
+  <ol class="gallery">
+    <li><button class="shot" type="button" data-i="0"><img src="gallery/01-cover.png" width="1800" height="1200" alt="SuuS home screen with the robot and the line: Hi Alex. Just say SuuS." loading="eager"></button>
+      <p><strong>Meet SuuS.</strong> An Android voice agent for people who find small taps and typing painful.</p></li>
+    <li><button class="shot" type="button" data-i="1"><img src="gallery/02-say-the-goal.png" width="1800" height="1200" alt="The spoken request on the home screen, then SuuS tapping the signup link in the Gmail invite." loading="lazy"></button>
+      <p><strong>Say the goal.</strong> SuuS opens Gmail, finds the invite and taps the signup link.</p></li>
+    <li><button class="shot" type="button" data-i="2"><img src="gallery/03-fills-the-form.png" width="1800" height="1200" alt="The robot pointing at the Phone field on the library form, captioned Filling in phone." loading="lazy"></button>
+      <p><strong>It fills the form.</strong> It picks the session that fits your calendar and points at each field before filling it.</p></li>
+    <li><button class="shot" type="button" data-i="3"><img src="gallery/04-approval.png" width="1800" height="1200" alt="The read-back with every filled field highlighted and a Submit speech bubble, then the Registration confirmed page." loading="lazy"></button>
+      <p><strong>You approve.</strong> It reads everything back, waits for you to say "Submit", then checks the confirmation.</p></li>
+    <li><button class="shot" type="button" data-i="4"><img src="gallery/05-photo-undo.png" width="1800" height="1200" alt="A Gmail draft to Maya with the robot tapping the paperclip, captioned Tapping the paperclip to attach the photo." loading="lazy"></button>
+      <p><strong>Undo just the photo.</strong> SuuS takes over a half-written email and can remove only what it added.</p></li>
+    <li><button class="shot" type="button" data-i="5"><img src="gallery/06-your-control.png" width="1800" height="1200" alt="The What I remember screen with one saved choice and a Remove button, and the Make SuuS yours settings screen." loading="lazy"></button>
+      <p><strong>You're in control.</strong> SuuS only remembers what you ask it to, and its tone and pace are yours.</p></li>
+    <li><button class="shot" type="button" data-i="6"><img src="gallery/07-results.png" width="1800" height="1200" alt="Bar chart: library registration 53 touches by hand, 0 with SuuS; volunteer signup 44 touches by hand, 0 with SuuS." loading="lazy"></button>
+      <p><strong>Zero touches after setup,</strong> against 53 and 44 doing the same signups by hand.</p></li>
+    <li><button class="shot" type="button" data-i="7"><img src="gallery/08-how-it-works.png" width="1800" height="1200" alt="Six steps: voice, read the screen, AI picks one step, robot points, code acts and checks, spoken approval." loading="lazy"></button>
+      <p><strong>How it works.</strong> The AI picks one step at a time; code does the parts that must be exact.</p></li>
+    <li><button class="shot" type="button" data-i="8"><img src="gallery/09-website.png" width="1800" height="1200" alt="The SuuS website shown in a browser window, at suus-nisith.vercel.app." loading="lazy"></button>
+      <p><strong>The website,</strong> with the in-depth tour, the results and the APK download.</p></li>
+  </ol>
+
+  <p class="fine">Everything shown ran on the Android emulator with test data we made, so no real
+    registration or email happens. <a href="./#download">Download SuuS 1.0</a> to try it on your phone.</p>
+</section>
+</main>
+
+<dialog class="lightbox" id="lightbox" aria-label="Image viewer">
+  <figure>
+    <img id="lb-img" src="" alt="">
+    <figcaption id="lb-cap"></figcaption>
+  </figure>
+  <div class="lb-bar">
+    <button type="button" class="lb-btn" id="lb-prev" aria-label="Previous image">&larr;</button>
+    <span id="lb-count" aria-live="polite"></span>
+    <button type="button" class="lb-btn" id="lb-next" aria-label="Next image">&rarr;</button>
+    <button type="button" class="lb-btn lb-close" id="lb-close" aria-label="Close">Close</button>
+  </div>
+</dialog>
+
+<footer class="foot">
+  <div class="wrap">
+    <p><strong>SuuS</strong> · Built for IceHacks 2026 · Robot art generated with ChatGPT; code written with help from Claude Code</p>
+    <p><a href="https://github.com/Nisith-ctrl/icehacks">GitHub</a></p>
+  </div>
+</footer>
+
+<script>
+  // Lightbox: Enter/click opens, arrow keys move, Esc closes, focus returns to the image.
+  (function () {
+    var shots = [].slice.call(document.querySelectorAll('.shot'));
+    var box = document.getElementById('lightbox');
+    var img = document.getElementById('lb-img');
+    var cap = document.getElementById('lb-cap');
+    var count = document.getElementById('lb-count');
+    var at = 0, opener = null;
+    function show(i) {
+      at = (i + shots.length) % shots.length;
+      var s = shots[at].querySelector('img');
+      img.src = s.src; img.alt = s.alt;
+      cap.innerHTML = shots[at].parentNode.querySelector('p').innerHTML;
+      count.textContent = (at + 1) + ' of ' + shots.length;
+    }
+    shots.forEach(function (b, i) {
+      b.addEventListener('click', function () {
+        opener = b; show(i);
+        if (box.showModal) box.showModal(); else window.open(b.querySelector('img').src);
+      });
+    });
+    document.getElementById('lb-prev').onclick = function () { show(at - 1); };
+    document.getElementById('lb-next').onclick = function () { show(at + 1); };
+    document.getElementById('lb-close').onclick = function () { box.close(); };
+    box.addEventListener('click', function (e) { if (e.target === box) box.close(); });
+    box.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); show(at - 1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); show(at + 1); }
+    });
+    box.addEventListener('close', function () { if (opener) opener.focus(); });
+  })();
+</script>
+</body>
+</html>

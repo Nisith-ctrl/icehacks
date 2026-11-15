@@ -34,3 +34,6 @@ captures/
 
 # Run logs pulled from the emulator while recording
 runs-recording/
+
+# Gallery source screenshots (the published copies live in site/gallery/)
+/gallery/
