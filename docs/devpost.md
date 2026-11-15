@@ -99,11 +99,12 @@ the form, the date picker, the attachment.
 Kotlin, Android Accessibility API, Android SpeechRecognizer, Android TextToSpeech, Kotlin coroutines,
 kotlinx.serialization, OkHttp, AndroidX (AppCompat, SQLite), Gradle, Groq (`openai/gpt-oss-120b`,
 `qwen/qwen3.8-27b`), Vercel (website, test forms, API relay), Node.js (relay), HTML/CSS/JavaScript,
-Motion (website animation), Google Fonts, **Claude Code** (AI coding assistant), Mobbin (design
+Motion (website animation), Google Fonts, **Claude Code** (AI coding assistant), **ChatGPT** (robot
+artwork), Mobbin (design
 references, IceHacks sponsor)
 
 (For the Devpost "Built with" tags: kotlin, android, groq, okhttp, sqlite, gradle, vercel, node.js,
-javascript, html5, css3, motion, claude-code, mobbin.)
+javascript, html5, css3, motion, claude-code, chatgpt, mobbin.)
 
 ## AI tools (disclosure, required by the rules)
 
@@ -113,13 +114,15 @@ docs. Commits it helped with carry a `Co-Authored-By: Claude` trailer. The team 
 product, the architecture and the safety rules, planned the tasks, made and recorded the decisions,
 tested every demo on the emulator, and reviewed each pull request before merging. At runtime, SuuS
 uses Groq-hosted models (`openai/gpt-oss-120b` to plan each step, `qwen/qwen3.8-27b` to describe
-photos). Everything was built during IceHacks (Nov 8–15); there's no pre-existing code.
+photos). The SuuS robot sprite and pixel speech-bubble style were generated with **ChatGPT** (OpenAI's
+image generation) from Guru's prompts; we cut the sprite sheet into frames and built the overlay
+around it. Everything was built during IceHacks (Nov 8–15); there's no pre-existing code.
 
 ## Credits
 
 Open-source libraries listed above; Atkinson Hyperlegible and Pixelify Sans fonts (SIL OFL); website
 fonts from Google Fonts; design references from Mobbin; layout ideas from stripe.com (inspiration
-only). The robot sprite and pixel speech bubble were supplied by Guru. Test forms, emails and photos
+only). The robot sprite and pixel speech bubble were generated with ChatGPT. Test forms, emails and photos
 are our own fixtures.
 
 ## Try it

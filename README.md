@@ -97,7 +97,9 @@ coding assistant throughout the week, to write and test much of the Kotlin code,
 docs. Commits it helped with carry a `Co-Authored-By: Claude` trailer. The team designed the
 product, the architecture and the safety rules, wrote the task plan, made the decisions recorded in
 our notes, tested every demo on the emulator, and reviewed each pull request before merging.
-At runtime, SuuS itself uses the Groq-hosted models above.
+The SuuS robot sprite and its pixel speech-bubble style were generated with **ChatGPT** (OpenAI's
+image generation) from Guru's prompts; we cut the sprite sheet into frames and built the overlay
+around it. At runtime, SuuS itself uses the Groq-hosted models above.
 
 ### Credits
 
@@ -105,7 +107,8 @@ At runtime, SuuS itself uses the Groq-hosted models above.
   [Pixelify Sans](https://fonts.google.com/specimen/Pixelify+Sans) in the app, both under the SIL
   Open Font License (license files in `app/src/main/assets/fonts/`). The website uses Atkinson
   Hyperlegible, Bricolage Grotesque, Instrument Serif and JetBrains Mono from Google Fonts.
-- The SuuS robot sprite and pixel speech-bubble artwork were supplied by Guru for this project.
+- The SuuS robot sprite and pixel speech-bubble artwork: generated with ChatGPT (see the AI
+  disclosure above).
 - Design references from [Mobbin](https://mobbin.com) (IceHacks sponsor); the app's hero header and
   the website's layout take ideas from stripe.com (inspiration only; no Stripe assets are used).
 - The test forms, invite emails and dog photos are fixtures we made (`fixtures/`). No real
