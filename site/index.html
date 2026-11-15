@@ -180,6 +180,7 @@
       <button role="tab" id="t-code" aria-controls="p-code" aria-selected="false" tabindex="-1">Code structure</button>
       <button role="tab" id="t-safe" aria-controls="p-safe" aria-selected="false" tabindex="-1">Approval and undo</button>
       <button role="tab" id="t-split" aria-controls="p-split" aria-selected="false" tabindex="-1">Model vs code</button>
+      <button role="tab" id="t-built" aria-controls="p-built" aria-selected="false" tabindex="-1">How we built it</button>
     </div>
 
     <div class="panel" role="tabpanel" id="p-loop" aria-labelledby="t-loop" tabindex="0">
@@ -281,6 +282,27 @@
         </tbody>
       </table>
       <p class="fine">That's why filling a form takes only 3–4 model calls, and a whole run from the home screen 8–11.</p>
+    </div>
+
+    <div class="panel" role="tabpanel" id="p-built" aria-labelledby="t-built" tabindex="0" hidden>
+      <p class="panel-intro">The second layer of AI: four of us each ran our own AI coding agent (Claude Code), and the
+        agents couldn't talk to each other. So we gave them one shared memory, a notebook synced through GitHub
+        every two minutes, and rules for reading it and writing back.</p>
+      <ol class="flow">
+        <li class="node node-voice"><span class="mod">the lead</span><b>A brief with fixed contracts</b><span>The interfaces between modules, the JSON shapes and the setting names were decided first, then the work was cut into six task files along folder boundaries.</span></li>
+        <li class="node"><span class="mod">every agent</span><b>Read before writing code</b><span>The brief, its own task, every decision and every dead end. Decisions are binding; dead ends say what not to try again.</span></li>
+        <li class="node node-ai"><span class="mod">every agent</span><b>Build on its own branch</b><span>One branch and one pull request per task, reviewed by a teammate before it reached <code>main</code>.</span></li>
+        <li class="node"><span class="mod">every agent</span><b>Write back what it learned</b><span>A session log, plus a new decision or dead end when it found one. Always a new file, never someone else's, so nothing conflicted.</span></li>
+        <li class="node node-ok"><span class="mod">the notebook</span><b>The next agent starts smarter</b><span>Obsidian Git synced the notebook every two minutes, so the next agent read what this one found.</span></li>
+      </ol>
+      <ul class="exits">
+        <li><b>57</b> pull requests merged</li>
+        <li><b>23</b> agent session logs</li>
+        <li><b>9 + 5</b> decisions and dead ends</li>
+      </ul>
+      <p class="fine">Example: guru's agent logged that real speech turned "Hey Goal" into "hey girl", so the agent never
+        woke. The next agent working on voice read that, and built the sound-alike matching for "Suus".
+        <a href="https://github.com/Nisith-ctrl/icehacks/tree/main/docs/team/notebook">Read the decisions and dead ends</a>.</p>
     </div>
   </div>
 </section>

@@ -20,6 +20,7 @@
 
 | Doc | What's in it |
 |---|---|
+| [team/notebook/](team/notebook/) | How four people and their AI coding agents shared one memory: the decisions and dead ends from our notebook, with the numbers. |
 | [team/workflow.md](team/workflow.md) | Shared notes vault, one task file per teammate and agent, one branch and PR per task. |
 | [team/teammate-setup.md](team/teammate-setup.md) | The setup prompt each teammate gave their coding agent on day one. |
 

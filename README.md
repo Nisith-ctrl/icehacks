@@ -168,8 +168,10 @@ around it. At runtime, SuuS itself uses the Groq-hosted models above.
 | **Guru** ([@Guru-Balaji18](https://github.com/Guru-Balaji18)) | Design and frontend: the robot, the app's screens, the Gmail photo demo, the APK and relay |
 | **Advay** ([@advaycode](https://github.com/advaycode)) | Data: the on-device database, saved preferences and the run log |
 
-How we worked together (shared notes, task files, one branch per task):
-[docs/team/workflow.md](docs/team/workflow.md).
+How we worked together: each of us ran our own AI coding agent, and the agents shared one memory,
+a notebook of the plan, decisions and dead ends that every agent read before starting and wrote back
+to after (57 pull requests, 23 agent session logs). The decisions and dead ends are in
+[docs/team/notebook/](docs/team/notebook/); the process is in [docs/team/workflow.md](docs/team/workflow.md).
 
 ## License
 

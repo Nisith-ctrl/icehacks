@@ -48,6 +48,25 @@ the form, the date picker, the attachment.
   call a small relay on Vercel (`relay/`) that holds the Groq key as a secret, allows only SuuS's two
   models, and rate-limits each address. A one-page website explains the app and links the download.
 
+### Two layers of AI
+
+SuuS uses AI at runtime, and we used AI to build it, in a workflow we designed for a team of agents.
+
+- **At runtime:** the Groq-hosted model picks one next step at a time from the goal and the screen,
+  and code does everything that has to be exact.
+- **While building:** each of the four of us ran our own AI coding agent (Claude Code) on our own
+  machine. The agents couldn't talk to each other, so we gave them a shared memory: an Obsidian
+  vault synced through GitHub every two minutes. The lead wrote a project brief with fixed
+  contracts (the interfaces between modules, JSON shapes, setting names) and cut the work into six
+  task files along folder boundaries. Every agent read the brief, its task, and every decision and
+  dead end before starting, worked on one branch per task, and wrote what it learned back as new
+  files, so nothing ever conflicted.
+- **What that produced:** 57 merged pull requests, 118 commits to the shared notebook, 23 agent
+  session logs, 9 binding decisions and 5 dead ends. One example: guru's agent logged that real
+  speech turned "Hey Goal" into "hey girl", and the next agent working on voice read that and built
+  the sound-alike matching for "Suus". The decisions and dead ends are public in
+  `docs/team/notebook/`.
+
 ## Challenges
 
 - Apps hide things from accessibility: Gmail keeps the inbox "visible" behind an open email,

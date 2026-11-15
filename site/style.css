@@ -469,3 +469,7 @@ h4 { font-size: 1.15rem; margin: 0 0 8px; }
   .lb-bar { flex-wrap: wrap; }
 }
 @media (prefers-reduced-motion: reduce) { .shot { transition: none; } .shot:hover { transform: none; } }
+
+/* In depth: "How we built it" tab */
+#p-built .exits { margin-top: 26px; }
+#p-built .exits b { font: 800 1.9rem var(--display); letter-spacing: -.02em; color: var(--primary); margin-bottom: 2px; }
