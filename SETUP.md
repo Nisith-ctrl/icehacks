@@ -6,8 +6,8 @@ few steps only you can do.
 
 ---
 
-You are setting up this machine for a hackathon team. The team shares two private GitHub repos
-owned by `Nisith-ctrl`:
+You are setting up this machine for a hackathon team. The team shares two GitHub repos
+owned by `Nisith-ctrl` (the code repo is public; the vault is private):
 
 - `icehacks`: the code. Contains `AGENTS.md`/`CLAUDE.md` with the agent working rules.
 - `icehacks-vault`: a shared Obsidian vault (team memory and tasks). Obsidian's Git plugin

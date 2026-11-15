@@ -512,7 +512,7 @@ running job and drops the queue [project brief, PR 1].
 | IC3 | Demo 1, library, end to end | Passed 2026-11-11: **LIB-282497**, 5 of 5 values verified [PR 27]. (An earlier pass on 2026-11-10 gave LIB-928519 [PR 24].) |
 | IC4 | Volunteer form, preference reused | Passed 2026-11-11: **VOL-730060**, 6 of 6 values verified [PR 27]. (Earlier: VOL-631528 [PR 24].) |
 | IC5 | Demo 2, photo + undo | Passed on 2026-11-13 in a Gmail draft: attach, undo only the photo, swap, read-back, "Send", sent to a test address; 0 touches, 6 spoken commands, 124 s [PR 35, PR 37, PR 38, metrics]. In Messages it stops at attach (no MMS) [PR 30] |
-| IC6 | Recorded runs, submission | Not started at the time of writing |
+| IC6 | Recorded runs, submission | Recording and Devpost submission on Nov 15 (deadline 9:00 PM EST) |
 
 ### 6.2 Demo runs from the run log (emulator, 2026-11-11) [metrics]
 
@@ -548,19 +548,19 @@ Caveats (all from metrics):
   the run ends in 1.6 s [T02 M2, PR 24]. Injected text, emulator.
 
 ### 6.5 Tests
-- **146 `@Test` methods** in the repo (`grep -r "@Test" --include=*.kt`, counted 2026-11-12 on `main`):
-  agent 94 (one of them an on-device instrumented test), device 23, voice 18, overlay 8, core 3, app 0.
+- **164 `@Test` methods** in the repo (`grep -r "@Test" --include=*.kt`, counted 2026-11-15 on `main`):
+  agent 112 (one of them an on-device instrumented test), device 23, voice 18, overlay 8, core 3, app 0.
   The JVM tests run without a key or device (`./gradlew test`).
 - Test count history from PR bodies: 17 (PR 1) → 53 (PR 9) → 58 (PR 10) → 63 (PR 13) → 88 (PR 16)
   → 115 (PR 18).
-- 12 recorded screen fixtures (JSON) in `fixtures/screens/` on `main`: home screen, Gmail inbox and
-  library invite, Calendar schedule, library form empty/filled/confirmation, volunteer form
-  empty/scrolled/dropdown-open/confirmation, Messages draft. PR 30 adds 4 more (Messages/Files) but is
-  not merged.
+- 19 recorded screen fixtures (JSON) in `fixtures/screens/` on `main` (counted 2026-11-15): home screen,
+  Gmail inbox and library invite, Calendar schedule, library and volunteer forms (empty, filled,
+  scrolled, dropdown open, confirmation), Messages draft and attach panel, the Files picker, and the
+  Gmail draft, attach menu and attached photo (PRs 30, 35).
 
-### 6.6 Project size and activity (counted 2026-11-12 on local `main`)
-- **31 pull requests**: 29 merged, 2 open (PR 28 run-log touch window, PR 30 IC5) [`gh pr list`].
-- **75 commits** on `main` (44 non-merge, 31 merge commits), dated 2026-11-08 to 2026-11-12 [`git log`].
+### 6.6 Project size and activity (counted 2026-11-15 on `main`)
+- **56 pull requests**: 55 merged, 1 closed as superseded (PR 36) [`gh pr list`].
+- **131 commits** on `main` (74 non-merge, 57 merge commits), dated 2026-11-08 to 2026-11-15 [`git log`].
 - **4 contributors** (Nisith, Susmith, guru, Advay). Git shows 5 author names because Susmith committed
   as both "Susmith" and "srchiluka".
 - **About 9,600 lines of Kotlin**: about 6,950 in app code (agent 3,376; app 1,192; overlay 911; voice
@@ -673,8 +673,9 @@ high contrast, TalkBack labels, light and dark.
   can start acting but can't submit or send [decision wake-word-suus]. No false-wake rate measured.
 - **Background mic on newer Android:** no microphone foreground service was added; behaviour on a real
   phone with Android 14+ background-mic rules is untested [T02 Handoff].
-- **Not ready for others to install:** the Groq key is built into the debug app from
-  `local.properties`; a public download would need each user to enter their own key [resources].
+- **Public download:** the signed release APK (SuuS 1.0, GitHub Releases) contains no Groq key. Its AI
+  requests go through a relay on Vercel (`relay/`) that holds the key as a secret and only allows
+  SuuS's two models (PR 54). Everyone using the APK shares one free-tier daily limit.
 - **The repo is public** since 2026-11-13, with its full history. Two scans of the history found no
   keys or secret files. Commit emails and the test account's address are visible [lead build plan].
 
@@ -729,7 +730,7 @@ uncut runs (unlisted) in the write-up. State on screen: "Recorded on the Android
 | 0:20–0:30 | Emulator home screen; "Suus" → robot pops up listening. Hands-off shot if possible | "SuuS is an Android app that does the tapping for you. Alex just says the goal." |
 | 0:30–1:20 | Demo 1 (library). Request spoken; robot points at Gmail, opens the invite; Calendar opens (Thursday dentist clash) → Friday; Chrome form fills field by field; read-back with highlights; "Submit"; confirmation LIB-xxxxx. **Sped up** during model waits (real run ≈ 85 s) | "It finds the invite, checks the calendar, sees Thursday clashes with the dentist, and picks Friday. The form is filled by code, not guessed by the AI. It reads everything back, and nothing is sent until Alex says 'Submit'. Then it checks the confirmation page." |
 | 1:20–1:50 | Demo 1b (volunteer). Different form; role question with numbered choices; "Setup crew"; saved Email reused; "Submit"; VOL-xxxxx. **Sped up ~3x** (real run ≈ 101 s). Cut to What I remember screen | "A different form: different labels, a new question. Same code. It remembers Alex said 'Email for event signups', asks only what's new, and gets a fresh approval. Alex can see and delete what it remembers." |
-| 1:50–2:35 | Demo 2 (Gmail draft, `seed-device.sh demo2`). Draft "Made it home!" to Maya is open; "Suus, take over. Attach yesterday's dog photo"; it asks which; "the one in the yard"; photo attached. "Suus, undo the photo": photo gone, text untouched. "Suus, use the one by the door"; "Suus, send it"; read-back with highlights; "Send". **Lightly sped up** (steps ≈ 41 s plus speaking time). Label "To a test address" | "Alex can also hand off something already started. SuuS finds yesterday's photos and asks which one. Wrong photo? 'Undo the photo' removes just that, and leaves the words alone. Then the right one, a read-back, and nothing goes until Alex says 'Send'." |
+| 1:50–2:35 | Demo 2 (Gmail draft, `seed-device.sh demo2`). Draft "Made it home!" to Maya is open; "Suus, take over. Attach yesterday's dog photo"; it asks which; "the one in the yard"; photo attached. "Suus, undo the photo": photo gone, text untouched. "Suus, use the one by the door"; "Suus, send it"; read-back with highlights; "Send". **Sped up during model waits** (measured run 124 s across six commands, `docs/metrics.md`). Label "To a test address" | "Alex can also hand off something already started. SuuS finds yesterday's photos and asks which one. Wrong photo? 'Undo the photo' removes just that, and leaves the words alone. Then the right one, a read-back, and nothing goes until Alex says 'Send'." |
 | 2:35–2:50 | Architecture diagram; robot modes; "stop" → "Stopped." | "Under the hood: an accessibility service reads the screen, an AI model picks one step at a time, and code does the exact parts. Submit and Send are locked to a fingerprint of the screen Alex approved. 'Stop' cancels in about a tenth of a second." |
 | 2:50–3:00 | Results card: 0 touches, 2 and 3 spoken commands, LIB/VOL confirmations; "Tested on the Android emulator; waits sped up due to free API tier" | "Two registrations, zero touches after setup. SuuS: say what you need." |
 
@@ -823,6 +824,12 @@ line counts by `grep`/`wc`.
 ---
 
 ## Appendix: inconsistencies between sources (fix before publishing)
+
+**Status 2026-11-15:** the items below were checked against the current docs. Fixed: the "15+" model
+calls line, the S21 mentions in the docs, PR 28 (merged), and the photo demo (it now works live in Gmail,
+PRs 35, 37, 38). Still true and left as history: the two confirmation-number pairs (use LIB-282497 /
+VOL-730060), T05's unticked checkboxes, the dropped library question, and the S21 leftovers in the vault
+brief and `AllowedApps`. The "0.1 s" stop time is measured from injected text, which the docs say.
 
 - `docs/devpost.md` says "3–4 model calls per form instead of 15+". The 3–4 figure is the volunteer form
   started with "take over" (PR 18). A full run from the home screen takes 8–11 model calls (groq-api;

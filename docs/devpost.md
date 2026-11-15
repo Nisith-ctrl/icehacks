@@ -96,9 +96,31 @@ the form, the date picker, the attachment.
 
 ## Built with
 
-Kotlin, Android Accessibility API, Android SpeechRecognizer, Android TextToSpeech, Groq
-(`openai/gpt-oss-120b`, `qwen/qwen3.8-27b`), SQLite, Gradle, Vercel (website, test forms, API relay),
-Node.js (relay), HTML/CSS/JavaScript, Motion (website animation)
+Kotlin, Android Accessibility API, Android SpeechRecognizer, Android TextToSpeech, Kotlin coroutines,
+kotlinx.serialization, OkHttp, AndroidX (AppCompat, SQLite), Gradle, Groq (`openai/gpt-oss-120b`,
+`qwen/qwen3.8-27b`), Vercel (website, test forms, API relay), Node.js (relay), HTML/CSS/JavaScript,
+Motion (website animation), Google Fonts, **Claude Code** (AI coding assistant), Mobbin (design
+references, IceHacks sponsor)
+
+(For the Devpost "Built with" tags: kotlin, android, groq, okhttp, sqlite, gradle, vercel, node.js,
+javascript, html5, css3, motion, claude-code, mobbin.)
+
+## AI tools (disclosure, required by the rules)
+
+All four of us used **Claude Code** (Anthropic; Claude Opus 5.5 and Claude Fable models) as an AI
+coding assistant during the hackathon, to write and test much of the Kotlin code, the website and the
+docs. Commits it helped with carry a `Co-Authored-By: Claude` trailer. The team designed the
+product, the architecture and the safety rules, planned the tasks, made and recorded the decisions,
+tested every demo on the emulator, and reviewed each pull request before merging. At runtime, SuuS
+uses Groq-hosted models (`openai/gpt-oss-120b` to plan each step, `qwen/qwen3.8-27b` to describe
+photos). Everything was built during IceHacks (Nov 8–15); there's no pre-existing code.
+
+## Credits
+
+Open-source libraries listed above; Atkinson Hyperlegible and Pixelify Sans fonts (SIL OFL); website
+fonts from Google Fonts; design references from Mobbin; layout ideas from stripe.com (inspiration
+only). The robot sprite and pixel speech bubble were supplied by Guru. Test forms, emails and photos
+are our own fixtures.
 
 ## Try it
 
