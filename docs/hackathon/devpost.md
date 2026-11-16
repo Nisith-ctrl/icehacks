@@ -2,125 +2,71 @@
 
 ## Name
 
-SuuS: a voice agent that does the tapping for you
+SuuS: a voice agent that uses your phone for you
 
-## Tagline
+## Tagline (elevator pitch)
 
-Say what you need. SuuS shows you every tap, asks before anything is sent, and undoes just the part you didn't want.
+An Android voice agent for people who find small taps and typing painful. Say what you need, and SuuS uses your apps for you: it fills in forms, attaches photos, and asks before sending anything.
+
+<!-- Paste everything from "Inspiration" to "About the video" into Devpost's "About the project" box. -->
 
 ## Inspiration
 
-Alex Rivera has arthritis in both hands. Small taps, typing and picking tiny options hurt, but
-talking is easy. Alex signs up for library workshops, volunteers at local events and texts family
-to say they got home. Voice assistants can open an app, but they stop at the part that hurts:
-the form, the date picker, the attachment.
+Alex Rivera, the person we designed for, has arthritis in both hands. Small taps, typing and picking tiny options hurt, but talking is easy. Alex signs up for library workshops, volunteers at local events and texts family to say they got home safely.
+
+Voice assistants can open an app for Alex, and then they stop right where it starts to hurt: the form, the date picker, the attachment. We wanted an assistant that keeps going through that part, while Alex stays in charge of what actually gets sent.
 
 ## What it does
 
-- **Say the goal:** "Suus, sign me up for the library workshop that fits my calendar." SuuS finds
-  the invite in Gmail, opens the link, checks Calendar (the first session clashes with the
-  dentist, so it picks the other one), fills the form, and reads everything back.
-- **You approve, by voice:** nothing is submitted or sent until you say "Submit" or "Send". If the
-  screen changed after you approved, it asks again.
-- **It checks the result:** after submitting it reads the confirmation page and tells you the
-  confirmation number, and that all your details came through.
-- **You choose what it remembers:** "use Email for event signups" is saved once and reused on the
-  next form. "What do you remember?" and "Forget …" work by voice, and on a big-button screen.
-- **Hand off what you started:** with an email to Maya half-written in Gmail, "Suus, take over.
-  Attach yesterday's dog photo." SuuS describes both dog photos and asks which one. "Undo the photo"
-  removes only the photo and confirms your words are untouched; "Use the one by the door" attaches the
-  other one; "Send it" reads everything back and waits for you to say "Send".
-- **See what it's doing:** a small robot points at each control before tapping it, with a short caption.
-- **"Stop" works any time**: once SuuS hears it, the current action is cancelled at once and it says "Stopped." in about a tenth of a second.
+SuuS is an Android voice agent that uses your apps for you. You say "Suus, sign me up for the library workshop that fits my calendar," and it takes it from there. It finds the invite in Gmail, opens the signup link, notices that the first session clashes with the dentist, and fills in the form for the other one. When it needs something it doesn't know, it asks out loud, and if you say "remember that," it does, so the next form needs one question fewer.
+
+Nothing is sent without you. SuuS reads everything back and waits for you to say "Submit" or "Send." That approval is tied to the exact screen you heard, so if anything changes, it asks again. Afterwards it reads the confirmation page and tells you your details came through. You can say "Stop" at any moment, and it stops within about a tenth of a second.
+
+It can also pick up something you've already started. With an email to Maya half-written, "Suus, take over. Attach yesterday's dog photo" makes it find yesterday's photos and ask which one. If it's the wrong one, "Undo the photo" removes only the photo and leaves your words alone. The whole time, a small robot points at each control before it's tapped, so you can always see what SuuS is about to do.
 
 ## How we built it
 
-- Android app in Kotlin, built as modules: device control (an accessibility service that reads the
-  screen and acts), voice (Android speech recognition, a sound-alike wake word "Suus", spoken
-  approvals), the agent loop, the on-screen character, and an on-device database for preferences
-  and a run log.
-- Planning by an LLM on Groq's free tier (`openai/gpt-oss-120b`): each turn it sees the goal and
-  the screen as text and calls one tool. Code, not the model, does the parts that must be exact:
-  filling fields, matching calendar clashes, gating Submit/Send behind a fingerprinted spoken
-  approval, verifying confirmation pages, and undoing exactly one edit.
-- Safety: an app allowlist, forms only on our test site, and every commit action needs spoken approval.
-- Shipping: a signed release APK (SuuS 1.0) on GitHub Releases. It carries no API key: release builds
-  call a small relay on Vercel (`relay/`) that holds the Groq key as a secret, allows only SuuS's two
-  models, and rate-limits each address. A one-page website explains the app and links the download.
+SuuS is a Kotlin Android app in six modules: device control, voice, the agent, the on-screen robot, a small on-device database, and the app that ties them together. An accessibility service reads the screen as a tree of buttons and text and performs the taps, typing and scrolling.
 
-### Two layers of AI
+The thinking is split on purpose. An LLM on Groq's free tier (`openai/gpt-oss-120b`) looks at the goal and the screen as text and picks one next step at a time. Everything that has to be exact is plain code: filling in form values, finding calendar clashes, checking confirmation pages, undoing exactly one edit, and locking Submit and Send to a SHA-256 fingerprint of the screen you approved. That split is why filling a form takes only three or four model calls.
 
-SuuS uses AI at runtime, and we used AI to build it, in a workflow we designed for a team of agents.
+To ship it, we built a signed release APK that carries no API key. It talks to a small relay on Vercel that holds the key as a secret, allows only SuuS's two models and rate-limits each address. A website explains the app, shows the results and links the download.
 
-- **At runtime:** the Groq-hosted model picks one next step at a time from the goal and the screen,
-  and code does everything that has to be exact.
-- **While building:** each of the four of us ran our own AI coding agent (Claude Code) on our own
-  machine. The agents couldn't talk to each other, so we gave them a shared memory: an Obsidian
-  vault synced through GitHub every two minutes. The lead wrote a project brief with fixed
-  contracts (the interfaces between modules, JSON shapes, setting names) and cut the work into six
-  task files along folder boundaries. Every agent read the brief, its task, and every decision and
-  dead end before starting, worked on one branch per task, and wrote what it learned back as new
-  files, so nothing ever conflicted.
-- **What that produced:** 57 merged pull requests, 118 commits to the shared notebook, 23 agent
-  session logs, 9 binding decisions and 5 dead ends. One example: guru's agent logged that real
-  speech turned "Hey Goal" into "hey girl", and the next agent working on voice read that and built
-  the sound-alike matching for "Suus". The decisions and dead ends are public in
-  `docs/team/notebook/`.
+## Two layers of AI
 
-## Challenges
+SuuS uses AI at runtime, and we also used AI to build it, in a workflow we designed for a team of agents. Each of the four of us ran our own AI coding agent (Claude Code) on our own machine. The agents couldn't talk to each other, so we gave them a shared memory: an Obsidian notebook synced through GitHub every two minutes.
 
-- Apps hide things from accessibility: Gmail keeps the inbox "visible" behind an open email,
-  Calendar lays an invisible full-screen layer over its event list, and older Messages builds
-  hid the text box entirely.
-- Gmail attachments: "Insert photo" puts the picture inside the email text, where undo can't remove
-  it, so SuuS always uses "Attach file". The attachment card appears a moment late, and a removed one
-  stayed in the accessibility tree until we cleared the cache before every screen read.
-- Surprises on screen: on our first recording take, Gmail popped up a tip about emoji reactions
-  that we had never seen. SuuS's tap missed, it read the screen again, saw the email was already
-  open, and tapped the signup link. Because it decides each step from what is on screen, not from
-  recorded tap positions, the tip didn't derail it. (That tip didn't block anything; a dialog that
-  has to be dismissed is a case we haven't tested.)
-- The emulator can't send photo texts (no MMS), so the photo demo moved from Messages to a Gmail draft.
-- Timing: cold app starts and slow first launches look like "nothing happened" unless you wait carefully.
-- Free-tier rate limits: small, stateless prompts, code doing the exact parts (3–4 model calls to fill a
-  form, 8–11 for a whole run from the home screen), and automatic waits. The waits are why parts of our video are sped up and labelled;
-  a paid API tier removes most of them.
+The lead wrote a project brief with fixed contracts (the interfaces between modules, the JSON shapes, the setting names) and cut the work into six task files along folder boundaries. Every agent read the brief, its task, and every decision and dead end before starting. Each one worked on its own branch and wrote what it learned back as new files, so nothing ever conflicted.
 
-## Accomplishments
+That produced 57 merged pull requests, 118 commits to the notebook, 23 agent session logs, 9 binding decisions and 5 dead ends. One example: guru's agent logged that real speech turned "Hey Goal" into "hey girl," so the agent never woke up. The next agent working on voice read that note and built the sound-alike matching for "Suus." The decisions and dead ends are public in our repo under `docs/team/notebook/`.
 
-- All three demos run end to end on the emulator with **zero touches** after setup (see `docs/metrics.md`):
-  - library registration: 2 spoken commands, confirmed LIB-282497
-  - volunteer signup, on a form it had never seen: 3 spoken commands, confirmed VOL-730060
-  - photo email with undo: 6 spoken commands, sent
-- On recording day (Nov 15) both signups ran again with **zero touches**: the library workshop in
-  175 s (it skipped Tuesday's session, which clashes with the dentist) and the volunteer shift in
-  80 s (it skipped Friday's shift, which clashes with lunch, and reused the saved "Email"
-  preference without asking).
-- The same two signups by hand took **53 and 44 touches**, most of them tiny keyboard keys.
-- Selective undo works live in Gmail: SuuS attached the yard photo, removed only that photo, checked the
-  recipient, subject and text were unchanged, then attached the one by the door.
-- Shipped: a public website and a downloadable, signed APK that needs no API key from the user.
+## Challenges we ran into
+
+The hardest part wasn't the AI. It was seeing the screen reliably. Gmail keeps the inbox "visible" behind an open email, Calendar lays an invisible full-screen layer over its event list, and the emulator's Messages app hides its text box from accessibility entirely. And a photo SuuS had just removed stayed in Android's cached accessibility tree, so it still looked present until we cleared that cache before every screen read.
+
+Some problems changed the plan. "Insert photo" in Gmail puts the picture inside the email text, where undo can't reach it, so SuuS always uses "Attach file." The emulator can't send photo texts at all, so the photo demo moved from Messages to a Gmail draft.
+
+Then there were the surprises. On our first recording take, Gmail popped up a tip about emoji reactions that we'd never seen. SuuS's tap missed, it read the screen again, saw the email was already open, and tapped the signup link. Because it decides each step from what's on screen, not from recorded tap positions, the tip didn't derail it. Finally, Groq's free tier only allows a few requests a minute, which is why parts of our video are sped up and labelled.
+
+## Accomplishments that we're proud of
+
+All three demos run end to end with zero touches after setup: a library registration, a volunteer signup on a form SuuS had never seen, and a photo email with undo. Done by hand, the two signups took 53 and 44 touches, most of them tiny keyboard keys.
+
+We're especially proud of selective undo working live in Gmail. SuuS removed only the photo, checked that the recipient, subject and text were unchanged, then attached the right one. And we shipped: a public website and a signed APK anyone can install, with no account or API key needed.
 
 ## What we learned
 
-<!-- team: edit or replace these drafts, and add your own line -->
-- Accessibility trees don't always match what's on screen: apps keep hidden layers "visible" and
-  cache removed items. Reading the screen reliably took more work than planning the next step.
-- Let the AI decide what to do next, and let code do anything that must be exact. That made it
-  both more reliable and cheaper: 3–4 model calls to fill a form.
-- Voice for older users needs forgiving matching ("Suus" is often heard as "sis" or "cease") and
-  strict confirmation: only the exact words "Submit" and "Send" can commit.
-- A shared notebook of decisions and dead ends let four people and their coding agents build in
-  parallel without stepping on each other.
+Accessibility trees don't always match what's on screen, and reading the screen reliably took more work than planning the next step. We also learned to let the AI decide what to do next and let code handle anything that has to be exact, which made SuuS both more reliable and cheaper to run.
 
-## What's next
+Voice for older users needs two opposite things: forgiving matching for the wake word ("Suus" is often heard as "sis" or "cease") and strict confirmation, where only the exact words "Submit" and "Send" can commit anything. And a shared notebook of decisions and dead ends let four people and their coding agents build in parallel without stepping on each other.
 
-- More apps and forms, beyond our test site; letting users teach a new workflow by showing it once.
-- On-device speech recognition, and testing on real phones with real speech.
-- Testing with people who have limited hand dexterity.
-- An iPhone version. iOS doesn't let apps read and tap other apps the way Android's accessibility
-  service does, so it would need a different approach.
-- A paid or faster model tier to remove the rate-limit waits.
+## What's next for SuuS
+
+Next we want SuuS to handle more apps and forms beyond our test site, and to let people teach it a new task by showing it once. Most of all, we want to test it with people who have limited hand dexterity, on real phones with real speech. An iPhone version would need a different approach, because iOS doesn't let apps read and tap other apps the way Android's accessibility service does.
+
+## About the video
+
+Recorded on the Android emulator. The screen recorder held the PC's microphone, so each command was sent to SuuS as text the moment it was spoken, and the commands are voiced over. Everything after that, every tap, question, approval and spoken reply, is SuuS running for real. Waits are sped up and labelled.
 
 ## Built with
 
