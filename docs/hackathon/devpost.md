@@ -12,9 +12,9 @@ An Android voice agent for people who find small taps and typing painful. Say wh
 
 ## Inspiration
 
-Alex Rivera, the person we designed for, has arthritis in both hands. Small taps, typing and picking tiny options hurt, but talking is easy. Alex signs up for library workshops, volunteers at local events and texts family to say they got home safely.
+For a lot of people, the hard part of a phone isn't knowing what to do. It's the doing. Arthritis, tremors, low vision, or simply getting older can turn small taps, typing and tiny options into something slow and painful, even for people who are perfectly comfortable talking.
 
-Voice assistants can open an app for Alex, and then they stop right where it starts to hurt: the form, the date picker, the attachment. We wanted an assistant that keeps going through that part, while Alex stays in charge of what actually gets sent.
+Voice assistants were supposed to help, but they stop right where it starts to hurt. They can open an app, set a timer or send a short text, and then they hand you back the screen for the form, the date picker or the attachment. Those are exactly the parts that take dozens of small, precise taps. We wanted an assistant that keeps going through that part, while you stay in charge of what actually gets sent.
 
 ## What it does
 
