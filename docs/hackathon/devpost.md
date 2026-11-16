@@ -77,7 +77,7 @@ We're especially proud of selective undo working live in Gmail. SuuS removed onl
 
 Accessibility trees don't always match what's on screen, and reading the screen reliably took more work than planning the next step. We also learned to let the AI decide what to do next and let code handle anything that has to be exact, which made SuuS both more reliable and cheaper to run.
 
-Voice for older users needs two opposite things. The wake word has to be forgiving, because the recognizer doesn't know the word "Suus" and writes it as "sous", "Seuss" or "Zeus", so SuuS matches it by sound:
+Voice control for people who find tapping hard needs two opposite things. The wake word has to be forgiving, because the recognizer doesn't know the word "Suus" and writes it as "sous", "Seuss" or "Zeus", so SuuS matches it by sound:
 
 ```kotlin
 // "suus", "sous", "Seuss", "Zeus", "zoos"... all count as the wake word
