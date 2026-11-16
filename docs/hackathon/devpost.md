@@ -30,6 +30,25 @@ SuuS is a Kotlin Android app in six modules: device control, voice, the agent, t
 
 The thinking is split on purpose. An LLM on Groq's free tier (`openai/gpt-oss-120b`) looks at the goal and the screen as text and picks one next step at a time. Everything that has to be exact is plain code: filling in form values, finding calendar clashes, checking confirmation pages, undoing exactly one edit, and locking Submit and Send to a SHA-256 fingerprint of the screen you approved. That split is why filling a form takes only three or four model calls.
 
+Each turn, the model sees the screen as compact text, one line per control, with an id it can act on:
+
+```
+n7  EditText "Alex" hint="Full name" label="Full name" [edit]
+n12 RadioButton "Thursday, Nov 12, 10:00" [check, checked]
+n20 Button "Submit" [tap]
+```
+
+It answers with exactly one tool call, such as `tap`, `enter_text`, `fill_form`, `check_calendar` or `ask_user`. The approval lock sits below all of that, in the device layer, so no plan the model makes can skip it. A Submit or Send tap is refused unless your spoken approval matches the fingerprint of the screen as it is right now:
+
+```kotlin
+if (action.isCommit) {
+    if (approval == null) return ActionResult.NotAllowed("commit tap needs an approval")
+    if (approval.fingerprint != beforeFp) {
+        return ActionResult.NotAllowed("approval does not match the current screen")
+    }
+}
+```
+
 To ship it, we built a signed release APK that carries no API key. It talks to a small relay on Vercel that holds the key as a secret, allows only SuuS's two models and rate-limits each address. A website explains the app, shows the results and links the download.
 
 ## Two layers of AI
@@ -58,7 +77,14 @@ We're especially proud of selective undo working live in Gmail. SuuS removed onl
 
 Accessibility trees don't always match what's on screen, and reading the screen reliably took more work than planning the next step. We also learned to let the AI decide what to do next and let code handle anything that has to be exact, which made SuuS both more reliable and cheaper to run.
 
-Voice for older users needs two opposite things: forgiving matching for the wake word ("Suus" is often heard as "sis" or "cease") and strict confirmation, where only the exact words "Submit" and "Send" can commit anything. And a shared notebook of decisions and dead ends let four people and their coding agents build in parallel without stepping on each other.
+Voice for older users needs two opposite things. The wake word has to be forgiving, because the recognizer doesn't know the word "Suus" and writes it as "sous", "Seuss" or "Zeus", so SuuS matches it by sound:
+
+```kotlin
+// "suus", "sous", "Seuss", "Zeus", "zoos"... all count as the wake word
+private val SUUS = Regex("^[sz](u|uu|oo|ou|ue|eu|ew|oe|ui)(s|ss|se|z|zz|ze|ce)s?$")
+```
+
+Confirmation has to be the opposite: strict. Only the exact words "Submit" and "Send" can commit anything, and "yes" or "sure" just gets the question again. And a shared notebook of decisions and dead ends let four people and their coding agents build in parallel without stepping on each other.
 
 ## What's next for SuuS
 
